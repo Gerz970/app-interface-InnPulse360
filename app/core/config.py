@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     y archivo .env. Proporciona valores por defecto para configuración de base de datos.
 
     Atributos:
-        database_url (str): URL de conexión a base de datos. Por defecto PostgreSQL.
-                           Se puede cambiar a SQLite, SQL Server u otras bases de datos.
+        database_url (str): URL de conexión a base de datos. Por defecto SQL Server.
+                            Se puede cambiar a SQLite, PostgreSQL u otras bases de datos.
     """
     database_url: str = "mssql+pyodbc://username:password@server/database?driver=ODBC+Driver+17+for+SQL+Server"
     # Para desarrollo con SQLite: "sqlite:///./app.db"

@@ -69,7 +69,7 @@ return User.from_orm(db_user)  # JSON response
 ### Prerrequisitos
 
 - Python 3.11+
-- PostgreSQL (o SQLite para desarrollo)
+- SQL Server (o SQLite para desarrollo)
 
 ### Instalación
 
@@ -85,14 +85,14 @@ return User.from_orm(db_user)  # JSON response
    ```
 
 3. **Configura la base de datos**
-   - Edita el archivo `.env`:
-     ```
-     DATABASE_URL=postgresql://user:password@localhost/dbname
-     ```
-   - Para desarrollo con SQLite:
-     ```
-     DATABASE_URL=sqlite:///./app.db
-     ```
+    - Edita el archivo `.env`:
+      ```
+      DATABASE_URL=mssql+pyodbc://username:password@server/database?driver=ODBC+Driver+17+for+SQL+Server
+      ```
+    - Para desarrollo con SQLite:
+      ```
+      DATABASE_URL=sqlite:///./app.db
+      ```
 
 4. **Ejecuta la aplicación**
    ```bash
@@ -140,7 +140,7 @@ curl -X GET "http://localhost:8000/api/v1/users/1"
 - **SQLAlchemy**: ORM para Python con soporte completo para bases de datos
 - **Pydantic**: Validación de datos y configuración
 - **Uvicorn**: Servidor ASGI de alto rendimiento
-- **PostgreSQL**: Base de datos relacional (configurable)
+- **SQL Server**: Base de datos relacional (configurable)
 - **Docker**: Containerización de la aplicación
 
 ## 📁 Estructura del Proyecto
@@ -183,14 +183,14 @@ curl -X GET "http://localhost:8000/api/v1/users/1"
 
 | Variable | Descripción | Valor por defecto |
 |----------|-------------|-------------------|
-| `DATABASE_URL` | URL de conexión a base de datos | `postgresql://user:password@localhost/dbname` |
+| `DATABASE_URL` | URL de conexión a base de datos | `mssql+pyodbc://username:password@server/database?driver=ODBC+Driver+17+for+SQL+Server` |
 
 ### Base de Datos
 
 La aplicación soporta múltiples motores de base de datos:
 
-- **SQL Server** (configurado por defecto)
-- **PostgreSQL** (recomendado para producción)
+- **SQL Server** (recomendado para producción)
+- **PostgreSQL** (configurable)
 - **SQLite** (para desarrollo y pruebas)
 - **MySQL/MariaDB** (configurable)
 

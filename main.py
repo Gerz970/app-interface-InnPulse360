@@ -1,11 +1,16 @@
-import uvicorn
+from fastapi import FastAPI
 
-from app.api import app
-from app.core import engine
-from app.models import Base
+# Crear instancia de FastAPI
+app = FastAPI(title="InnPulse360 API", version="1.0.0")
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+@app.get("/")
+def read_root():
+    return {"message": "Bienvenido a InnPulse360 API"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
 
 if __name__ == "__main__":
+    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

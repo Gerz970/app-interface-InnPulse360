@@ -1,70 +1,140 @@
 # InnPulse360 API
 
-Una API REST moderna construida con FastAPI y SQLAlchemy para la gestión de usuarios en el sistema InnPulse360.
+Una API REST moderna construida con FastAPI para la gestión de hoteles en el sistema InnPulse360.
 
 ## 📋 Descripción
 
-Esta aplicación proporciona una API RESTful completa para operaciones CRUD (Crear, Leer, Actualizar, Eliminar) de usuarios. Está diseñada siguiendo principios de arquitectura limpia con separación clara de responsabilidades en capas.
+Esta aplicación proporciona una API RESTful para operaciones relacionadas con hoteles. Está diseñada siguiendo principios de arquitectura limpia con separación clara de responsabilidades en capas, preparada para expandirse con funcionalidades CRUD completas.
 
 ## 🏗️ Arquitectura
 
-El proyecto sigue una arquitectura en capas bien definida:
+El proyecto sigue una arquitectura modular preparada para escalar:
 
 ```
 app/
 ├── api/           # Capa de presentación (FastAPI routers)
 │   └── v1/        # Versionado de API
 ├── core/          # Configuración y servicios core
-├── models/        # Modelos de base de datos (SQLAlchemy)
+├── models/        # Modelos de datos (preparado para SQLAlchemy)
 ├── schemas/       # Esquemas Pydantic para validación
-├── dao/           # Data Access Objects (repositorios)
-└── services/      # Lógica de negocio
+├── dao/           # Data Access Objects (preparado para repositorios)
+├── services/      # Lógica de negocio
+├── utils/         # Utilidades y helpers
+└── views/         # Vistas y templates (si se requiere)
 ```
 
-### Capas de la Arquitectura
+### Arquitectura Actual
 
-- **Capa API**: Endpoints REST, manejo de requests/responses
-- **Capa Service**: Lógica de negocio, validaciones, transformación de datos
-- **Capa DAO**: Acceso a datos, operaciones CRUD puras
-- **Capa Model**: Definición de entidades de base de datos
-- **Capa Schema**: Validación y serialización de datos
-- **Capa Core**: Configuración, conexiones, utilidades
+- **Capa API**: Endpoints REST básicos para hoteles
+- **Capa Core**: Configuración de la aplicación y manejo de entornos
+- **Capa de Configuración**: Gestión de variables de entorno por ambiente
 
-### Flujo de Datos
+### Flujo de Datos Actual
 ```
-API → Service → DAO → Database
-Response ← Schema ← Model ←
+API → Core → Response
 ```
 
-### Explicación del Flujo
+### Estructura Preparada para Escalabilidad
 
-1. **API Layer** (`app/api/`): Recibe requests HTTP, valida entrada con Pydantic
-2. **Service Layer** (`app/services/`): Contiene lógica de negocio, validaciones específicas
-3. **DAO Layer** (`app/dao/`): Maneja operaciones CRUD puras con la base de datos
-4. **Model Layer** (`app/models/`): Define estructura de tablas con SQLAlchemy
-5. **Schema Layer** (`app/schemas/`): Convierte datos para responses JSON
-6. **Core Layer** (`app/core/`): Configuraciones globales y conexiones
+El proyecto está estructurado para crecer con:
+- **Modelos de datos** para entidades de hoteles
+- **Servicios de negocio** para lógica compleja
+- **DAOs** para acceso a base de datos
+- **Schemas** para validación de datos
+- **Utilidades** para funciones auxiliares
 
-### Ejemplo de Flujo Completo
+## 📋 Diferencia entre Models y Schemas
+
+### Models (`app/models/`)
+Los **Models** representan la estructura de la base de datos y son utilizados por SQLAlchemy:
+
+```python
+# Ejemplo: app/models/hotel.py
+from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+class Hotel(Base):
+    __tablename__ = "hotels"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    location = Column(String, nullable=False)
+    price_per_night = Column(Float, nullable=False)
+    rating = Column(Float, default=0.0)
+```
+
+**Características de Models:**
+- ✅ Definen la estructura de tablas en la base de datos
+- ✅ Manejan relaciones entre entidades (foreign keys, etc.)
+- ✅ Usados por SQLAlchemy para crear/migrar esquemas de BD
+- ✅ Contienen validaciones de nivel de base de datos
+- ✅ Persisten datos en la BD
+
+### Schemas (`app/schemas/`)
+Los **Schemas** definen la estructura de datos para la API REST usando Pydantic:
+
+```python
+# Ejemplo: app/schemas/hotel.py
+from pydantic import BaseModel, Field
+from typing import Optional
+
+class HotelBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    location: str = Field(..., min_length=1, max_length=200)
+    price_per_night: float = Field(..., gt=0)
+    rating: Optional[float] = Field(None, ge=0, le=5)
+
+class HotelCreate(HotelBase):
+    pass  # Hereda todos los campos de HotelBase
+
+class HotelUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    location: Optional[str] = Field(None, min_length=1, max_length=200)
+    price_per_night: Optional[float] = Field(None, gt=0)
+    rating: Optional[float] = Field(None, ge=0, le=5)
+
+class Hotel(HotelBase):
+    id: int
+    
+    class Config:
+        from_attributes = True  # Permite conversión desde SQLAlchemy models
+```
+
+**Características de Schemas:**
+- ✅ Validan datos de entrada de la API
+- ✅ Serializan datos de salida para JSON
+- ✅ Documentan automáticamente la API (Swagger/OpenAPI)
+- ✅ Permiten diferentes estructuras para crear/actualizar/leer
+- ✅ Validaciones de tipo y formato automáticas
+
+### Flujo de Datos: Model ↔ Schema
+
+```python
+# 1. Request JSON → Schema (validación)
+hotel_data = HotelCreate(name="Hotel Plaza", location="Madrid", price_per_night=150.0)
+
+# 2. Schema → Model (para guardar en BD)
+db_hotel = Hotel(**hotel_data.dict())
+db.add(db_hotel)
+db.commit()
+
+# 3. Model → Schema (para respuesta JSON)
+return Hotel.from_orm(db_hotel)
+```
+
+### Ejemplo de Endpoint Actual
 
 ```python
 # 1. Request llega a endpoint
-POST /api/v1/users/ → create_user() en users.py
+GET /api/v1/hotel/ → get_hotels() en routes_hotel.py
 
-# 2. Validación automática con Pydantic
-user: UserCreate = UserCreate(name="Juan", email="juan@email.com")
-
-# 3. Lógica de negocio en Service
-service.create_user(user)  # Validar email único
-
-# 4. Operación de base de datos en DAO
-dao.create_user(user)  # INSERT INTO users...
-
-# 5. Respuesta formateada con Schema
-return User.from_orm(db_user)  # JSON response
+# 2. Respuesta directa
+return {"message": "Hotel get request"}
 ```
 
-## 🚀 Inicio Rápido
+## Inicio Rápido
 
 ### Prerrequisitos
 
@@ -84,19 +154,13 @@ return User.from_orm(db_user)  # JSON response
    pip install -r requirements.txt
    ```
 
-3. **Configura la base de datos**
-    - Edita el archivo `.env`:
-      ```
-      DATABASE_URL=mssql+pyodbc://username:password@server/database?driver=ODBC+Driver+17+for+SQL+Server
-      ```
-    - Para desarrollo con SQLite:
-      ```
-      DATABASE_URL=sqlite:///./app.db
-      ```
+3. **Configura las variables de entorno**
+   - Para desarrollo, asegúrate de tener el archivo `.development.env`
+   - Para producción, usa el archivo `.production.env`
 
 4. **Ejecuta la aplicación**
    ```bash
-   python main.py
+   python app/main.py
    ```
 
 5. **Accede a la documentación**
@@ -105,122 +169,93 @@ return User.from_orm(db_user)  # JSON response
 
 ## 📚 API Endpoints
 
-### Usuarios
+### Hoteles
 
 | Método | Endpoint | Descripción |
 |--------|----------|-------------|
-| GET | `/api/v1/users/` | Lista usuarios (con paginación) |
-| GET | `/api/v1/users/{user_id}` | Obtener usuario específico |
-| POST | `/api/v1/users/` | Crear nuevo usuario |
-| PUT | `/api/v1/users/{user_id}` | Actualizar usuario |
-| DELETE | `/api/v1/users/{user_id}` | Eliminar usuario |
+| GET | `/` | Endpoint de bienvenida |
+| GET | `/api/v1/hotel/` | Obtener información de hoteles |
 
 ### Ejemplos de Uso
 
-#### Crear Usuario
+#### Obtener Hoteles
 ```bash
-curl -X POST "http://localhost:8000/api/v1/users/" \
-     -H "Content-Type: application/json" \
-     -d '{"name": "Juan Pérez", "email": "juan@example.com"}'
+curl -X GET "http://localhost:8000/api/v1/hotel/"
 ```
 
-#### Listar Usuarios
+#### Endpoint de Bienvenida
 ```bash
-curl -X GET "http://localhost:8000/api/v1/users/?skip=0&limit=10"
-```
-
-#### Obtener Usuario Específico
-```bash
-curl -X GET "http://localhost:8000/api/v1/users/1"
+curl -X GET "http://localhost:8000/"
 ```
 
 ## 🛠️ Tecnologías
 
 - **FastAPI**: Framework web moderno y rápido para APIs
-- **SQLAlchemy**: ORM para Python con soporte completo para bases de datos
-- **Pydantic**: Validación de datos y configuración
 - **Uvicorn**: Servidor ASGI de alto rendimiento
-- **SQL Server**: Base de datos relacional (configurable)
+- **Python-dotenv**: Manejo de variables de entorno
 - **Docker**: Containerización de la aplicación
 
 ## 📁 Estructura del Proyecto
 
 ```
 .
-├── main.py                 # Punto de entrada de la aplicación
+├── app/
+│   ├── __init__.py
+│   ├── main.py            # Punto de entrada de la aplicación
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── v1/
+│   │       ├── __init__.py # Router v1
+│   │       └── routes_hotel.py # Endpoints de hoteles
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config.py      # Configuración de aplicación
+│   │   └── database.py    # Configuración de base de datos
+│   ├── models/
+│   │   └── __init__.py
+│   ├── schemas/
+│   │   └── __init__.py
+│   ├── dao/
+│   │   └── __init__.py
+│   ├── services/
+│   │   └── __init__.py
+│   ├── utils/
+│   └── views/
 ├── requirements.txt        # Dependencias Python
 ├── Dockerfile             # Configuración Docker
-├── .env                   # Variables de entorno
-├── README.md              # Esta documentación
-└── app/
-    ├── __init__.py
-    ├── api/
-    │   ├── __init__.py    # Aplicación FastAPI principal
-    │   └── v1/
-    │       ├── __init__.py # Router v1
-    │       └── users.py    # Endpoints de usuarios
-    ├── core/
-    │   ├── __init__.py
-    │   ├── config.py      # Configuración de aplicación
-    │   └── database.py    # Configuración de base de datos
-    ├── models/
-    │   ├── __init__.py
-    │   └── user.py        # Modelo User SQLAlchemy
-    ├── schemas/
-    │   ├── __init__.py
-    │   └── user.py        # Esquemas Pydantic
-    ├── dao/
-    │   ├── __init__.py
-    │   └── user_dao.py    # Data Access Object para usuarios
-    └── services/
-        ├── __init__.py
-        └── user_service.py # Servicio de lógica de negocio
+├── .development.env       # Variables de entorno para desarrollo
+├── .production.env        # Variables de entorno para producción
+└── README.md              # Esta documentación
 ```
 
 ## 🔧 Configuración
 
 ### Variables de Entorno
 
+La aplicación utiliza archivos de configuración específicos para diferentes entornos:
+
+#### Desarrollo (`.development.env`)
+```
+PORT=8000
+HOST=127.0.0.1
+API_VERSION=/api/v1
+```
+
+#### Producción (`.production.env`)
+```
+PORT=8000
+API_VERSION=/v1
+```
+
+### Configuración de la Aplicación
+
 | Variable | Descripción | Valor por defecto |
 |----------|-------------|-------------------|
-| `DATABASE_URL` | URL de conexión a base de datos | `mssql+pyodbc://username:password@server/database?driver=ODBC+Driver+17+for+SQL+Server` |
+| `PORT` | Puerto del servidor | `8000` |
+| `HOST` | Host del servidor | `127.0.0.1` |
+| `API_VERSION` | Versión de la API | `/api/v1` |
 
-### Base de Datos
-
-La aplicación soporta múltiples motores de base de datos:
-
-- **SQL Server** (recomendado para producción)
-- **PostgreSQL** (configurable)
-- **SQLite** (para desarrollo y pruebas)
-- **MySQL/MariaDB** (configurable)
-
-#### Configuración para SQL Server
-
-1. **Instalar ODBC Driver**:
-   - Descargar e instalar "ODBC Driver 17 for SQL Server" desde Microsoft
-   - Para Windows: https://docs.microsoft.com/en-us/sql/connect/odbc/download-odbc-driver-for-sql-server
-
-2. **Configurar conexión** en `.env`:
-   ```
-   DATABASE_URL=mssql+pyodbc://username:password@server/database?driver=ODBC+Driver+17+for+SQL+Server
-   ```
-
-3. **Crear base de datos**:
-   ```sql
-   CREATE DATABASE InnPulse360;
-   ```
-
-#### Configuraciones alternativas:
-
-**SQLite (desarrollo)**:
-```
-DATABASE_URL=sqlite:///./app.db
-```
-
-**PostgreSQL**:
-```
-DATABASE_URL=postgresql://user:password@localhost/dbname
-```
+La aplicación automáticamente carga el archivo `.development.env` si existe, de lo contrario carga `.production.env`.
 
 ## 🐳 Docker
 
@@ -234,12 +269,12 @@ docker build -t innpulse360-api .
 docker run -p 8000:8000 innpulse360-api
 ```
 
-## 🧪 Validaciones y Reglas de Negocio
+## 🧪 Estado Actual y Funcionalidades
 
-### Usuarios
-- **Email único**: No se permiten emails duplicados
-- **Campos requeridos**: `name` y `email` son obligatorios
-- **Formato email**: Validación automática de formato de email
+### Hoteles
+- **Endpoint básico**: Disponible endpoint GET para obtener información de hoteles
+- **Configuración flexible**: Sistema de configuración por ambientes (desarrollo/producción)
+- **Arquitectura escalable**: Estructura preparada para implementar funcionalidades CRUD completas
 
 ## 📖 Documentación Adicional
 
@@ -253,14 +288,16 @@ docker run -p 8000:8000 innpulse360-api
 
 ### Extensiones Futuras
 
-- Autenticación y autorización (JWT, OAuth2)
-- Paginación avanzada
-- Filtros y búsqueda
-- Caché (Redis)
-- Logging estructurado
-- Tests unitarios e integración
-- Migraciones de base de datos (Alembic)
-- API versioning avanzado
+- **Modelos de datos**: Implementación de modelos SQLAlchemy para hoteles
+- **CRUD completo**: Operaciones Create, Read, Update, Delete para hoteles
+- **Validaciones**: Esquemas Pydantic para validación de datos de hoteles
+- **Base de datos**: Integración con SQLAlchemy y migraciones
+- **Autenticación**: Sistema de autenticación y autorización
+- **Filtros y búsqueda**: Búsqueda avanzada de hoteles por ubicación, precio, etc.
+- **Caché**: Implementación de Redis para mejorar rendimiento
+- **Logging**: Sistema de logging estructurado
+- **Tests**: Suite de tests unitarios e integración
+- **API versioning**: Manejo avanzado de versiones de API
 
 ## 🤝 Contribución
 
@@ -276,10 +313,10 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 
 ## 📞 Soporte
 
-Para soporte técnico o preguntas:
-- Email: soporte@innpulse360.com
-- Documentación: http://localhost:8000/docs (cuando la app esté ejecutándose)
+Para soporte técnico o preguntas, consulta la documentación de la API:
+- Documentación interactiva: http://localhost:8000/docs (cuando la app esté ejecutándose)
+- ReDoc: http://localhost:8000/redoc
 
 ---
 
-**InnPulse360** - Transformando la gestión de usuarios con tecnología moderna.
+**InnPulse360** - Transformando la gestión de hoteles con tecnología moderna.

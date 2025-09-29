@@ -173,6 +173,8 @@ alembic/versions/*.py
 .env.development
 .env.test
 .env.production
+.development.env
+.production.env
 
 # Testing
 .coverage

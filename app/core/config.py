@@ -17,11 +17,10 @@ class Settings:
     api_version: str = os.getenv("API_VERSION", "/api/v1")
 
 class DatabaseSettings:
-    server: str = os.getenv("SERVER", "localhost")
-    database: str = os.getenv("DATABASE", "innpulse360")
-    username: str = os.getenv("USERNAME", "sa")
-    password: str = os.getenv("PASSWORD", "123456")
-    port: int = int(os.getenv("PORT_DB", "1433"))
-    trust_server_certificate: bool = os.getenv("TRUST_SERVER_CERTIFICATE", "true") == "true"
+    server: str = os.getenv("SERVER")
+    database: str = os.getenv("DATABASE")
+    username: str = os.getenv("USER_DB")
+    password: str = os.getenv("PASSWORD")
+    port: int = int(os.getenv("PORT_DB"))
     driver: str = os.getenv("DRIVER", "ODBC Driver 17 for SQL Server")
     trust_server_certificate: bool = os.getenv("TRUST_SERVER_CERTIFICATE", "true") == "true"

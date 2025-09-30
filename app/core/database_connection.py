@@ -100,6 +100,9 @@ class DatabaseConnection:
         """
         Construye la cadena de conexión para SQL Server
         """
+        # Convertir el booleano a 'yes' o 'no' para ODBC Driver
+        trust_cert = "yes" if self._database_settings.trust_server_certificate else "no"
+        
         return (
             f"mssql+pyodbc://{self._database_settings.username}:"
             f"{self._database_settings.password}@"
@@ -107,7 +110,7 @@ class DatabaseConnection:
             f"{self._database_settings.port}/"
             f"{self._database_settings.database}"
             f"?driver={self._database_settings.driver.replace(' ', '+')}"
-            f"&TrustServerCertificate={self._database_settings.trust_server_certificate}"
+            f"&TrustServerCertificate={trust_cert}"
         )
     
     def get_session(self) -> Session:

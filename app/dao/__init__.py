@@ -1,5 +1,4 @@
-from .dao_hotel import HotelDAO # Importa el DAO de Hotel
+from .dao_hotel import HotelDAO
+from .dao_usuario import UsuarioDAO
 
-# Importa el DAO de Hotel
-__all__ = ["HotelDAO"]
-
+__all__ = ["HotelDAO", "UsuarioDAO"]

@@ -17,10 +17,15 @@ class Settings:
     api_version: str = os.getenv("API_VERSION", "/api/v1")
 
 class DatabaseSettings:
-    server: str = os.getenv("SERVER")
-    database: str = os.getenv("DATABASE")
-    username: str = os.getenv("USER_DB")
-    password: str = os.getenv("PASSWORD")
-    port: int = int(os.getenv("PORT_DB"))
+    server: str = os.getenv("SERVER", "localhost")
+    database: str = os.getenv("DATABASE", "InnPulse360")
+    username: str = os.getenv("USER_DB", "sa")
+    password: str = os.getenv("PASSWORD", "password")
+    port: int = int(os.getenv("PORT_DB", "1433"))
     driver: str = os.getenv("DRIVER", "ODBC Driver 17 for SQL Server")
     trust_server_certificate: bool = os.getenv("TRUST_SERVER_CERTIFICATE", "true") == "true"
+
+class AuthSettings:
+    secret_key: str = os.getenv("SECRET_KEY", "tu_clave_secreta_muy_segura_aqui_cambiar_en_produccion")
+    algorithm: str = os.getenv("ALGORITHM", "HS256")
+    access_token_expire_minutes: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))

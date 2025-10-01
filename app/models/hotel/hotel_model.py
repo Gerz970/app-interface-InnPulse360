@@ -22,6 +22,7 @@ class Hotel(Base):
     telefono = Column(String(30), nullable=True)
     email_contacto = Column(String(150), nullable=True)
     numero_estrellas = Column(SmallInteger, nullable=True)
+    estatus_id = Column(SmallInteger, nullable=False)
     
     def __repr__(self):
         return f"<Hotel(id_hotel={self.id_hotel}, nombre='{self.nombre}')>"

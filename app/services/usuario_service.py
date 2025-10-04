@@ -11,11 +11,14 @@ from passlib.context import CryptContext
 from fastapi import HTTPException, status
 
 from dao.dao_usuario import UsuarioDAO
+from dao.dao_roles import RolesDAO
+from dao.dao_rol_usuario import RolUsuarioDAO
 from models.seguridad.usuario_model import Usuario
 from schemas.seguridad.usuario_create import UsuarioCreate
 from schemas.seguridad.usuario_update import UsuarioUpdate
 from schemas.seguridad.usuario_response import UsuarioResponse
 from schemas.seguridad.auth_schemas import UsuarioLogin, Token, TokenData
+from schemas.seguridad.usuario_rol_schemas import RolSimpleResponse
 from core.config import AuthSettings
 
 # Configuración para encriptación de contraseñas
@@ -38,6 +41,8 @@ class UsuarioService:
         """
         self.db = db_session
         self.dao = UsuarioDAO(db_session)
+        self.roles_dao = RolesDAO(db_session)
+        self.rol_usuario_dao = RolUsuarioDAO(db_session)
     
     def _hash_password(self, password: str) -> str:
         """
@@ -63,6 +68,25 @@ class UsuarioService:
             bool: True si coinciden, False si no
         """
         return pwd_context.verify(plain_password, hashed_password)
+    
+    def _get_usuario_roles(self, usuario_id: int) -> List[RolSimpleResponse]:
+        """
+        Obtiene los roles de un usuario
+        
+        Args:
+            usuario_id (int): ID del usuario
+            
+        Returns:
+            List[RolSimpleResponse]: Lista de roles del usuario
+        """
+        roles = self.rol_usuario_dao.get_roles_by_usuario(usuario_id)
+        return [
+            RolSimpleResponse(
+                id_rol=rol.id_rol,
+                rol=rol.rol
+            )
+            for rol in roles
+        ]
     
     def _create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None) -> str:
         """
@@ -112,6 +136,16 @@ class UsuarioService:
                 detail="El correo electrónico ya está en uso"
             )
         
+        # Verificar que todos los roles existen y están activos (si se proporcionan)
+        if usuario_data.roles_ids:
+            for rol_id in usuario_data.roles_ids:
+                rol = self.roles_dao.get_by_id(rol_id)
+                if not rol or rol.estatus_id != 1:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Rol con ID {rol_id} no encontrado o inactivo"
+                    )
+        
         # Encriptar la contraseña
         hashed_password = self._hash_password(usuario_data.password)
         
@@ -119,12 +153,20 @@ class UsuarioService:
         usuario_data.password = hashed_password
         db_usuario = self.dao.create(usuario_data)
         
-        # Retornar sin la contraseña
+        # Asignar roles si se proporcionaron
+        if usuario_data.roles_ids:
+            self.rol_usuario_dao.bulk_assign_roles_to_usuario(db_usuario.id_usuario, usuario_data.roles_ids)
+        
+        # Obtener roles asignados
+        roles = self._get_usuario_roles(db_usuario.id_usuario)
+        
+        # Retornar con los roles
         return UsuarioResponse(
             id_usuario=db_usuario.id_usuario,
             login=db_usuario.login,
             correo_electronico=db_usuario.correo_electronico,
-            estatus_id=db_usuario.estatus_id
+            estatus_id=db_usuario.estatus_id,
+            roles=roles
         )
     
     def get_usuario_by_id(self, id_usuario: int) -> Optional[UsuarioResponse]:
@@ -141,11 +183,15 @@ class UsuarioService:
         if not db_usuario:
             return None
         
+        # Obtener roles del usuario
+        roles = self._get_usuario_roles(id_usuario)
+        
         return UsuarioResponse(
             id_usuario=db_usuario.id_usuario,
             login=db_usuario.login,
             correo_electronico=db_usuario.correo_electronico,
-            estatus_id=db_usuario.estatus_id
+            estatus_id=db_usuario.estatus_id,
+            roles=roles
         )
     
     def get_usuario_by_login(self, login: str) -> Optional[UsuarioResponse]:
@@ -162,11 +208,15 @@ class UsuarioService:
         if not db_usuario:
             return None
         
+        # Obtener roles del usuario
+        roles = self._get_usuario_roles(db_usuario.id_usuario)
+        
         return UsuarioResponse(
             id_usuario=db_usuario.id_usuario,
             login=db_usuario.login,
             correo_electronico=db_usuario.correo_electronico,
-            estatus_id=db_usuario.estatus_id
+            estatus_id=db_usuario.estatus_id,
+            roles=roles
         )
     
     def get_all_usuarios(self, skip: int = 0, limit: int = 100) -> List[UsuarioResponse]:
@@ -186,7 +236,8 @@ class UsuarioService:
                 id_usuario=usuario.id_usuario,
                 login=usuario.login,
                 correo_electronico=usuario.correo_electronico,
-                estatus_id=usuario.estatus_id
+                estatus_id=usuario.estatus_id,
+                roles=self._get_usuario_roles(usuario.id_usuario)
             )
             for usuario in db_usuarios
         ]
@@ -235,11 +286,15 @@ class UsuarioService:
         if not db_usuario:
             return None
         
+        # Obtener roles del usuario
+        roles = self._get_usuario_roles(id_usuario)
+        
         return UsuarioResponse(
             id_usuario=db_usuario.id_usuario,
             login=db_usuario.login,
             correo_electronico=db_usuario.correo_electronico,
-            estatus_id=db_usuario.estatus_id
+            estatus_id=db_usuario.estatus_id,
+            roles=roles
         )
     
     def delete_usuario(self, id_usuario: int) -> bool:
@@ -364,9 +419,13 @@ class UsuarioService:
         if usuario is None or usuario.estatus_id != 1:
             raise credentials_exception
         
+        # Obtener roles del usuario
+        roles = self._get_usuario_roles(usuario.id_usuario)
+        
         return UsuarioResponse(
             id_usuario=usuario.id_usuario,
             login=usuario.login,
             correo_electronico=usuario.correo_electronico,
-            estatus_id=usuario.estatus_id
+            estatus_id=usuario.estatus_id,
+            roles=roles
         )

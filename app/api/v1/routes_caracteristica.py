@@ -1,0 +1,172 @@
+"""
+Rutas API para Caracteristica
+Endpoints para operaciones CRUD de características
+"""
+
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.orm import Session
+
+from core.database_connection import get_database_session
+from services.caracteristica_service import CaracteristicaService
+from schemas.catalogos.caracteristica_schemas import CaracteristicaCreate, CaracteristicaUpdate, CaracteristicaResponse
+
+# Crear router para características
+router = APIRouter(prefix="/caracteristicas", tags=["Características"])
+
+
+@router.post("/", response_model=CaracteristicaResponse, status_code=status.HTTP_201_CREATED)
+async def create_caracteristica(
+    caracteristica_data: CaracteristicaCreate,
+    db: Session = Depends(get_database_session)
+):
+    """
+    Crear una nueva característica
+    
+    - **caracteristica**: Nombre de la característica (requerido)
+    - **descripcion**: Descripción de la característica (opcional)
+    """
+    try:
+        service = CaracteristicaService(db)
+        return service.create_caracteristica(caracteristica_data)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al crear característica: {str(e)}"
+        )
+
+
+@router.get("/", response_model=List[CaracteristicaResponse])
+async def get_caracteristicas(
+    skip: int = Query(0, ge=0, description="Número de registros a saltar"),
+    limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros a retornar"),
+    db: Session = Depends(get_database_session)
+):
+    """
+    Obtener lista de características con paginación
+    
+    - **skip**: Número de registros a saltar (por defecto: 0)
+    - **limit**: Número máximo de registros a retornar (por defecto: 100, máximo: 1000)
+    """
+    try:
+        service = CaracteristicaService(db)
+        return service.get_all_caracteristicas(skip, limit)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener características: {str(e)}"
+        )
+
+
+@router.get("/{id_caracteristica}", response_model=CaracteristicaResponse)
+async def get_caracteristica_by_id(
+    id_caracteristica: int,
+    db: Session = Depends(get_database_session)
+):
+    """
+    Obtener una característica por su ID
+    
+    - **id_caracteristica**: ID único de la característica
+    """
+    try:
+        service = CaracteristicaService(db)
+        caracteristica = service.get_caracteristica_by_id(id_caracteristica)
+        if not caracteristica:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Característica no encontrada"
+            )
+        return caracteristica
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener característica: {str(e)}"
+        )
+
+
+@router.get("/nombre/{caracteristica}", response_model=CaracteristicaResponse)
+async def get_caracteristica_by_nombre(
+    caracteristica: str,
+    db: Session = Depends(get_database_session)
+):
+    """
+    Obtener una característica por su nombre
+    
+    - **caracteristica**: Nombre de la característica
+    """
+    try:
+        service = CaracteristicaService(db)
+        caracteristica_obj = service.get_caracteristica_by_nombre(caracteristica)
+        if not caracteristica_obj:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Característica no encontrada"
+            )
+        return caracteristica_obj
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al obtener característica: {str(e)}"
+        )
+
+
+@router.put("/{id_caracteristica}", response_model=CaracteristicaResponse)
+async def update_caracteristica(
+    id_caracteristica: int,
+    caracteristica_data: CaracteristicaUpdate,
+    db: Session = Depends(get_database_session)
+):
+    """
+    Actualizar una característica existente
+    
+    - **id_caracteristica**: ID único de la característica
+    - **caracteristica**: Nuevo nombre de la característica (opcional)
+    - **descripcion**: Nueva descripción de la característica (opcional)
+    """
+    try:
+        service = CaracteristicaService(db)
+        caracteristica = service.update_caracteristica(id_caracteristica, caracteristica_data)
+        if not caracteristica:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Característica no encontrada"
+            )
+        return caracteristica
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al actualizar característica: {str(e)}"
+        )
+
+
+@router.delete("/{id_caracteristica}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_caracteristica(
+    id_caracteristica: int,
+    db: Session = Depends(get_database_session)
+):
+    """
+    Eliminar una característica
+    
+    - **id_caracteristica**: ID único de la característica
+    """
+    try:
+        service = CaracteristicaService(db)
+        success = service.delete_caracteristica(id_caracteristica)
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Característica no encontrada"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al eliminar característica: {str(e)}"
+        )

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 
 
 class UsuarioCreate(BaseModel):
@@ -38,12 +38,19 @@ class UsuarioCreate(BaseModel):
         example=1
     )
     
+    roles_ids: Optional[List[int]] = Field(
+        None,
+        description="Lista de IDs de roles a asignar al usuario",
+        example=[1, 2]
+    )
+    
     class Config:
         json_schema_extra = {
             "example": {
                 "login": "juan.perez",
                 "correo_electronico": "juan.perez@gmail.com",
                 "password": "123456",
-                "estatus_id": 1
+                "estatus_id": 1,
+                "roles_ids": [1, 2]
             }
         }

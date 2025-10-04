@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, SmallInteger
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
 Base = declarative_base()
 
@@ -18,6 +19,13 @@ class Usuario(Base):
     correo_electronico = Column(String(50), nullable=False)
     password = Column(String(1000), nullable=False)
     estatus_id = Column(SmallInteger, nullable=False)
+    
+    # Relaciones
+    roles = relationship(
+        "Roles", 
+        secondary="SEGURIDAD.Tb_rolUsuario", 
+        back_populates="usuarios"
+    )
 
     
     def __repr__(self):

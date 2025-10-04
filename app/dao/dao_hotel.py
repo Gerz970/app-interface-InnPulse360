@@ -145,7 +145,7 @@ class HotelDAO:
             self.db.rollback()
             raise e
     
-    def delete(self, hotel_id: int) -> bool:
+    def delete_logical(self, hotel_id: int) -> bool:
         """
         Elimina un hotel de la base de datos, baja logicamente el hotel
         

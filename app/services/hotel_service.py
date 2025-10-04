@@ -156,7 +156,7 @@ class HotelService:
             Exception: Si hay un error en la base de datos
         """
         try:
-            return self.dao.delete(hotel_id)
+            return self.dao.delete_logical(hotel_id)
             
         except SQLAlchemyError as e:
             raise Exception(f"Error al eliminar hotel de la base de datos: {str(e)}")

@@ -125,7 +125,13 @@ class UsuarioDAO:
             List[Usuario]: Lista de usuarios
         """
         try:
-            return self.db.query(Usuario).offset(skip).limit(limit).all()
+            return (
+                self.db.query(Usuario)
+                    .order_by(Usuario.id_usuario.desc()) # Ordena los registros por id_usuario de forma descendente
+                    .offset(skip) # Número de registros a saltar
+                    .limit(limit) # Número máximo de registros a retornar
+                    .all() # Retorna todos los registros
+            )
         except SQLAlchemyError as e:
             raise e
     
@@ -141,9 +147,14 @@ class UsuarioDAO:
             List[Usuario]: Lista de usuarios activos
         """
         try:
-            return self.db.query(Usuario).filter(
+            return (
+                self.db.query(Usuario).filter(
                 Usuario.estatus_id == self.__status_active__
-            ).offset(skip).limit(limit).all()
+            ).order_by(Usuario.id_usuario.desc()) # Ordena los registros por id_usuario de forma descendente
+            .offset(skip) # Número de registros a saltar
+            .limit(limit) # Número máximo de registros a retornar
+            .all() # Retorna todos los registros
+        )
         except SQLAlchemyError as e:
             raise e
     

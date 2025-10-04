@@ -5,9 +5,15 @@ from core.config import Settings
 from core.database_connection import get_database_session
 from schemas.hotel import HotelCreate, HotelUpdate, HotelResponse
 from services.hotel_service import HotelService
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
 
 # Crear instancia de settings
 settings = Settings()
+
+# Configurar seguridad
+security = HTTPBearer()
+
 
 api_router = APIRouter(prefix="/hotel", tags=["hotel"])
 
@@ -32,7 +38,8 @@ def get_hotel_service(db: Session = Depends(get_database_session)) -> HotelServi
 async def get_hotels(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros"),
-    service: HotelService = Depends(get_hotel_service)
+    service: HotelService = Depends(get_hotel_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
 ):
     """
     Obtener lista de todos los hoteles con paginación
@@ -61,7 +68,8 @@ async def get_hotels(
 @api_router.get("/{hotel_id}", response_model=HotelResponse)
 async def get_hotel(
     hotel_id: int,
-    service: HotelService = Depends(get_hotel_service)
+    service: HotelService = Depends(get_hotel_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Obtener un hotel específico por ID
@@ -99,7 +107,8 @@ async def get_hotel(
 @api_router.post("/", response_model=HotelResponse, status_code=status.HTTP_201_CREATED)
 async def create_hotel(
     hotel: HotelCreate,
-    service: HotelService = Depends(get_hotel_service)
+    service: HotelService = Depends(get_hotel_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Crear un nuevo hotel
@@ -134,7 +143,8 @@ async def create_hotel(
 async def update_hotel(
     hotel_id: int,
     hotel_update: HotelUpdate,
-    service: HotelService = Depends(get_hotel_service)
+    service: HotelService = Depends(get_hotel_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Actualizar un hotel existente (actualización parcial)
@@ -179,7 +189,8 @@ async def update_hotel(
 @api_router.delete("/{hotel_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_hotel(
     hotel_id: int,
-    service: HotelService = Depends(get_hotel_service)
+    service: HotelService = Depends(get_hotel_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Eliminar un hotel
@@ -216,7 +227,8 @@ async def delete_hotel(
 @api_router.get("/buscar/nombre/{nombre}", response_model=List[HotelResponse])
 async def buscar_por_nombre(
     nombre: str,
-    service: HotelService = Depends(get_hotel_service)
+    service: HotelService = Depends(get_hotel_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Buscar hoteles por nombre (búsqueda parcial)
@@ -241,7 +253,8 @@ async def buscar_por_nombre(
 @api_router.get("/pais/{id_pais}", response_model=List[HotelResponse])
 async def obtener_por_pais(
     id_pais: int,
-    service: HotelService = Depends(get_hotel_service)
+    service: HotelService = Depends(get_hotel_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Obtener todos los hoteles de un país
@@ -266,7 +279,8 @@ async def obtener_por_pais(
 @api_router.get("/estrellas/{numero_estrellas}", response_model=List[HotelResponse])
 async def obtener_por_estrellas(
     numero_estrellas: int,
-    service: HotelService = Depends(get_hotel_service)
+    service: HotelService = Depends(get_hotel_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Obtener hoteles por número de estrellas

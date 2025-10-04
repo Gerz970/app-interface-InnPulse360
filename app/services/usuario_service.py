@@ -19,7 +19,8 @@ from schemas.seguridad.auth_schemas import UsuarioLogin, Token, TokenData
 from core.config import AuthSettings
 
 # Configuración para encriptación de contraseñas
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Argon2 es más moderno y seguro que bcrypt, sin limitaciones de longitud
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 class UsuarioService:
@@ -40,10 +41,10 @@ class UsuarioService:
     
     def _hash_password(self, password: str) -> str:
         """
-        Encripta una contraseña usando bcrypt
+        Encripta una contraseña usando Argon2
         
         Args:
-            password (str): Contraseña en texto plano
+            password (str): Contraseña en texto plano (sin límite de longitud)
             
         Returns:
             str: Contraseña encriptada
@@ -52,7 +53,7 @@ class UsuarioService:
     
     def _verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """
-        Verifica si una contraseña coincide con su hash
+        Verifica si una contraseña coincide con su hash usando Argon2
         
         Args:
             plain_password (str): Contraseña en texto plano

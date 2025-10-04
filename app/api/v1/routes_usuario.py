@@ -26,7 +26,9 @@ router = APIRouter(
 security = HTTPBearer()
 
 
-def get_usuario_service(db: Session = Depends(get_database_session)) -> UsuarioService:
+def get_usuario_service(
+    db: Session = Depends(get_database_session)
+) -> UsuarioService:
     """
     Dependency para obtener el servicio de usuario
     

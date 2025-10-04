@@ -18,11 +18,14 @@ app.include_router(api_router, prefix=settings.api_version)
 def read_root():
     return {"message": "Bienvenido a InnPulse360 API"}
 
+
+"""
 @app.get("/test-db")
 def test_db():
-    """devuelve verdadero si la conexión a la base de datos es exitosa
-    """
+    #devuelve verdadero si la conexión a la base de datos es exitosa
+    
     return db_connection.test_connection()
+"""
 
 
 # Iniciar el servidor

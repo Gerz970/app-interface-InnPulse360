@@ -26,8 +26,8 @@ class UsuarioUpdate(BaseModel):
     password: Optional[str] = Field(
         None,
         min_length=6,
-        max_length=50,
-        description="Nueva contraseña del usuario (mínimo 6 caracteres)",
+        max_length=255,  # Máximo razonable para contraseñas
+        description="Nueva contraseña del usuario (mínimo 6 caracteres, sin límite superior)",
         example="nueva123456"
     )
     

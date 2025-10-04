@@ -26,8 +26,8 @@ class UsuarioCreate(BaseModel):
     password: str = Field(
         ...,
         min_length=6,  # Mínimo 6 caracteres para seguridad
-        max_length=50,
-        description="Contraseña del usuario (mínimo 6 caracteres)",
+        max_length=255,  # Máximo razonable para contraseñas
+        description="Contraseña del usuario (mínimo 6 caracteres, sin límite superior)",
         example="123456"
     )
     

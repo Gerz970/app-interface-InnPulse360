@@ -5,10 +5,12 @@ Define los endpoints para operaciones de vinculación Usuario-Roles
 
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
 from services.usuario_rol_service import UsuarioRolService
+from services.usuario_service import UsuarioService
 from schemas.seguridad.usuario_rol_schemas import UsuarioRolAssign, UsuarioRolBulkAssign, RolSimpleResponse
 from schemas.seguridad.usuario_response import UsuarioResponse
 
@@ -23,11 +25,50 @@ router = APIRouter(
     }
 )
 
+# Configurar seguridad
+security = HTTPBearer()
+
+
+def get_usuario_service(
+    db: Session = Depends(get_database_session)
+) -> UsuarioService:
+    """
+    Dependency para obtener el servicio de usuario
+    
+    Args:
+        db (Session): Sesión de base de datos
+        
+    Returns:
+        UsuarioService: Instancia del servicio
+    """
+    return UsuarioService(db)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    usuario_service: UsuarioService = Depends(get_usuario_service)
+) -> UsuarioResponse:
+    """
+    Dependency para obtener el usuario actual desde el token JWT
+    
+    Args:
+        credentials (HTTPAuthorizationCredentials): Credenciales del token
+        usuario_service (UsuarioService): Servicio de usuario
+        
+    Returns:
+        UsuarioResponse: Usuario actual
+        
+    Raises:
+        HTTPException: Si el token es inválido
+    """
+    return usuario_service.get_current_user(credentials.credentials)
+
 
 @router.post("/{usuario_id}/roles/{rol_id}", status_code=status.HTTP_201_CREATED)
 async def assign_rol_to_usuario(
     usuario_id: int,
     rol_id: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -60,6 +101,7 @@ async def assign_rol_to_usuario(
 async def remove_rol_from_usuario(
     usuario_id: int,
     rol_id: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -89,6 +131,7 @@ async def remove_rol_from_usuario(
 @router.get("/{usuario_id}/roles", response_model=List[RolSimpleResponse])
 async def get_usuario_roles(
     usuario_id: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -112,6 +155,7 @@ async def get_usuario_roles(
 async def bulk_assign_roles_to_usuario(
     usuario_id: int,
     roles_data: UsuarioRolBulkAssign,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -145,6 +189,7 @@ async def bulk_assign_roles_to_usuario(
 async def bulk_remove_roles_from_usuario(
     usuario_id: int,
     roles_data: UsuarioRolBulkAssign,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -177,6 +222,7 @@ async def bulk_remove_roles_from_usuario(
 @router.get("/{usuario_id}/with-roles", response_model=UsuarioResponse)
 async def get_usuario_with_roles(
     usuario_id: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -200,6 +246,7 @@ async def get_usuario_with_roles(
 @router.get("/by-rol/{rol_id}", response_model=List[UsuarioResponse])
 async def get_usuarios_by_rol(
     rol_id: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """

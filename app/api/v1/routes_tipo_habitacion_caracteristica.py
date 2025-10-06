@@ -5,24 +5,66 @@ Endpoints para gestionar la relación TipoHabitacion-Caracteristica
 
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
 from services.tipo_habitacion_caracteristica_service import TipoHabitacionCaracteristicaService
+from services.usuario_service import UsuarioService
 from schemas.hotel.tipo_habitacion_caracteristica_schemas import (
     TipoHabitacionCaracteristicaBulkAssign
 )
 from schemas.hotel.tipo_habitacion_schemas import TipoHabitacionResponse
 from schemas.hotel.caracteristica_schemas import CaracteristicaResponse
+from schemas.seguridad.usuario_response import UsuarioResponse
 
 # Crear router para asignación de características
 router = APIRouter(prefix="/tipos-habitacion", tags=["Asignación de Características"])
+
+# Configurar seguridad
+security = HTTPBearer()
+
+
+def get_usuario_service(
+    db: Session = Depends(get_database_session)
+) -> UsuarioService:
+    """
+    Dependency para obtener el servicio de usuario
+    
+    Args:
+        db (Session): Sesión de base de datos
+        
+    Returns:
+        UsuarioService: Instancia del servicio
+    """
+    return UsuarioService(db)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    usuario_service: UsuarioService = Depends(get_usuario_service)
+) -> UsuarioResponse:
+    """
+    Dependency para obtener el usuario actual desde el token JWT
+    
+    Args:
+        credentials (HTTPAuthorizationCredentials): Credenciales del token
+        usuario_service (UsuarioService): Servicio de usuario
+        
+    Returns:
+        UsuarioResponse: Usuario actual
+        
+    Raises:
+        HTTPException: Si el token es inválido
+    """
+    return usuario_service.get_current_user(credentials.credentials)
 
 
 @router.post("/{tipo_habitacion_id}/caracteristicas/{caracteristica_id}", status_code=status.HTTP_201_CREATED)
 async def assign_caracteristica_to_tipo_habitacion(
     tipo_habitacion_id: int,
     caracteristica_id: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -47,6 +89,7 @@ async def assign_caracteristica_to_tipo_habitacion(
 async def remove_caracteristica_from_tipo_habitacion(
     tipo_habitacion_id: int,
     caracteristica_id: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -75,6 +118,7 @@ async def remove_caracteristica_from_tipo_habitacion(
 @router.get("/{tipo_habitacion_id}/caracteristicas", response_model=List[CaracteristicaResponse])
 async def get_caracteristicas_by_tipo_habitacion(
     tipo_habitacion_id: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -98,6 +142,7 @@ async def get_caracteristicas_by_tipo_habitacion(
 async def bulk_assign_caracteristicas_to_tipo_habitacion(
     tipo_habitacion_id: int,
     caracteristicas_data: TipoHabitacionCaracteristicaBulkAssign,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -129,6 +174,7 @@ async def bulk_assign_caracteristicas_to_tipo_habitacion(
 async def bulk_remove_caracteristicas_from_tipo_habitacion(
     tipo_habitacion_id: int,
     caracteristicas_data: TipoHabitacionCaracteristicaBulkAssign,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -159,6 +205,7 @@ async def bulk_remove_caracteristicas_from_tipo_habitacion(
 @router.get("/caracteristicas/{caracteristica_id}/tipos-habitacion", response_model=List[TipoHabitacionResponse])
 async def get_tipos_habitacion_by_caracteristica(
     caracteristica_id: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """

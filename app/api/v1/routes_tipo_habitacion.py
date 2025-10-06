@@ -5,19 +5,61 @@ Endpoints para operaciones CRUD de tipos de habitación
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
 from services.tipo_habitacion_service import TipoHabitacionService
+from services.usuario_service import UsuarioService
 from schemas.hotel.tipo_habitacion_schemas import TipoHabitacionCreate, TipoHabitacionUpdate, TipoHabitacionResponse
+from schemas.seguridad.usuario_response import UsuarioResponse
 
 # Crear router para tipos de habitación
 router = APIRouter(prefix="/tipos-habitacion", tags=["Tipos de Habitación"])
+
+# Configurar seguridad
+security = HTTPBearer()
+
+
+def get_usuario_service(
+    db: Session = Depends(get_database_session)
+) -> UsuarioService:
+    """
+    Dependency para obtener el servicio de usuario
+    
+    Args:
+        db (Session): Sesión de base de datos
+        
+    Returns:
+        UsuarioService: Instancia del servicio
+    """
+    return UsuarioService(db)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    usuario_service: UsuarioService = Depends(get_usuario_service)
+) -> UsuarioResponse:
+    """
+    Dependency para obtener el usuario actual desde el token JWT
+    
+    Args:
+        credentials (HTTPAuthorizationCredentials): Credenciales del token
+        usuario_service (UsuarioService): Servicio de usuario
+        
+    Returns:
+        UsuarioResponse: Usuario actual
+        
+    Raises:
+        HTTPException: Si el token es inválido
+    """
+    return usuario_service.get_current_user(credentials.credentials)
 
 
 @router.post("/", response_model=TipoHabitacionResponse, status_code=status.HTTP_201_CREATED)
 async def create_tipo_habitacion(
     tipo_habitacion_data: TipoHabitacionCreate,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -41,6 +83,7 @@ async def create_tipo_habitacion(
 async def get_tipos_habitacion(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros a retornar"),
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -62,6 +105,7 @@ async def get_tipos_habitacion(
 @router.get("/{id_tipoHabitacion}", response_model=TipoHabitacionResponse)
 async def get_tipo_habitacion_by_id(
     id_tipoHabitacion: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -90,6 +134,7 @@ async def get_tipo_habitacion_by_id(
 @router.get("/clave/{clave}", response_model=TipoHabitacionResponse)
 async def get_tipo_habitacion_by_clave(
     clave: str,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -118,6 +163,7 @@ async def get_tipo_habitacion_by_clave(
 @router.get("/nombre/{tipo_habitacion}", response_model=TipoHabitacionResponse)
 async def get_tipo_habitacion_by_nombre(
     tipo_habitacion: str,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -147,6 +193,7 @@ async def get_tipo_habitacion_by_nombre(
 async def update_tipo_habitacion(
     id_tipoHabitacion: int,
     tipo_habitacion_data: TipoHabitacionUpdate,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -178,6 +225,7 @@ async def update_tipo_habitacion(
 @router.delete("/{id_tipoHabitacion}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_tipo_habitacion(
     id_tipoHabitacion: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -205,6 +253,7 @@ async def delete_tipo_habitacion(
 @router.patch("/{id_tipoHabitacion}/reactivate", status_code=status.HTTP_200_OK)
 async def reactivate_tipo_habitacion(
     id_tipoHabitacion: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """

@@ -64,7 +64,7 @@ class UsuarioRolService:
             )
         
         # Asignar el rol
-        success = self.rol_usuario_dao.assign_rol_to_usuario(usuario_id, rol_id)
+        success = self.rol_usuario_dao.assign_role_to_user(usuario_id, rol_id)
         
         if not success:
             raise HTTPException(
@@ -105,7 +105,7 @@ class UsuarioRolService:
             )
         
         # Remover el rol
-        success = self.rol_usuario_dao.remove_rol_from_usuario(usuario_id, rol_id)
+        success = self.rol_usuario_dao.remove_role_from_user(usuario_id, rol_id)
         
         if not success:
             raise HTTPException(
@@ -137,7 +137,7 @@ class UsuarioRolService:
             )
         
         # Obtener roles
-        roles = self.rol_usuario_dao.get_roles_by_usuario(usuario_id)
+        roles = self.rol_usuario_dao.get_user_roles(usuario_id)
         
         return [
             RolSimpleResponse(
@@ -169,7 +169,7 @@ class UsuarioRolService:
             )
         
         # Obtener usuarios
-        usuarios = self.rol_usuario_dao.get_usuarios_by_rol(rol_id)
+        usuarios = self.rol_usuario_dao.get_role_users(rol_id)
         
         return [
             UsuarioResponse(
@@ -214,7 +214,7 @@ class UsuarioRolService:
                 )
         
         # Asignar roles
-        assigned_count = self.rol_usuario_dao.bulk_assign_roles_to_usuario(usuario_id, roles_ids)
+        assigned_count = self.rol_usuario_dao.assign_multiple_roles_to_user(usuario_id, roles_ids)
         
         return assigned_count
     
@@ -241,7 +241,7 @@ class UsuarioRolService:
             )
         
         # Remover roles
-        removed_count = self.rol_usuario_dao.bulk_remove_roles_from_usuario(usuario_id, roles_ids)
+        removed_count = self.rol_usuario_dao.remove_multiple_roles_from_user(usuario_id, roles_ids)
         
         return removed_count
     

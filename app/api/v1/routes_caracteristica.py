@@ -5,19 +5,61 @@ Endpoints para operaciones CRUD de características
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
 from services.caracteristica_service import CaracteristicaService
+from services.usuario_service import UsuarioService
 from schemas.hotel.caracteristica_schemas import CaracteristicaCreate, CaracteristicaUpdate, CaracteristicaResponse
+from schemas.seguridad.usuario_response import UsuarioResponse
 
 # Crear router para características
 router = APIRouter(prefix="/caracteristicas", tags=["Características"])
+
+# Configurar seguridad
+security = HTTPBearer()
+
+
+def get_usuario_service(
+    db: Session = Depends(get_database_session)
+) -> UsuarioService:
+    """
+    Dependency para obtener el servicio de usuario
+    
+    Args:
+        db (Session): Sesión de base de datos
+        
+    Returns:
+        UsuarioService: Instancia del servicio
+    """
+    return UsuarioService(db)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    usuario_service: UsuarioService = Depends(get_usuario_service)
+) -> UsuarioResponse:
+    """
+    Dependency para obtener el usuario actual desde el token JWT
+    
+    Args:
+        credentials (HTTPAuthorizationCredentials): Credenciales del token
+        usuario_service (UsuarioService): Servicio de usuario
+        
+    Returns:
+        UsuarioResponse: Usuario actual
+        
+    Raises:
+        HTTPException: Si el token es inválido
+    """
+    return usuario_service.get_current_user(credentials.credentials)
 
 
 @router.post("/", response_model=CaracteristicaResponse, status_code=status.HTTP_201_CREATED)
 async def create_caracteristica(
     caracteristica_data: CaracteristicaCreate,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -40,6 +82,7 @@ async def create_caracteristica(
 async def get_caracteristicas(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros a retornar"),
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -61,6 +104,7 @@ async def get_caracteristicas(
 @router.get("/{id_caracteristica}", response_model=CaracteristicaResponse)
 async def get_caracteristica_by_id(
     id_caracteristica: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -89,6 +133,7 @@ async def get_caracteristica_by_id(
 @router.get("/nombre/{caracteristica}", response_model=CaracteristicaResponse)
 async def get_caracteristica_by_nombre(
     caracteristica: str,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -118,6 +163,7 @@ async def get_caracteristica_by_nombre(
 async def update_caracteristica(
     id_caracteristica: int,
     caracteristica_data: CaracteristicaUpdate,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -148,6 +194,7 @@ async def update_caracteristica(
 @router.delete("/{id_caracteristica}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_caracteristica(
     id_caracteristica: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """

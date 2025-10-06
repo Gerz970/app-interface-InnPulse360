@@ -47,8 +47,8 @@ class RolUsuarioDAO:
             existing = self.db.execute(
                 select(rol_usuario).where(
                     and_(
-                        rol_usuario.c.id_usuario == usuario_id,
-                        rol_usuario.c.id_rol == rol_id
+                        rol_usuario.c.usuario_id == usuario_id,
+                        rol_usuario.c.rol_id == rol_id
                     )
                 )
             ).first()
@@ -59,8 +59,8 @@ class RolUsuarioDAO:
             # Crear nueva asignación
             self.db.execute(
                 insert(rol_usuario).values(
-                    id_usuario=usuario_id,
-                    id_rol=rol_id
+                    usuario_id=usuario_id,
+                    rol_id=rol_id
                 )
             )
             self.db.commit()
@@ -89,8 +89,8 @@ class RolUsuarioDAO:
             result = self.db.execute(
                 delete(rol_usuario).where(
                     and_(
-                        rol_usuario.c.id_usuario == usuario_id,
-                        rol_usuario.c.id_rol == rol_id
+                        rol_usuario.c.usuario_id == usuario_id,
+                        rol_usuario.c.rol_id == rol_id
                     )
                 )
             )

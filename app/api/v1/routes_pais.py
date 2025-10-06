@@ -5,19 +5,61 @@ Endpoints para operaciones CRUD de países
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
 from services.pais_service import PaisService
+from services.usuario_service import UsuarioService
 from schemas.catalogos.pais_schemas import PaisCreate, PaisUpdate, PaisResponse
+from schemas.seguridad.usuario_response import UsuarioResponse
 
 # Crear router para países
 router = APIRouter(prefix="/paises", tags=["Países"])
+
+# Configurar seguridad
+security = HTTPBearer()
+
+
+def get_usuario_service(
+    db: Session = Depends(get_database_session)
+) -> UsuarioService:
+    """
+    Dependency para obtener el servicio de usuario
+    
+    Args:
+        db (Session): Sesión de base de datos
+        
+    Returns:
+        UsuarioService: Instancia del servicio
+    """
+    return UsuarioService(db)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    usuario_service: UsuarioService = Depends(get_usuario_service)
+) -> UsuarioResponse:
+    """
+    Dependency para obtener el usuario actual desde el token JWT
+    
+    Args:
+        credentials (HTTPAuthorizationCredentials): Credenciales del token
+        usuario_service (UsuarioService): Servicio de usuario
+        
+    Returns:
+        UsuarioResponse: Usuario actual
+        
+    Raises:
+        HTTPException: Si el token es inválido
+    """
+    return usuario_service.get_current_user(credentials.credentials)
 
 
 @router.post("/", response_model=PaisResponse, status_code=status.HTTP_201_CREATED)
 async def create_pais(
     pais_data: PaisCreate,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -40,6 +82,7 @@ async def create_pais(
 async def get_paises(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros a retornar"),
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -61,6 +104,7 @@ async def get_paises(
 @router.get("/{id_pais}", response_model=PaisResponse)
 async def get_pais_by_id(
     id_pais: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -89,6 +133,7 @@ async def get_pais_by_id(
 @router.get("/nombre/{nombre}", response_model=PaisResponse)
 async def get_pais_by_nombre(
     nombre: str,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -118,6 +163,7 @@ async def get_pais_by_nombre(
 async def update_pais(
     id_pais: int,
     pais_data: PaisUpdate,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -148,6 +194,7 @@ async def update_pais(
 @router.delete("/{id_pais}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_pais(
     id_pais: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -175,6 +222,7 @@ async def delete_pais(
 @router.patch("/{id_pais}/reactivate", status_code=status.HTTP_200_OK)
 async def reactivate_pais(
     id_pais: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """

@@ -5,13 +5,16 @@ Define los endpoints para operaciones CRUD de roles
 
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
 from services.roles_service import RolesService
+from services.usuario_service import UsuarioService
 from schemas.seguridad.roles_create import RolesCreate
 from schemas.seguridad.roles_update import RolesUpdate
 from schemas.seguridad.roles_response import RolesResponse
+from schemas.seguridad.usuario_response import UsuarioResponse
 
 # Crear el router
 router = APIRouter(
@@ -24,10 +27,49 @@ router = APIRouter(
     }
 )
 
+# Configurar seguridad
+security = HTTPBearer()
+
+
+def get_usuario_service(
+    db: Session = Depends(get_database_session)
+) -> UsuarioService:
+    """
+    Dependency para obtener el servicio de usuario
+    
+    Args:
+        db (Session): Sesión de base de datos
+        
+    Returns:
+        UsuarioService: Instancia del servicio
+    """
+    return UsuarioService(db)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    usuario_service: UsuarioService = Depends(get_usuario_service)
+) -> UsuarioResponse:
+    """
+    Dependency para obtener el usuario actual desde el token JWT
+    
+    Args:
+        credentials (HTTPAuthorizationCredentials): Credenciales del token
+        usuario_service (UsuarioService): Servicio de usuario
+        
+    Returns:
+        UsuarioResponse: Usuario actual
+        
+    Raises:
+        HTTPException: Si el token es inválido
+    """
+    return usuario_service.get_current_user(credentials.credentials)
+
 
 @router.post("/", response_model=RolesResponse, status_code=status.HTTP_201_CREATED)
 async def create_rol(
     roles_data: RolesCreate,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -53,6 +95,7 @@ async def create_rol(
 async def get_all_roles(
     skip: int = Query(0, ge=0, description="Número de registros a saltar"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros a retornar"),
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -74,6 +117,7 @@ async def get_all_roles(
 @router.get("/{id_rol}", response_model=RolesResponse)
 async def get_rol_by_id(
     id_rol: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -102,6 +146,7 @@ async def get_rol_by_id(
 @router.get("/by-name/{rol}", response_model=RolesResponse)
 async def get_rol_by_name(
     rol: str,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -131,6 +176,7 @@ async def get_rol_by_name(
 async def update_rol(
     id_rol: int,
     roles_data: RolesUpdate,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -160,6 +206,7 @@ async def update_rol(
 @router.delete("/{id_rol}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_rol(
     id_rol: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -187,6 +234,7 @@ async def delete_rol(
 @router.patch("/{id_rol}/reactivate", response_model=RolesResponse)
 async def reactivate_rol(
     id_rol: int,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """

@@ -9,8 +9,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
-from services.caracteristica_service import CaracteristicaService
-from services.usuario_service import UsuarioService
+from services.hotel.caracteristica_service import CaracteristicaService
+from services.seguridad.usuario_service import UsuarioService
 from schemas.hotel.caracteristica_schemas import CaracteristicaCreate, CaracteristicaUpdate, CaracteristicaResponse
 from schemas.seguridad.usuario_response import UsuarioResponse
 

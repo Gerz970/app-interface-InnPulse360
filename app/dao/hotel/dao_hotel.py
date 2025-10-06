@@ -7,7 +7,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from models.hotel.hotel_model import Hotel
-from schemas.hotel import HotelCreate, HotelUpdate
+from schemas.hotel.hotel_create import HotelCreate
+from schemas.hotel.hotel_update import HotelUpdate
 
 
 class HotelDAO:

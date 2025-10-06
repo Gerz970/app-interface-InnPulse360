@@ -7,7 +7,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from dao.dao_caracteristica import CaracteristicaDAO
+from dao.hotel.dao_caracteristica import CaracteristicaDAO
 from models.hotel.caracteristica_model import Caracteristica
 from schemas.hotel.caracteristica_schemas import CaracteristicaCreate, CaracteristicaUpdate, CaracteristicaResponse
 

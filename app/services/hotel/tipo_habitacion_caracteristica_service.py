@@ -7,9 +7,9 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from dao.dao_tipo_habitacion_caracteristica import TipoHabitacionCaracteristicaDAO
-from dao.dao_tipo_habitacion import TipoHabitacionDAO
-from dao.dao_caracteristica import CaracteristicaDAO
+from dao.hotel.dao_tipo_habitacion_caracteristica import TipoHabitacionCaracteristicaDAO
+from dao.hotel.dao_tipo_habitacion import TipoHabitacionDAO
+from dao.hotel.dao_caracteristica import CaracteristicaDAO
 from models.hotel.tipo_habitacion_model import TipoHabitacion
 from models.hotel.caracteristica_model import Caracteristica
 from models.hotel.tipo_habitacion_caracteristica_model import TipoHabitacionCaracteristica

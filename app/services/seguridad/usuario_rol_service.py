@@ -7,9 +7,9 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from dao.dao_rol_usuario import RolUsuarioDAO
-from dao.dao_usuario import UsuarioDAO
-from dao.dao_roles import RolesDAO
+from dao.seguridad.dao_rol_usuario import RolUsuarioDAO
+from dao.seguridad.dao_usuario import UsuarioDAO
+from dao.seguridad.dao_roles import RolesDAO
 from models.seguridad.usuario_model import Usuario
 from models.seguridad.roles_model import Roles
 from schemas.seguridad.usuario_rol_schemas import UsuarioRolAssign, UsuarioRolBulkAssign, RolSimpleResponse

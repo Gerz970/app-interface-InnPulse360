@@ -9,8 +9,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
-from services.tipo_habitacion_service import TipoHabitacionService
-from services.usuario_service import UsuarioService
+from services.hotel.tipo_habitacion_service import TipoHabitacionService
+from services.seguridad.usuario_service import UsuarioService
 from schemas.hotel.tipo_habitacion_schemas import TipoHabitacionCreate, TipoHabitacionUpdate, TipoHabitacionResponse
 from schemas.seguridad.usuario_response import UsuarioResponse
 

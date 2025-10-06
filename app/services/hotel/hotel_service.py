@@ -7,7 +7,7 @@ Actúa como intermediario entre las rutas (API) y el DAO (acceso a datos)
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from dao.dao_hotel import HotelDAO
+from dao.hotel.dao_hotel import HotelDAO
 from schemas.hotel import HotelCreate, HotelUpdate, HotelResponse
 from models.hotel.hotel_model import Hotel
 

@@ -9,8 +9,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
-from services.tipo_habitacion_caracteristica_service import TipoHabitacionCaracteristicaService
-from services.usuario_service import UsuarioService
+from services.hotel.tipo_habitacion_caracteristica_service import TipoHabitacionCaracteristicaService
+from services.seguridad.usuario_service import UsuarioService
 from schemas.hotel.tipo_habitacion_caracteristica_schemas import (
     TipoHabitacionCaracteristicaBulkAssign
 )

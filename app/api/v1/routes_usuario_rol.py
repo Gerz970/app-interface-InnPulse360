@@ -9,8 +9,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
-from services.usuario_rol_service import UsuarioRolService
-from services.usuario_service import UsuarioService
+from services.seguridad.usuario_rol_service import UsuarioRolService
+from services.seguridad.usuario_service import UsuarioService
 from schemas.seguridad.usuario_rol_schemas import UsuarioRolAssign, UsuarioRolBulkAssign, RolSimpleResponse
 from schemas.seguridad.usuario_response import UsuarioResponse
 

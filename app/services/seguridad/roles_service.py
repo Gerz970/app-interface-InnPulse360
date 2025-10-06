@@ -7,7 +7,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from dao.dao_roles import RolesDAO
+from dao.seguridad.dao_roles import RolesDAO
 from models.seguridad.roles_model import Roles
 from schemas.seguridad.roles_create import RolesCreate
 from schemas.seguridad.roles_update import RolesUpdate

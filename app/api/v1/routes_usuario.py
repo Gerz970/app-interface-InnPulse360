@@ -9,7 +9,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
-from services.usuario_service import UsuarioService
+from services.seguridad.usuario_service import UsuarioService
 from schemas.seguridad.usuario_create import UsuarioCreate
 from schemas.seguridad.usuario_update import UsuarioUpdate
 from schemas.seguridad.usuario_response import UsuarioResponse

@@ -7,7 +7,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from dao.dao_pais import PaisDAO
+from dao.catalogos.dao_pais import PaisDAO
 from models.catalogos.models import *
 from schemas.catalogos.pais_schemas import PaisCreate, PaisUpdate, PaisResponse
 

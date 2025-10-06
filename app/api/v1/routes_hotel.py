@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from core.config import Settings
 from core.database_connection import get_database_session
 from schemas.hotel import HotelCreate, HotelUpdate, HotelResponse
-from services.hotel_service import HotelService
+from services.hotel.hotel_service import HotelService
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 

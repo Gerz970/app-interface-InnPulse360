@@ -9,8 +9,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
-from services.pais_service import PaisService
-from services.usuario_service import UsuarioService
+from services.catalogos.pais_service import PaisService
+from services.seguridad.usuario_service import UsuarioService
 from schemas.catalogos.pais_schemas import PaisCreate, PaisUpdate, PaisResponse
 from schemas.seguridad.usuario_response import UsuarioResponse
 

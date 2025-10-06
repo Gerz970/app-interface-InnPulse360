@@ -7,8 +7,8 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-from dao.dao_estado import EstadoDAO
-from dao.dao_pais import PaisDAO
+from dao.catalogos.dao_estado import EstadoDAO
+from dao.catalogos.dao_pais import PaisDAO
 from models.catalogos.models import *
 from schemas.catalogos.estado_schemas import EstadoCreate, EstadoUpdate, EstadoResponse
 from schemas.catalogos.pais_schemas import PaisResponse

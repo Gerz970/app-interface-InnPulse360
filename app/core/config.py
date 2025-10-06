@@ -33,19 +33,15 @@ class AuthSettings:
 class EmailSettings:
     """
     Configuración para el servicio de email
+    Usa las variables de configuración existentes
     """
     # Configuración SMTP
-    smtp_server: str = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-    smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
-    smtp_username: str = os.getenv("SMTP_USERNAME", "")
-    smtp_password: str = os.getenv("SMTP_PASSWORD", "")
-    use_tls: bool = os.getenv("SMTP_USE_TLS", "true").lower() == "true"
-    use_ssl: bool = os.getenv("SMTP_USE_SSL", "false").lower() == "true"
+    smtp_server: str = os.getenv("SmtpServer", "smtp.gmail.com")
+    smtp_port: int = int(os.getenv("SmtpPort", "587"))
+    smtp_username: str = os.getenv("FromEmail", "")
+    smtp_password: str = os.getenv("FromPassword", "")
+    use_tls: bool = os.getenv("EnableSsl", "true").lower() == "true"
     
     # Configuración del remitente
-    from_email: str = os.getenv("FROM_EMAIL", "noreply@innpulse360.com")
+    from_email: str = os.getenv("FromEmail", "noreply@innpulse360.com")
     from_name: str = os.getenv("FROM_NAME", "InnPulse360")
-    
-    # Configuración de desarrollo
-    debug_mode: bool = os.getenv("EMAIL_DEBUG", "false").lower() == "true"
-    test_mode: bool = os.getenv("EMAIL_TEST_MODE", "false").lower() == "true"

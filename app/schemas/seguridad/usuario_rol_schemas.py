@@ -34,7 +34,7 @@ class UsuarioRolBulkAssign(BaseModel):
     roles_ids: List[int] = Field(
         ...,
         description="Lista de IDs de roles a asignar",
-        example=[1, 2, 3]
+        example=[1, 2, 3]    
     )
     
     class Config:

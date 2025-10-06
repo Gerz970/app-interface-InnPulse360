@@ -4,15 +4,6 @@ from pydantic import BaseModel, Field
 class RolesAsignacionResponse(BaseModel):
     """
     Schema para respuestas de Roles Asignados a usuarios
-
-    {
-        "usuario_id": assignment.id_usuario,
-        "rol_id": assignment.id_rol,
-        "usuario_login": assignment.login,
-        "usuario_email": assignment.correo_electronico,
-        "rol_nombre": assignment.rol,
-        "rol_descripcion": assignment.descripcion
-    }
     """
     usuario_id: int = Field(
         ...,

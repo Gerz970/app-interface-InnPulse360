@@ -9,11 +9,11 @@ from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
 from services.tipo_habitacion_caracteristica_service import TipoHabitacionCaracteristicaService
-from schemas.catalogos.tipo_habitacion_caracteristica_schemas import (
+from schemas.hotel.tipo_habitacion_caracteristica_schemas import (
     TipoHabitacionCaracteristicaBulkAssign
 )
-from schemas.catalogos.tipo_habitacion_schemas import TipoHabitacionResponse
-from schemas.catalogos.caracteristica_schemas import CaracteristicaResponse
+from schemas.hotel.tipo_habitacion_schemas import TipoHabitacionResponse
+from schemas.hotel.caracteristica_schemas import CaracteristicaResponse
 
 # Crear router para asignación de características
 router = APIRouter(prefix="/tipos-habitacion", tags=["Asignación de Características"])

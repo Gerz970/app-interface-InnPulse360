@@ -17,10 +17,9 @@ app/
 ├── core/          # Configuración y servicios core
 ├── models/        # Modelos de datos (preparado para SQLAlchemy)
 ├── schemas/       # Esquemas Pydantic para validación
-├── dao/           # Data Access Objects (preparado para repositorios)
+├── dao/           # Data Access Objects (solo operaciones de tipo CRUD)
 ├── services/      # Lógica de negocio
-├── utils/         # Utilidades y helpers
-└── views/         # Vistas y templates (si se requiere)
+└── utils/         # Utilidades y helpers
 ```
 
 ### Arquitectura Actual

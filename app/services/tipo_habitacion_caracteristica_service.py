@@ -10,14 +10,16 @@ from fastapi import HTTPException, status
 from dao.dao_tipo_habitacion_caracteristica import TipoHabitacionCaracteristicaDAO
 from dao.dao_tipo_habitacion import TipoHabitacionDAO
 from dao.dao_caracteristica import CaracteristicaDAO
-from models.catalogos.models import *
-from schemas.catalogos.tipo_habitacion_caracteristica_schemas import (
+from models.hotel.tipo_habitacion_model import TipoHabitacion
+from models.hotel.caracteristica_model import Caracteristica
+from models.hotel.tipo_habitacion_caracteristica_model import TipoHabitacionCaracteristica
+from schemas.hotel.tipo_habitacion_caracteristica_schemas import (
     TipoHabitacionCaracteristicaAssign, 
     TipoHabitacionCaracteristicaBulkAssign, 
     TipoHabitacionCaracteristicaResponse
 )
-from schemas.catalogos.tipo_habitacion_schemas import TipoHabitacionResponse
-from schemas.catalogos.caracteristica_schemas import CaracteristicaResponse
+from schemas.hotel.tipo_habitacion_schemas import TipoHabitacionResponse
+from schemas.hotel.caracteristica_schemas import CaracteristicaResponse
 
 
 class TipoHabitacionCaracteristicaService:

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
 from services.caracteristica_service import CaracteristicaService
-from schemas.catalogos.caracteristica_schemas import CaracteristicaCreate, CaracteristicaUpdate, CaracteristicaResponse
+from schemas.hotel.caracteristica_schemas import CaracteristicaCreate, CaracteristicaUpdate, CaracteristicaResponse
 
 # Crear router para características
 router = APIRouter(prefix="/caracteristicas", tags=["Características"])

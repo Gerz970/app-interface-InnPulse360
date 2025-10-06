@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Integer, String, SmallInteger
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from core.base import Base
+from .roles_model import rol_usuario
 
-Base = declarative_base()
 
 
 class Usuario(Base):
@@ -23,7 +23,7 @@ class Usuario(Base):
     # Relaciones
     roles = relationship(
         "Roles", 
-        secondary="SEGURIDAD.Tb_rolUsuario", 
+        secondary=rol_usuario, 
         back_populates="usuarios"
     )
 

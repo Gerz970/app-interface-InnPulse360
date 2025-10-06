@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from core.database_connection import get_database_session
 from services.tipo_habitacion_service import TipoHabitacionService
-from schemas.catalogos.tipo_habitacion_schemas import TipoHabitacionCreate, TipoHabitacionUpdate, TipoHabitacionResponse
+from schemas.hotel.tipo_habitacion_schemas import TipoHabitacionCreate, TipoHabitacionUpdate, TipoHabitacionResponse
 
 # Crear router para tipos de habitación
 router = APIRouter(prefix="/tipos-habitacion", tags=["Tipos de Habitación"])

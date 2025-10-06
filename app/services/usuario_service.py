@@ -79,7 +79,7 @@ class UsuarioService:
         Returns:
             List[RolSimpleResponse]: Lista de roles del usuario
         """
-        roles = self.rol_usuario_dao.get_roles_by_usuario(usuario_id)
+        roles = self.rol_usuario_dao.get_user_roles(usuario_id)
         return [
             RolSimpleResponse(
                 id_rol=rol.id_rol,

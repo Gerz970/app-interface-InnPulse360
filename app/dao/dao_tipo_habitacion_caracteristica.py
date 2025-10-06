@@ -7,7 +7,9 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import and_
-from models.catalogos.models import TipoHabitacionCaracteristica, TipoHabitacion, Caracteristica
+from models.hotel.tipo_habitacion_caracteristica_model import TipoHabitacionCaracteristica
+from models.hotel.tipo_habitacion_model import TipoHabitacion
+from models.hotel.caracteristica_model import Caracteristica
 
 
 class TipoHabitacionCaracteristicaDAO:

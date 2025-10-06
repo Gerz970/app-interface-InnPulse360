@@ -1,33 +1,34 @@
 """
 DAO (Data Access Object) para operaciones de asignación de roles a usuarios
-Maneja la tabla intermedia entre Usuario y Roles
+Maneja la tabla intermedia entre Usuario y Roles usando SQL directo
 """
 
-from typing import List, Optional
+from typing import List
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import and_
-from models.seguridad.rol_usuario_model import RolUsuario
+from sqlalchemy import and_, select, insert, delete
+from models.seguridad.roles_model import rol_usuario
 from models.seguridad.usuario_model import Usuario
 from models.seguridad.roles_model import Roles
+from schemas.seguridad.roles_asignacion_response import RolesAsignacionResponse
 
 
 class RolUsuarioDAO:
     """
     Clase DAO para manejar operaciones de asignación de roles a usuarios
-    Utiliza SQLAlchemy ORM para las operaciones
+    Utiliza SQL directo para operaciones con la tabla de asociación
     """
     
-    def __init__(self, db_session: Session):
+    def __init__(self, db: Session):
         """
         Inicializa el DAO con una sesión de base de datos
         
         Args:
-            db_session (Session): Sesión de SQLAlchemy para operaciones de BD
+            db (Session): Sesión de SQLAlchemy
         """
-        self.db = db_session
+        self.db = db
     
-    def assign_rol_to_usuario(self, usuario_id: int, rol_id: int) -> bool:
+    def assign_role_to_user(self, usuario_id: int, rol_id: int) -> bool:
         """
         Asigna un rol a un usuario
         
@@ -43,10 +44,12 @@ class RolUsuarioDAO:
         """
         try:
             # Verificar si ya existe la asignación
-            existing = self.db.query(RolUsuario).filter(
-                and_(
-                    RolUsuario.usuario_id == usuario_id,
-                    RolUsuario.rol_id == rol_id
+            existing = self.db.execute(
+                select(rol_usuario).where(
+                    and_(
+                        rol_usuario.c.id_usuario == usuario_id,
+                        rol_usuario.c.id_rol == rol_id
+                    )
                 )
             ).first()
             
@@ -54,21 +57,20 @@ class RolUsuarioDAO:
                 return False  # Ya existe la asignación
             
             # Crear nueva asignación
-            rol_usuario = RolUsuario(
-                usuario_id=usuario_id,
-                rol_id=rol_id
+            self.db.execute(
+                insert(rol_usuario).values(
+                    id_usuario=usuario_id,
+                    id_rol=rol_id
+                )
             )
-            
-            self.db.add(rol_usuario)
             self.db.commit()
-            
             return True
             
         except SQLAlchemyError as e:
             self.db.rollback()
             raise e
     
-    def remove_rol_from_usuario(self, usuario_id: int, rol_id: int) -> bool:
+    def remove_role_from_user(self, usuario_id: int, rol_id: int) -> bool:
         """
         Remueve un rol de un usuario
         
@@ -84,27 +86,26 @@ class RolUsuarioDAO:
         """
         try:
             # Buscar la asignación
-            rol_usuario = self.db.query(RolUsuario).filter(
-                and_(
-                    RolUsuario.usuario_id == usuario_id,
-                    RolUsuario.rol_id == rol_id
+            result = self.db.execute(
+                delete(rol_usuario).where(
+                    and_(
+                        rol_usuario.c.id_usuario == usuario_id,
+                        rol_usuario.c.id_rol == rol_id
+                    )
                 )
-            ).first()
+            )
             
-            if not rol_usuario:
-                return False  # No existe la asignación
-            
-            # Eliminar la asignación
-            self.db.delete(rol_usuario)
-            self.db.commit()
-            
-            return True
-            
+            if result.rowcount > 0:
+                self.db.commit()
+                return True
+            else:
+                return False  # No existía la asignación
+                
         except SQLAlchemyError as e:
             self.db.rollback()
             raise e
     
-    def get_roles_by_usuario(self, usuario_id: int) -> List[Roles]:
+    def get_user_roles(self, usuario_id: int) -> List[Roles]:
         """
         Obtiene todos los roles asignados a un usuario
         
@@ -112,7 +113,7 @@ class RolUsuarioDAO:
             usuario_id (int): ID del usuario
             
         Returns:
-            List[Roles]: Lista de roles asignados al usuario
+            List[Roles]: Lista de roles del usuario
             
         Raises:
             SQLAlchemyError: Si hay un error en la base de datos
@@ -120,8 +121,8 @@ class RolUsuarioDAO:
         try:
             return (
                 self.db.query(Roles)
-                .join(RolUsuario, Roles.id_rol == RolUsuario.rol_id)
-                .filter(RolUsuario.usuario_id == usuario_id)
+                .join(rol_usuario, Roles.id_rol == rol_usuario.c.rol_id)
+                .filter(rol_usuario.c.usuario_id == usuario_id)
                 .filter(Roles.estatus_id == 1)  # Solo roles activos
                 .order_by(Roles.id_rol.asc())
                 .all()
@@ -129,7 +130,7 @@ class RolUsuarioDAO:
         except SQLAlchemyError as e:
             raise e
     
-    def get_usuarios_by_rol(self, rol_id: int) -> List[Usuario]:
+    def get_role_users(self, rol_id: int) -> List[Usuario]:
         """
         Obtiene todos los usuarios que tienen un rol específico
         
@@ -145,8 +146,8 @@ class RolUsuarioDAO:
         try:
             return (
                 self.db.query(Usuario)
-                .join(RolUsuario, Usuario.id_usuario == RolUsuario.usuario_id)
-                .filter(RolUsuario.rol_id == rol_id)
+                .join(rol_usuario, Usuario.id_usuario == rol_usuario.c.usuario_id)
+                .filter(rol_usuario.c.rol_id == rol_id)
                 .filter(Usuario.estatus_id == 1)  # Solo usuarios activos
                 .order_by(Usuario.id_usuario.asc())
                 .all()
@@ -154,7 +155,7 @@ class RolUsuarioDAO:
         except SQLAlchemyError as e:
             raise e
     
-    def get_all_assignments(self, skip: int = 0, limit: int = 100) -> List[RolUsuario]:
+    def get_all_assignments(self, skip: int = 0, limit: int = 100) -> List[RolesAsignacionResponse]:
         """
         Obtiene todas las asignaciones de roles con paginación
         
@@ -163,24 +164,45 @@ class RolUsuarioDAO:
             limit (int): Número máximo de registros a retornar
             
         Returns:
-            List[RolUsuario]: Lista de asignaciones
+            List[RolesAsignacionResponse]: Lista de asignaciones con información de usuario y rol
             
         Raises:
             SQLAlchemyError: Si hay un error en la base de datos
         """
         try:
-            return (
-                self.db.query(RolUsuario)
+            assignments = (
+                self.db.query(
+                    rol_usuario.c.usuario_id,
+                    rol_usuario.c.rol_id,
+                    Usuario.login,
+                    Usuario.correo_electronico,
+                    Roles.rol,
+                    Roles.descripcion
+                )
+                .join(Usuario, rol_usuario.c.usuario_id == Usuario.id_usuario)
+                .join(Roles, rol_usuario.c.rol_id == Roles.id_rol)
                 .offset(skip)
                 .limit(limit)
                 .all()
             )
+            
+            return [
+                RolesAsignacionResponse(
+                    usuario_id=assignment.id_usuario,
+                    rol_id=assignment.rol_id,
+                    usuario_login=assignment.login,
+                    usuario_email=assignment.correo_electronico,
+                    rol_nombre=assignment.rol,
+                    rol_descripcion=assignment.descripcion
+                )
+                for assignment in assignments
+            ]
         except SQLAlchemyError as e:
             raise e
     
-    def bulk_assign_roles_to_usuario(self, usuario_id: int, roles_ids: List[int]) -> int:
+    def assign_multiple_roles_to_user(self, usuario_id: int, roles_ids: List[int]) -> int:
         """
-        Asigna múltiples roles a un usuario (solo los que no estén ya asignados)
+        Asigna múltiples roles a un usuario
         
         Args:
             usuario_id (int): ID del usuario
@@ -197,20 +219,23 @@ class RolUsuarioDAO:
             
             for rol_id in roles_ids:
                 # Verificar si ya existe la asignación
-                existing = self.db.query(RolUsuario).filter(
-                    and_(
-                        RolUsuario.usuario_id == usuario_id,
-                        RolUsuario.rol_id == rol_id
+                existing = self.db.execute(
+                    select(rol_usuario).where(
+                        and_(
+                            rol_usuario.c.usuario_id == usuario_id,
+                            rol_usuario.c.rol_id == rol_id
+                        )
                     )
                 ).first()
                 
                 if not existing:
                     # Crear nueva asignación
-                    rol_usuario = RolUsuario(
-                        usuario_id=usuario_id,
-                        rol_id=rol_id
+                    self.db.execute(
+                        insert(rol_usuario).values(
+                            usuario_id=usuario_id,
+                            rol_id=rol_id
+                        )
                     )
-                    self.db.add(rol_usuario)
                     assigned_count += 1
             
             self.db.commit()
@@ -220,7 +245,7 @@ class RolUsuarioDAO:
             self.db.rollback()
             raise e
     
-    def bulk_remove_roles_from_usuario(self, usuario_id: int, roles_ids: List[int]) -> int:
+    def remove_multiple_roles_from_user(self, usuario_id: int, roles_ids: List[int]) -> int:
         """
         Remueve múltiples roles de un usuario
         
@@ -239,16 +264,15 @@ class RolUsuarioDAO:
             
             for rol_id in roles_ids:
                 # Buscar la asignación
-                rol_usuario = self.db.query(RolUsuario).filter(
-                    and_(
-                        RolUsuario.usuario_id == usuario_id,
-                        RolUsuario.rol_id == rol_id
+                result = self.db.execute(
+                    delete(rol_usuario).where(
+                        and_(
+                            rol_usuario.c.usuario_id == usuario_id,
+                            rol_usuario.c.rol_id == rol_id
+                        )
                     )
-                ).first()
-                
-                if rol_usuario:
-                    # Eliminar la asignación
-                    self.db.delete(rol_usuario)
+                )
+                if result.rowcount > 0:
                     removed_count += 1
             
             self.db.commit()
@@ -258,30 +282,31 @@ class RolUsuarioDAO:
             self.db.rollback()
             raise e
     
-    def exists_assignment(self, usuario_id: int, rol_id: int) -> bool:
+    def has_role(self, usuario_id: int, rol_id: int) -> bool:
         """
-        Verifica si existe una asignación entre usuario y rol
+        Verifica si un usuario tiene un rol específico
         
         Args:
             usuario_id (int): ID del usuario
             rol_id (int): ID del rol
             
         Returns:
-            bool: True si existe la asignación, False si no
+            bool: True si el usuario tiene el rol, False en caso contrario
             
         Raises:
             SQLAlchemyError: Si hay un error en la base de datos
         """
         try:
-            return (
-                self.db.query(RolUsuario)
-                .filter(
+            result = self.db.execute(
+                select(rol_usuario).where(
                     and_(
-                        RolUsuario.usuario_id == usuario_id,
-                        RolUsuario.rol_id == rol_id
+                        rol_usuario.c.usuario_id == usuario_id,
+                        rol_usuario.c.rol_id == rol_id
                     )
                 )
-                .first() is not None
-            )
+            ).first()
+            
+            return result is not None
+            
         except SQLAlchemyError as e:
             raise e

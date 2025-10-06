@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from dao.dao_caracteristica import CaracteristicaDAO
-from models.catalogos.models import *
-from schemas.catalogos.caracteristica_schemas import CaracteristicaCreate, CaracteristicaUpdate, CaracteristicaResponse
+from models.hotel.caracteristica_model import Caracteristica
+from schemas.hotel.caracteristica_schemas import CaracteristicaCreate, CaracteristicaUpdate, CaracteristicaResponse
 
 
 class CaracteristicaService:

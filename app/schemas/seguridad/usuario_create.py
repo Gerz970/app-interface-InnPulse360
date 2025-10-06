@@ -50,7 +50,6 @@ class UsuarioCreate(BaseModel):
                 "login": "juan.perez",
                 "correo_electronico": "juan.perez@gmail.com",
                 "password": "123456",
-                "estatus_id": 1,
                 "roles_ids": [1, 2]
             }
         }

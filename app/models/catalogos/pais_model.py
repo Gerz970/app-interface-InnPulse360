@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
-from .base import Base
+from core.base import Base
 
 
 class Pais(Base):

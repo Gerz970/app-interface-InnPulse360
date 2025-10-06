@@ -6,8 +6,8 @@ Maneja todas las interacciones con la base de datos para la entidad Caracteristi
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from models.catalogos.models import Caracteristica
-from schemas.catalogos.caracteristica_schemas import CaracteristicaCreate, CaracteristicaUpdate
+from models.hotel.caracteristica_model import Caracteristica
+from schemas.hotel.caracteristica_schemas import CaracteristicaCreate, CaracteristicaUpdate
 
 
 class CaracteristicaDAO:

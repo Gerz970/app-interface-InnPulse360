@@ -6,8 +6,8 @@ Maneja todas las interacciones con la base de datos para la entidad TipoHabitaci
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from models.catalogos.models import TipoHabitacion
-from schemas.catalogos.tipo_habitacion_schemas import TipoHabitacionCreate, TipoHabitacionUpdate
+from models.hotel.tipo_habitacion_model import TipoHabitacion
+from schemas.hotel.tipo_habitacion_schemas import TipoHabitacionCreate, TipoHabitacionUpdate
 
 
 class TipoHabitacionDAO:

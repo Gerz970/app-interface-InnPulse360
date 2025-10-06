@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from dao.dao_tipo_habitacion import TipoHabitacionDAO
-from models.catalogos.models import *
-from schemas.catalogos.tipo_habitacion_schemas import TipoHabitacionCreate, TipoHabitacionUpdate, TipoHabitacionResponse
+from models.hotel.tipo_habitacion_model import TipoHabitacion
+from schemas.hotel.tipo_habitacion_schemas import TipoHabitacionCreate, TipoHabitacionUpdate, TipoHabitacionResponse
 
 
 class TipoHabitacionService:

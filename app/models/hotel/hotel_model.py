@@ -1,7 +1,5 @@
 from sqlalchemy import Column, Integer, String, SmallInteger
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from core.base import Base
 
 
 class Hotel(Base):

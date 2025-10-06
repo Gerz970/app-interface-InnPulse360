@@ -1,15 +1,15 @@
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import relationship
-from .base import Base
+from core.base import Base
 
 
 class Caracteristica(Base):
     """
-    Modelo SQLAlchemy para la tabla CATALOGOS.Tb_caracteristicas
+    Modelo SQLAlchemy para la tabla HOTEL.Tb_caracteristicas
     Refleja exactamente la estructura de la base de datos
     """
     __tablename__ = "Tb_caracteristicas"
-    __table_args__ = {'schema': 'CATALOGOS'}
+    __table_args__ = {'schema': 'HOTEL'}
     
     # Campos de la tabla
     id_caracteristica = Column(Integer, primary_key=True, autoincrement=True, index=True)
@@ -19,7 +19,7 @@ class Caracteristica(Base):
     # Relaciones
     tipos_habitacion = relationship(
         "TipoHabitacion", 
-        secondary="CATALOGOS.Tb_tipoHabitacionCaracteristicas",
+        secondary="HOTEL.Tb_tipoHabitacionCaracteristicas",
         back_populates="caracteristicas"
     )
     

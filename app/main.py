@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from core.config import Settings
 from api.v1 import api_router
 from core.database_connection import db_connection
@@ -9,6 +10,18 @@ settings = Settings()
 
 # Crear instancia de FastAPI
 app = FastAPI(title="InnPulse360 API", version="1.0.0")
+
+# CORS
+# Lista de orígenes permitidos
+origins = ["*"] # Todos los orígenes permitidos
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,          # dominios permitidos * = todos
+    allow_credentials=True,         # si vas a usar cookies o auth * = todos
+    allow_methods=["*"],            # GET, POST, PUT... "*" = todos
+    allow_headers=["*"],            # encabezados permitidos * = todos
+)
 
 # Incluir el router de la API v1
 app.include_router(api_router, prefix=settings.api_version)

@@ -100,9 +100,12 @@ class EmailTemplateConfig:
     BOOKING_CONFIRMATION = "booking_confirmation"
     SYSTEM_ALERT = "system_alert"
     
-    # Configuración de estilos
-    PRIMARY_COLOR = os.getenv("EMAIL_PRIMARY_COLOR", "#2563eb")
-    SECONDARY_COLOR = os.getenv("EMAIL_SECONDARY_COLOR", "#64748b")
+    # Configuración de estilos - Colores del logo InnPulse 360
+    PRIMARY_COLOR = os.getenv("EMAIL_PRIMARY_COLOR", "#6B46C1")  # Púrpura oscuro del logo
+    SECONDARY_COLOR = os.getenv("EMAIL_SECONDARY_COLOR", "#A78BFA")  # Púrpura claro del logo
+    ACCENT_COLOR = os.getenv("EMAIL_ACCENT_COLOR", "#3B82F6")  # Azul claro del logo
+    BACKGROUND_COLOR = os.getenv("EMAIL_BACKGROUND_COLOR", "#F8FAFC")  # Gris claro para fondos
+    TEXT_COLOR = os.getenv("EMAIL_TEXT_COLOR", "#374151")  # Gris oscuro para texto
     SUCCESS_COLOR = os.getenv("EMAIL_SUCCESS_COLOR", "#059669")
     WARNING_COLOR = os.getenv("EMAIL_WARNING_COLOR", "#d97706")
     ERROR_COLOR = os.getenv("EMAIL_ERROR_COLOR", "#dc2626")
@@ -128,6 +131,9 @@ class EmailTemplateConfig:
             "support_email": cls.SUPPORT_EMAIL,
             "primary_color": cls.PRIMARY_COLOR,
             "secondary_color": cls.SECONDARY_COLOR,
+            "accent_color": cls.ACCENT_COLOR,
+            "background_color": cls.BACKGROUND_COLOR,
+            "text_color": cls.TEXT_COLOR,
             "success_color": cls.SUCCESS_COLOR,
             "warning_color": cls.WARNING_COLOR,
             "error_color": cls.ERROR_COLOR

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{asunto}}</title>
+    <style>
+        /* Reset básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #374151;
+            background-color: #f8fafc;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #6B46C1 0%, #7C3AED 100%);
+            padding: 32px 24px;
+            text-align: center;
+        }
+        
+        .logo {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .tagline {
+            color: #E0E7FF;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Contenido principal */
+        .content {
+            padding: 40px 32px;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #6B46C1;
+            margin-bottom: 24px;
+        }
+        
+        .main-content {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #374151;
+            margin-bottom: 32px;
+        }
+        
+        .main-content p {
+            margin-bottom: 16px;
+        }
+        
+        .main-content p:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Botones */
+        .button-container {
+            text-align: center;
+            margin: 32px 0;
+        }
+        
+        .button {
+            display: inline-block;
+            padding: 12px 32px;
+            background-color: #3B82F6;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .button:hover {
+            background-color: #2563EB;
+        }
+        
+        .button-secondary {
+            background-color: #6B46C1;
+        }
+        
+        .button-secondary:hover {
+            background-color: #5B21B6;
+        }
+        
+        /* Información adicional */
+        .info-box {
+            background-color: #F8FAFC;
+            border-left: 4px solid #6B46C1;
+            padding: 20px;
+            margin: 24px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        
+        .info-box h3 {
+            color: #6B46C1;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .info-box p {
+            color: #4B5563;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        /* Footer */
+        .footer {
+            background-color: #F8FAFC;
+            padding: 32px;
+            text-align: center;
+            border-top: 1px solid #E5E7EB;
+        }
+        
+        .footer-content {
+            color: #6B7280;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .footer-links {
+            margin: 16px 0;
+        }
+        
+        .footer-links a {
+            color: #6B46C1;
+            text-decoration: none;
+            margin: 0 12px;
+            font-weight: 500;
+        }
+        
+        .footer-links a:hover {
+            color: #5B21B6;
+        }
+        
+        .company-info {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #9CA3AF;
+        }
+        
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header {
+                padding: 24px 16px;
+            }
+            
+            .logo {
+                font-size: 24px;
+            }
+            
+            .content {
+                padding: 24px 20px;
+            }
+            
+            .footer {
+                padding: 24px 20px;
+            }
+            
+            .button {
+                display: block;
+                margin: 0 auto;
+                text-align: center;
+            }
+        }
+        
+        /* Estilos específicos para elementos dinámicos */
+        .highlight {
+            color: #6B46C1;
+            font-weight: 600;
+        }
+        
+        .code {
+            background-color: #F3F4F6;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #374151;
+            border: 1px solid #E5E7EB;
+        }
+        
+        .divider {
+            height: 1px;
+            background-color: #E5E7EB;
+            margin: 32px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">InnPulse 360</div>
+            <div class="tagline">Hotel Management ERP</div>
+        </div>
+        
+        <!-- Contenido principal -->
+        <div class="content">
+            {% if destinatario_nombre %}
+            <div class="greeting">Hola {{destinatario_nombre}},</div>
+            {% endif %}
+            
+            <div class="main-content">
+                {{contenido_principal}}
+            </div>
+            
+            {% if boton_url and boton_texto %}
+            <div class="button-container">
+                <a href="{{boton_url}}" class="button {% if boton_estilo %}{{boton_estilo}}{% endif %}">{{boton_texto}}</a>
+            </div>
+            {% endif %}
+            
+            {% if info_adicional %}
+            <div class="info-box">
+                {{info_adicional}}
+            </div>
+            {% endif %}
+            
+            {% if contenido_secundario %}
+            <div class="divider"></div>
+            <div class="main-content">
+                {{contenido_secundario}}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="https://innpulse360.com">Sitio Web</a>
+                    <a href="mailto:support@innpulse360.com">Soporte</a>
+                    <a href="https://innpulse360.com/privacidad">Privacidad</a>
+                </div>
+                <div class="company-info">
+                    InnPulse 360 - Hotel Management ERP<br>
+                    Soporte: support@innpulse360.com<br>
+                    <span style="color: #9CA3AF;">Este es un correo automático, por favor no responder.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

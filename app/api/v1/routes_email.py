@@ -81,6 +81,169 @@ async def send_email(email_data: EmailSendBasic) -> EmailResponseBasic:
         )
 
 
+@router.post(
+    "/send-welcome",
+    response_model=EmailResponseBasic,
+    status_code=status.HTTP_200_OK,
+    summary="Enviar Email de Bienvenida",
+    description="Envía email de bienvenida usando plantilla específica"
+)
+async def send_welcome_email(
+    destinatario_email: str,
+    destinatario_nombre: str,
+    usuario_email: str,
+    codigo_activacion: Optional[str] = None
+) -> EmailResponseBasic:
+    """
+    Envía email de bienvenida usando plantilla específica
+    
+    Args:
+        destinatario_email: Email del destinatario
+        destinatario_nombre: Nombre del destinatario
+        usuario_email: Email del usuario
+        codigo_activacion: Código de activación opcional
+        
+    Returns:
+        EmailResponseBasic: Resultado del envío
+    """
+    try:
+        email_service = EmailService()
+        result = await email_service.send_welcome_email(
+            destinatario_email, destinatario_nombre, usuario_email, codigo_activacion
+        )
+        
+        if not result.success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "message": result.message,
+                    "error": result.error
+                }
+            )
+        
+        return result
+        
+    except HTTPException:
+        raise
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "message": "Error al procesar el envío de email de bienvenida",
+                "error": str(e)
+            }
+        )
+
+
+@router.post(
+    "/send-password-reset",
+    response_model=EmailResponseBasic,
+    status_code=status.HTTP_200_OK,
+    summary="Enviar Email de Restablecimiento",
+    description="Envía email de restablecimiento de contraseña"
+)
+async def send_password_reset_email(
+    destinatario_email: str,
+    destinatario_nombre: str,
+    reset_token: str
+) -> EmailResponseBasic:
+    """
+    Envía email de restablecimiento de contraseña
+    
+    Args:
+        destinatario_email: Email del destinatario
+        destinatario_nombre: Nombre del destinatario
+        reset_token: Token para restablecer contraseña
+        
+    Returns:
+        EmailResponseBasic: Resultado del envío
+    """
+    try:
+        email_service = EmailService()
+        result = await email_service.send_password_reset_email(
+            destinatario_email, destinatario_nombre, reset_token
+        )
+        
+        if not result.success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "message": result.message,
+                    "error": result.error
+                }
+            )
+        
+        return result
+        
+    except HTTPException:
+        raise
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "message": "Error al procesar el envío de email de restablecimiento",
+                "error": str(e)
+            }
+        )
+
+
+@router.post(
+    "/send-role-assignment",
+    response_model=EmailResponseBasic,
+    status_code=status.HTTP_200_OK,
+    summary="Enviar Email de Asignación de Rol",
+    description="Envía email de asignación de rol"
+)
+async def send_role_assignment_email(
+    destinatario_email: str,
+    destinatario_nombre: str,
+    rol_asignado: str,
+    asignado_por: str
+) -> EmailResponseBasic:
+    """
+    Envía email de asignación de rol
+    
+    Args:
+        destinatario_email: Email del destinatario
+        destinatario_nombre: Nombre del destinatario
+        rol_asignado: Rol que se asignó
+        asignado_por: Quién asignó el rol
+        
+    Returns:
+        EmailResponseBasic: Resultado del envío
+    """
+    try:
+        email_service = EmailService()
+        result = await email_service.send_role_assignment_email(
+            destinatario_email, destinatario_nombre, rol_asignado, asignado_por
+        )
+        
+        if not result.success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "message": result.message,
+                    "error": result.error
+                }
+            )
+        
+        return result
+        
+    except HTTPException:
+        raise
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "message": "Error al procesar el envío de email de asignación de rol",
+                "error": str(e)
+            }
+        )
+
+
 @router.get(
     "/test-connection",
     response_model=Dict[str, Any],

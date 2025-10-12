@@ -1,0 +1,18 @@
+from sqlalchemy import Column, Integer, String, Date
+from core.base import Base
+
+class Empleado(Base):
+    __tablename__ = "Tb_empleado"
+    __table_args__ = {'schema': 'EMPLEADOS'}
+
+    id_empleado = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    clave_empleado = Column(String(25), nullable=False)
+    nombre = Column(String(150), nullable=False)
+    apellido_paterno = Column(String(50), nullable=False)
+    apellido_materno = Column(String(50), nullable=False)
+    fecha_nacimiento = Column(Date)
+    rfc = Column(String(13), nullable=False)
+    curp = Column(String(18), nullable=False)
+
+    def __repr__(self):
+        return f"<Empleado(id_empleado={self.id_empleado}, empleado='{self.empleado}')>"

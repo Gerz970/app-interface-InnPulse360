@@ -1,15 +1,18 @@
 # Configuración de la aplicación
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
-# Cargar archivo .env según disponibilidad
-if os.path.exists(".development.env"):
-    # Cargar archivo .env de desarrollo
-    load_dotenv(".development.env")
-else:
-    # Cargar archivo .env de producción
-    load_dotenv(".production.env")
+# Obtener la ruta del archivo .development.env en la carpeta app/
+current_file = Path(__file__).resolve() 
+core_dir = current_file.parent           
+app_dir = core_dir.parent                
+env_file = app_dir / ".development.env" 
 
+#valida si esta el modo debug
+
+# Cargar archivo .development.env desde la carpeta app/
+load_dotenv(dotenv_path=env_file)
 
 class Settings:
     port: int = int(os.getenv("PORT", "8000"))

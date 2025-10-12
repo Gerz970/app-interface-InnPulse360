@@ -12,10 +12,11 @@ from .routes_email import router as email_router
 
 api_router = APIRouter()
 
-api_router.include_router(hotel_router)
+
 api_router.include_router(usuario_router)
 api_router.include_router(roles_router)
 api_router.include_router(usuario_rol_router)
+api_router.include_router(hotel_router)
 api_router.include_router(pais_router)
 api_router.include_router(estado_router)
 api_router.include_router(tipo_habitacion_router)

@@ -15,6 +15,7 @@ from core.database_connection import get_database_session
 from schemas.email.email_basic_schemas import EmailSendBasic, EmailResponseBasic
 from schemas.email.email_schemas import EmailSend, EmailStatus, EmailType
 from dao.email.dao_email_log import EmailLogDAO
+from services.email.template_service import EmailTemplateService
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -37,6 +38,9 @@ class EmailService:
         self.use_tls = EmailSettings.use_tls
         self.from_email = EmailSettings.from_email
         self.from_name = EmailSettings.from_name
+        
+        # Inicializar servicio de plantillas
+        self.template_service = EmailTemplateService()
         
         logger.info(f"EmailService inicializado - Server: {self.smtp_server}:{self.smtp_port}")
     
@@ -150,6 +154,200 @@ class EmailService:
                 error=error_msg
             )
     
+    async def send_welcome_email(self, destinatario_email: str, destinatario_nombre: str, 
+                                usuario_email: str, codigo_activacion: Optional[str] = None) -> EmailResponseBasic:
+        """
+        Envía email de bienvenida usando plantilla específica
+        
+        Args:
+            destinatario_email (str): Email del destinatario
+            destinatario_nombre (str): Nombre del destinatario
+            usuario_email (str): Email del usuario
+            codigo_activacion (Optional[str]): Código de activación si aplica
+            
+        Returns:
+            EmailResponseBasic: Resultado del envío
+        """
+        try:
+            # Generar HTML usando la plantilla de bienvenida
+            html_content = self.template_service.create_welcome_email(
+                destinatario_nombre, usuario_email, codigo_activacion
+            )
+            
+            # Crear datos del email
+            email_data = EmailSendBasic(
+                destinatario_email=destinatario_email,
+                asunto="Bienvenido a InnPulse 360",
+                contenido_html=html_content
+            )
+            
+            return await self.send_email(email_data)
+            
+        except Exception as e:
+            logger.error(f"Error al enviar email de bienvenida: {str(e)}")
+            return EmailResponseBasic(
+                success=False,
+                message="Error al procesar email de bienvenida",
+                fecha_envio=None,
+                error=str(e)
+            )
+    
+    async def send_password_reset_email(self, destinatario_email: str, destinatario_nombre: str,
+                                      reset_token: str) -> EmailResponseBasic:
+        """
+        Envía email de restablecimiento de contraseña
+        
+        Args:
+            destinatario_email (str): Email del destinatario
+            destinatario_nombre (str): Nombre del destinatario
+            reset_token (str): Token para restablecer contraseña
+            
+        Returns:
+            EmailResponseBasic: Resultado del envío
+        """
+        try:
+            # Generar HTML usando la plantilla de restablecimiento
+            html_content = self.template_service.create_password_reset_email(
+                destinatario_nombre, reset_token
+            )
+            
+            # Crear datos del email
+            email_data = EmailSendBasic(
+                destinatario_email=destinatario_email,
+                asunto="Restablecer contraseña - InnPulse 360",
+                contenido_html=html_content
+            )
+            
+            return await self.send_email(email_data)
+            
+        except Exception as e:
+            logger.error(f"Error al enviar email de restablecimiento: {str(e)}")
+            return EmailResponseBasic(
+                success=False,
+                message="Error al procesar email de restablecimiento",
+                fecha_envio=None,
+                error=str(e)
+            )
+    
+    async def send_role_assignment_email(self, destinatario_email: str, destinatario_nombre: str,
+                                       rol_asignado: str, asignado_por: str) -> EmailResponseBasic:
+        """
+        Envía email de asignación de rol
+        
+        Args:
+            destinatario_email (str): Email del destinatario
+            destinatario_nombre (str): Nombre del destinatario
+            rol_asignado (str): Rol que se asignó
+            asignado_por (str): Quién asignó el rol
+            
+        Returns:
+            EmailResponseBasic: Resultado del envío
+        """
+        try:
+            # Generar HTML usando la plantilla de asignación de rol
+            html_content = self.template_service.create_role_assignment_email(
+                destinatario_nombre, rol_asignado, asignado_por
+            )
+            
+            # Crear datos del email
+            email_data = EmailSendBasic(
+                destinatario_email=destinatario_email,
+                asunto=f"Nuevo rol asignado: {rol_asignado}",
+                contenido_html=html_content
+            )
+            
+            return await self.send_email(email_data)
+            
+        except Exception as e:
+            logger.error(f"Error al enviar email de asignación de rol: {str(e)}")
+            return EmailResponseBasic(
+                success=False,
+                message="Error al procesar email de asignación de rol",
+                fecha_envio=None,
+                error=str(e)
+            )
+    
+    async def send_hotel_notification_email(self, destinatario_email: str, destinatario_nombre: str,
+                                          hotel_nombre: str, tipo_notificacion: str, 
+                                          mensaje: str) -> EmailResponseBasic:
+        """
+        Envía email de notificación de hotel
+        
+        Args:
+            destinatario_email (str): Email del destinatario
+            destinatario_nombre (str): Nombre del destinatario
+            hotel_nombre (str): Nombre del hotel
+            tipo_notificacion (str): Tipo de notificación
+            mensaje (str): Mensaje específico
+            
+        Returns:
+            EmailResponseBasic: Resultado del envío
+        """
+        try:
+            # Generar HTML usando la plantilla de notificación de hotel
+            html_content = self.template_service.create_hotel_notification_email(
+                destinatario_nombre, hotel_nombre, tipo_notificacion, mensaje
+            )
+            
+            # Crear datos del email
+            email_data = EmailSendBasic(
+                destinatario_email=destinatario_email,
+                asunto=f"Notificación de hotel: {hotel_nombre}",
+                contenido_html=html_content
+            )
+            
+            return await self.send_email(email_data)
+            
+        except Exception as e:
+            logger.error(f"Error al enviar email de notificación de hotel: {str(e)}")
+            return EmailResponseBasic(
+                success=False,
+                message="Error al procesar email de notificación de hotel",
+                fecha_envio=None,
+                error=str(e)
+            )
+    
+    async def send_booking_confirmation_email(self, destinatario_email: str, destinatario_nombre: str,
+                                            hotel_nombre: str, fecha_llegada: str, 
+                                            fecha_salida: str, numero_reserva: str) -> EmailResponseBasic:
+        """
+        Envía email de confirmación de reserva
+        
+        Args:
+            destinatario_email (str): Email del destinatario
+            destinatario_nombre (str): Nombre del destinatario
+            hotel_nombre (str): Nombre del hotel
+            fecha_llegada (str): Fecha de llegada
+            fecha_salida (str): Fecha de salida
+            numero_reserva (str): Número de reserva
+            
+        Returns:
+            EmailResponseBasic: Resultado del envío
+        """
+        try:
+            # Generar HTML usando la plantilla de confirmación de reserva
+            html_content = self.template_service.create_booking_confirmation_email(
+                destinatario_nombre, hotel_nombre, fecha_llegada, fecha_salida, numero_reserva
+            )
+            
+            # Crear datos del email
+            email_data = EmailSendBasic(
+                destinatario_email=destinatario_email,
+                asunto=f"Confirmación de reserva #{numero_reserva}",
+                contenido_html=html_content
+            )
+            
+            return await self.send_email(email_data)
+            
+        except Exception as e:
+            logger.error(f"Error al enviar email de confirmación de reserva: {str(e)}")
+            return EmailResponseBasic(
+                success=False,
+                message="Error al procesar email de confirmación de reserva",
+                fecha_envio=None,
+                error=str(e)
+            )
+    
     def _validate_config(self) -> bool:
         """
         Valida que la configuración SMTP esté completa
@@ -166,7 +364,7 @@ class EmailService:
     
     def _create_message(self, email_data: EmailSendBasic) -> MIMEMultipart:
         """
-        Crea el mensaje de email
+        Crea el mensaje de email usando la plantilla base
         
         Args:
             email_data (EmailSendBasic): Datos del email
@@ -179,11 +377,37 @@ class EmailService:
         message["From"] = f"{self.from_name} <{self.from_email}>"
         message["To"] = email_data.destinatario_email
         
+        # Procesar contenido HTML con la plantilla base
+        html_content = self._process_html_content(email_data)
+        
         # Crear parte HTML
-        html_part = MIMEText(email_data.contenido_html, "html", "utf-8")
+        html_part = MIMEText(html_content, "html", "utf-8")
         message.attach(html_part)
         
         return message
+    
+    def _process_html_content(self, email_data: EmailSendBasic) -> str:
+        """
+        Procesa el contenido HTML usando la plantilla base
+        
+        Args:
+            email_data (EmailSendBasic): Datos del email
+            
+        Returns:
+            str: HTML procesado
+        """
+        try:
+            # Usar la plantilla base para el contenido personalizado
+            variables = {
+                'contenido_principal': email_data.contenido_html
+            }
+            
+            return self.template_service.render_base_template(variables)
+            
+        except Exception as e:
+            logger.warning(f"Error al procesar plantilla, usando contenido directo: {str(e)}")
+            # Fallback al contenido original si falla la plantilla
+            return email_data.contenido_html
     
     def _send_smtp(self, message: MIMEMultipart, destinatario: str):
         """

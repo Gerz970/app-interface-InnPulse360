@@ -49,6 +49,7 @@ class EmpleadoDAO:
         
             self.db.add(relacion)
             self.db.commit()
+            db_empleado.domicilio = db_domicilio
 
             return db_empleado
 

@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Date
+from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from core.base import Base
+from sqlalchemy.orm import relationship
 
 class Empleado(Base):
     __tablename__ = "Tb_empleado"
@@ -13,6 +14,8 @@ class Empleado(Base):
     fecha_nacimiento = Column(Date)
     rfc = Column(String(13), nullable=False)
     curp = Column(String(18), nullable=False)
+
+    domicilio_relacion = relationship("DomicilioEmpleado", back_populates="empleado", uselist=False)
 
     def __repr__(self):
         return f"<Empleado(id_empleado={self.id_empleado}, empleado='{self.empleado}')>"

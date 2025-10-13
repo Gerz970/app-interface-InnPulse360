@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, EmailStr, validator
 from datetime import date
+from .domicilio_base import DomicilioBase
 
 class EmpleadoBase(BaseModel):
     """
@@ -52,5 +53,8 @@ class EmpleadoBase(BaseModel):
         description="CURP del empleado",
         example="MABG851202HZTWMG91"
     )
+
+    domicilio: DomicilioBase
+
 
 

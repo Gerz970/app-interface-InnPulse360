@@ -16,6 +16,10 @@ class EmpleadoCreate(EmpleadoBase):
                 "apellido_materno": "López",
                 "fecha_nacimiento": "1990-05-15",
                 "rfc": "MOGF780404S36",
-                "curp": "MABG851202HZTWMG9"
+                "curp": "MABG851202HZTWMG9",
+                "domicilio": {
+                    "domicilio_completo": "Calle Los Olivos #123, Col. Centro, CDMX",
+                    "codigo_postal": "06000"
+                }
             }
         }

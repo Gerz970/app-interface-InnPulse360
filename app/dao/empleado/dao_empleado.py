@@ -1,10 +1,11 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 from models.empleados.empleado_model import Empleado
 from schemas.empleado.empleado_create import EmpleadoCreate
 from schemas.empleado.empleado_update import EmpleadoUpdate
-
+from models.empleados.domicilio_model import Domicilio
+from models.empleados.domicilio_empleado_model import DomicilioEmpleado
 
 class EmpleadoDAO:
     __status_active__ = 1
@@ -29,30 +30,52 @@ class EmpleadoDAO:
             self.db.commit()
             self.db.refresh(db_empleado)
 
+                # Crear domicilio
+            db_domicilio = Domicilio(
+                domicilio_completo=empleado_data.domicilio.domicilio_completo,
+                codigo_postal=empleado_data.domicilio.codigo_postal,
+                estatus_id=1
+            )
+        
+            self.db.add(db_domicilio)
+            self.db.commit()
+            self.db.refresh(db_domicilio)
+
+            # Crear relación empleado-domicilio
+            relacion = DomicilioEmpleado(
+                empleado_id=db_empleado.id_empleado,
+                domicilio_id=db_domicilio.id_id_domicilio
+            )
+        
+            self.db.add(relacion)
+            self.db.commit()
             return db_empleado
 
         except SQLAlchemyError as e:
             self.db.rollback()
             raise e
 
-    def get_by_id(self, empleado_id: int) -> Optional[Empleado]:
-        try:
-            return self.db.query(Empleado).filter(Empleado.id_empleado == empleado_id).first()
-        except SQLAlchemyError as e:
-            raise e
-
-    def get_all(self, skip: int = 0, limit: int = 100) -> List[Empleado]:
-        try:
-            return (
-                self.db.query(Empleado)
-                .order_by(Empleado.id_empleado.desc())
-                .offset(skip)
-                .limit(limit)
-                .all()
+    def get_all(self, skip: int = 0, limit: int = 100):
+        return (
+            self.db.query(Empleado)
+            .options(
+                joinedload(Empleado.domicilio_relacion).joinedload(DomicilioEmpleado.domicilio)
             )
-        except SQLAlchemyError as e:
-            raise e
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
+    def get_by_id(self, empleado_id: int):
+        return (
+            self.db.query(Empleado)
+            .options(
+                joinedload(Empleado.domicilio_relacion).joinedload(DomicilioEmpleado.domicilio)
+            )
+            .filter(Empleado.id_empleado == empleado_id)
+            .first()
+        )
+    
     def update(self, empleado_id: int, empleado_update: EmpleadoUpdate) -> Optional[Empleado]:
         try:
             db_empleado = self.get_by_id(empleado_id)

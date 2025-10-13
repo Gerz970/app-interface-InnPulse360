@@ -42,7 +42,7 @@ class EmpleadoService:
             if empleado.domicilio_relacion and empleado.domicilio_relacion.domicilio:
                 domicilio_obj = empleado.domicilio_relacion.domicilio
                 domicilio_dict = {
-                    "id_id_domicilio": domicilio_obj.id_id_domicilio,
+                    "id_domicilio": domicilio_obj.id_domicilio,
                     "domicilio_completo": domicilio_obj.domicilio_completo,
                     "codigo_postal": domicilio_obj.codigo_postal,
                     "estatus_id": domicilio_obj.estatus_id
@@ -85,7 +85,7 @@ class EmpleadoService:
                 if emp.domicilio_relacion and emp.domicilio_relacion.domicilio:
                     domicilio_obj = emp.domicilio_relacion.domicilio
                     domicilio_dict = {
-                        "id_id_domicilio": domicilio_obj.id_id_domicilio,
+                        "id_domicilio": domicilio_obj.id_domicilio,
                         "domicilio_completo": domicilio_obj.domicilio_completo,
                         "codigo_postal": domicilio_obj.codigo_postal,
                         "estatus_id": domicilio_obj.estatus_id

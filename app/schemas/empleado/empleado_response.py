@@ -25,6 +25,7 @@ class EmpleadoResponse(EmpleadoBase):
                 "rfc": "MOGF780404S36",
                 "curp": "MABG851202HZTWMG9",
                 "domicilio": {
+                    "id_domicilio": 1,
                     "domicilio_completo": "Calle Falsa 123",
                     "codigo_postal": "01234",
                     "estatus_id": 1

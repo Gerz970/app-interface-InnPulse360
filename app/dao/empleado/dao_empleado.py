@@ -44,11 +44,12 @@ class EmpleadoDAO:
             # Crear relación empleado-domicilio
             relacion = DomicilioEmpleado(
                 empleado_id=db_empleado.id_empleado,
-                domicilio_id=db_domicilio.id_id_domicilio
+                domicilio_id=db_domicilio.id_domicilio
             )
         
             self.db.add(relacion)
             self.db.commit()
+
             return db_empleado
 
         except SQLAlchemyError as e:

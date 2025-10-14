@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from core.base import Base
 from sqlalchemy.orm import relationship
+from .puesto_model import puesto_empleado
 
 class Empleado(Base):
     __tablename__ = "Tb_empleado"
@@ -16,6 +17,12 @@ class Empleado(Base):
     curp = Column(String(18), nullable=False)
 
     domicilio_relacion = relationship("DomicilioEmpleado", back_populates="empleado", uselist=False)
+
+    puestos = relationship(
+        "Puesto",
+        secondary=puesto_empleado,
+        back_populates="empleado"
+    )
 
     def __repr__(self):
         return f"<Empleado(id_empleado={self.id_empleado}, empleado='{self.empleado}')>"

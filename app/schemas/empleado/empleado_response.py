@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from .empleado_base import EmpleadoBase
 from typing import Optional
 from .domicilio_base import DomicilioBase
+from .puesto_schema import PuestoResponse
 
 class EmpleadoResponse(EmpleadoBase):
     id_empleado: int=Field(
@@ -11,6 +12,7 @@ class EmpleadoResponse(EmpleadoBase):
     )
     
     domicilio: Optional[DomicilioBase] = None
+    puesto: Optional[PuestoResponse] = None
 
     class Config: 
         from_attributes = True
@@ -28,6 +30,12 @@ class EmpleadoResponse(EmpleadoBase):
                     "id_domicilio": 1,
                     "domicilio_completo": "Calle Falsa 123",
                     "codigo_postal": "01234",
+                    "estatus_id": 1
+                },
+                "puesto": {
+                    "id_puesto" : 1,
+                    "puesto": "Recepcionista",
+                    "descripcion": "Responsable de agendar reservaciones, recibir a clientes, etc.",
                     "estatus_id": 1
                 }
             }

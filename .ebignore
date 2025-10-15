@@ -1,0 +1,28 @@
+# .ebignore - Control de archivos para Elastic Beanstalk
+# Si este archivo existe, EB CLI lo usa en lugar de .gitignore
+
+# Excluir entorno virtual y caché
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Excluir archivos de desarrollo
+.git/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Excluir archivos de configuración local
+.env
+.env.local
+*.log
+
+# IMPORTANTE: NO excluir estos archivos necesarios para el deploy
+# Dockerrun.aws.json - se incluye automáticamente
+# .ebextensions/ - se incluye automáticamente
+

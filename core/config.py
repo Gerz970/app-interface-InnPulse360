@@ -3,16 +3,9 @@ from dotenv import load_dotenv
 import os
 from pathlib import Path
 
-# Obtener la ruta del archivo .development.env en la carpeta app/
-current_file = Path(__file__).resolve() 
-core_dir = current_file.parent           
-app_dir = core_dir.parent                
-env_file = app_dir / ".development.env" 
-
-#valida si esta el modo debug
 
 # Cargar archivo .development.env desde la carpeta app/
-load_dotenv(dotenv_path=env_file)
+load_dotenv()
 
 class Settings:
     port: int = int(os.getenv("PORT", "8000"))
@@ -20,11 +13,11 @@ class Settings:
     api_version: str = os.getenv("API_VERSION", "/api/v1")
 
 class DatabaseSettings:
-    server: str = os.getenv("SERVER", "aquamind.database.windows.net")
+    server: str = os.getenv("SERVER", "localhost")
     database: str = os.getenv("DATABASE", "DBInnpulse360")
-    username: str = os.getenv("USER_DB", "sAdmin")
-    password: str = os.getenv("PASSWORD", "6aAi7lf16Q")
-    port: int = int(os.getenv("PORT_DB", "1433"))
+    username: str = os.getenv("USER_DB", "root")
+    password: str = os.getenv("PASSWORD", "123456")
+    port: int = int(os.getenv("PORT_DB", "3306"))
     driver: str = os.getenv("DRIVER", "ODBC Driver 17 for SQL Server")
     trust_server_certificate: bool = os.getenv("TRUST_SERVER_CERTIFICATE", "true") == "true"
 

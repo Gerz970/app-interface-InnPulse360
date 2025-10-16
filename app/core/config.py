@@ -20,7 +20,7 @@ class Settings:
     api_version: str = os.getenv("API_VERSION", "/api/v1")
 
 class DatabaseSettings:
-    server: str = os.getenv("SERVER", "aquamind.database.windows.net")
+    server: str = os.getenv("SERVER", "innpulse360.cilyeay64s86.us-east-1.rds.amazonaws.com")
     database: str = os.getenv("DATABASE", "DBInnpulse360")
     username: str = os.getenv("USER_DB", "sAdmin")
     password: str = os.getenv("PASSWORD", "6aAi7lf16Q")

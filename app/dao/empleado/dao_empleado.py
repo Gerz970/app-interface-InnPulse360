@@ -6,7 +6,7 @@ from schemas.empleado.empleado_create import EmpleadoCreate
 from schemas.empleado.empleado_update import EmpleadoUpdate
 from models.empleados.domicilio_model import Domicilio
 from models.empleados.domicilio_empleado_model import DomicilioEmpleado
-
+from models.empleados.puesto_model import Puesto
 class EmpleadoDAO:
     __status_active__ = 1
     __status_inactive__ = 0
@@ -16,6 +16,7 @@ class EmpleadoDAO:
 
     def create(self, empleado_data: EmpleadoCreate) -> Empleado:
         try:
+            # Crear empleado
             db_empleado = Empleado(
                 clave_empleado=empleado_data.clave_empleado,
                 nombre=empleado_data.nombre,
@@ -25,33 +26,40 @@ class EmpleadoDAO:
                 rfc=empleado_data.rfc,
                 curp=empleado_data.curp,
             )
-
             self.db.add(db_empleado)
-            self.db.commit()
-            self.db.refresh(db_empleado)
+            self.db.flush()  # obtiene el ID antes del commit
 
-                # Crear domicilio
+            # Crear domicilio
             db_domicilio = Domicilio(
                 domicilio_completo=empleado_data.domicilio.domicilio_completo,
                 codigo_postal=empleado_data.domicilio.codigo_postal,
                 estatus_id=1
             )
-        
             self.db.add(db_domicilio)
-            self.db.commit()
-            self.db.refresh(db_domicilio)
+            self.db.flush()
 
             # Crear relación empleado-domicilio
             relacion = DomicilioEmpleado(
                 empleado_id=db_empleado.id_empleado,
                 domicilio_id=db_domicilio.id_domicilio
             )
-        
             self.db.add(relacion)
+
+            # Relacionar con el puesto
+            puesto = self.db.query(Puesto).filter(Puesto.id_puesto == empleado_data.puesto_id).first()
+            if puesto:
+                db_empleado.puestos.append(puesto)
+
+            # Guardar todo junto
             self.db.commit()
-            db_empleado.domicilio = db_domicilio
+            self.db.refresh(db_empleado)
 
             return db_empleado
+
+        except Exception as e:
+            self.db.rollback()
+            raise e
+
 
         except SQLAlchemyError as e:
             self.db.rollback()

@@ -6,3 +6,4 @@ from .hotel.hotel_model import Hotel
 from .hotel.tipo_habitacion_model import TipoHabitacion
 from .hotel.caracteristica_model import Caracteristica
 from .hotel.tipo_habitacion_caracteristica_model import TipoHabitacionCaracteristica
+from .empleados import *

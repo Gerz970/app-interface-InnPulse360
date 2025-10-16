@@ -20,10 +20,10 @@ class Settings:
     api_version: str = os.getenv("API_VERSION", "/api/v1")
 
 class DatabaseSettings:
-    server: str = os.getenv("SERVER", "localhost")
-    database: str = os.getenv("DATABASE", "InnPulse360")
-    username: str = os.getenv("USER_DB", "sa")
-    password: str = os.getenv("PASSWORD", "password")
+    server: str = os.getenv("SERVER", "aquamind.database.windows.net")
+    database: str = os.getenv("DATABASE", "DBInnpulse360")
+    username: str = os.getenv("USER_DB", "sAdmin")
+    password: str = os.getenv("PASSWORD", "6aAi7lf16Q")
     port: int = int(os.getenv("PORT_DB", "1433"))
     driver: str = os.getenv("DRIVER", "ODBC Driver 17 for SQL Server")
     trust_server_certificate: bool = os.getenv("TRUST_SERVER_CERTIFICATE", "true") == "true"

@@ -9,6 +9,8 @@ from .routes_tipo_habitacion import router as tipo_habitacion_router
 from .routes_caracteristica import router as caracteristica_router
 from .routes_tipo_habitacion_caracteristica import router as tipo_habitacion_caracteristica_router
 from .routes_email import router as email_router
+from .routes_empleado import api_router as empleado_router
+from .routes_puesto import api_router as puesto_router
 
 api_router = APIRouter()
 
@@ -23,3 +25,5 @@ api_router.include_router(tipo_habitacion_router)
 api_router.include_router(caracteristica_router)
 api_router.include_router(tipo_habitacion_caracteristica_router)
 api_router.include_router(email_router)
+api_router.include_router(empleado_router)
+api_router.include_router(puesto_router)

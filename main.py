@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI 
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import Settings
 from api.v1 import api_router

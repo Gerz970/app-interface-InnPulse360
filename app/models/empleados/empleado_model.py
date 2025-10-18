@@ -24,5 +24,10 @@ class Empleado(Base):
         back_populates="empleados"
     )
 
+    @property
+    def domicilio(self):
+        """Acceso directo al domicilio a través de la tabla intermedia."""
+        return self.domicilio_relacion.domicilio if self.domicilio_relacion else None
+
     def __repr__(self):
         return f"<Empleado(id_empleado={self.id_empleado})>"

@@ -24,7 +24,7 @@ class Empleado(Base):
     rfc = Column(String(13), nullable=False)
     curp = Column(String(18), nullable=False)
 
-    domicilio_relacion = relationship("DomicilioEmpleado", back_populates="empleado", uselist=False)
+    domicilio_relacion = relationship("DomicilioEmpleado", back_populates="empleado", uselist=False, cascade="all, delete-orphan")
 
     puestos = relationship( 
         "Puesto",

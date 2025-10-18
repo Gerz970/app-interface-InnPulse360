@@ -111,7 +111,7 @@ class EmpleadoDAO:
     
     def update(self, empleado_id: int, empleado_update: EmpleadoUpdate) -> Optional[Empleado]:
         try:
-            db_empleado = self.get_by_id(empleado_id)
+            db_empleado = self.db.query(Empleado).filter(Empleado.id_empleado == empleado_id).first()
             if not db_empleado:
                 return None
 

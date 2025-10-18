@@ -2,10 +2,11 @@ from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 from dao.empleado.dao_empleado import EmpleadoDAO
+from dao.empleado.dao_direccion import DireccionDAO
 from schemas.empleado import EmpleadoCreate, EmpleadoUpdate, EmpleadoResponse
 from models.empleados.empleado_model import Empleado
 from models.empleados.domicilio_empleado_model import DomicilioEmpleado
-from schemas.empleado.domicilio_base import DomicilioBase
+from schemas.empleado.domicilio_base import DomicilioUpdate, DomicilioBase
 
 
 class EmpleadoService:
@@ -70,5 +71,27 @@ class EmpleadoService:
             raise Exception(f"Error al eliminar empleado de la base de datos: {str(e)}")
         except Exception as e:
             raise Exception(f"Error inesperado al eliminar empleado: {str(e)}")
+
+    def actualizar_direccion(self, direccion_id: int, direccion_update: DomicilioUpdate) -> Optional[DomicilioBase]:
+        try:
+            update_data = direccion_update.model_dump(exclude_unset=True)
+            if not update_data:
+                raise ValueError("Debe proporcionar al menos un campo para actualizar")
+            # Crear instancia del DAO con la sesión actual
+            direccion_dao = DireccionDAO(self.db)
+
+        # Llamar al método de instancia
+            direccion_actualizado = direccion_dao.update(direccion_id, direccion_update)
+
+            if not direccion_actualizado:
+                return None
+
+            return DomicilioBase.model_validate(direccion_actualizado)
+        except ValueError as e:
+            raise e
+        except SQLAlchemyError as e:
+            raise Exception(f"Error al actualizar direccion en la base de datos: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Error inesperado al actualizar direccion: {str(e)}")
 
    

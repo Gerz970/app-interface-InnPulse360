@@ -6,6 +6,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from core.database_connection import get_database_session
 from schemas.empleado import EmpleadoCreate, EmpleadoUpdate, EmpleadoResponse
 from services.empleado.empleado_service import EmpleadoService
+from schemas.empleado.domicilio_base import DomicilioUpdate
 
 # Seguridad con token tipo Bearer
 security = HTTPBearer()
@@ -107,3 +108,19 @@ def eliminar_empleado(
     if not eliminado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado para eliminar")
     return None
+
+@api_router.put("/editar-direccion/{direccion_id}", response_model=DomicilioUpdate)
+def actualizar_empleado(
+    direccion_id: int,
+    direccion_update: DomicilioUpdate,
+    service: EmpleadoService = Depends(get_empleado_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Actualiza los datos de un empleado existente.
+    Requiere autenticación Bearer.
+    """
+    empleado = service.actualizar_direccion(direccion_id, direccion_update)
+    if not empleado:
+        raise HTTPException(status_code=404, detail="Empleado no encontrado para actualizar")
+    return empleado

@@ -31,9 +31,9 @@ class EmpleadoService:
         except Exception as e:
             raise Exception(f"Error inesperado al obtener empleado: {str(e)}")
     
-    def obtener_todos_los_empleados(self, skip: int = 0, limit: int = 100) -> List[EmpleadoResponse]:
+    def obtener_todos_los_empleados_por_hotel(self, hotel_id: int, skip: int = 0, limit: int = 100) -> List[EmpleadoResponse]:
         try:
-            empleados = self.dao.get_all()
+            empleados = self.dao.get_all(hotel_id)
 
             return empleados
         except SQLAlchemyError as e:

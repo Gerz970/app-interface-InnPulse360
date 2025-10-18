@@ -41,19 +41,20 @@ def crear_empleado(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@api_router.get("/", response_model=List[EmpleadoResponse])
-def obtener_todos_los_empleados(
+@api_router.get("/empleado-hotel/{hotel_id}", response_model=List[EmpleadoResponse])
+def obtener_todos_los_empleados_por_hotel(
+    hotel_id: int,
     skip: int = Query(0, ge=0),
     limit: int = Query(100, le=1000),
     service: EmpleadoService = Depends(get_empleado_service),
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
-    Obtiene todos los empleados registrados.
+    Obtiene todos los empleados registrados por hotel.
     Requiere autenticación Bearer.
     """
     try:
-        empleados= service.obtener_todos_los_empleados(skip, limit)
+        empleados= service.obtener_todos_los_empleados_por_hotel(hotel_id, skip, limit)
         return empleados
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

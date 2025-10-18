@@ -71,7 +71,7 @@ class EmpleadoDAO:
             self.db.rollback()
             raise e
 
-    def get_all(self, skip: int = 0, limit: int = 100):
+    def get_all(self, hotel_id: int, skip: int = 0, limit: int = 100):
         return (
             self.db.query(Empleado)
             .options(
@@ -79,6 +79,7 @@ class EmpleadoDAO:
                 joinedload(Empleado.puestos),
                 joinedload(Empleado.hoteles)
             )
+            .filter(Empleado.hoteles.any(Hotel.id_hotel == hotel_id))
             .order_by(Empleado.id_empleado)
             .offset(skip)
             .limit(limit)
@@ -101,7 +102,6 @@ class EmpleadoDAO:
         if not empleado_db:
             return None
 
-        print("Empleado encontrado:", empleado_db)
         print("Puestos asociados:", empleado_db.puestos)  # 👈 Aquí deberías ver los puestos cargados
 
         # Retornar el objeto convertido a Pydantic

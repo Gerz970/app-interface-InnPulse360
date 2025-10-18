@@ -3,6 +3,7 @@ from .empleado_base import EmpleadoBase
 from typing import Optional, List
 from .domicilio_base import DomicilioBase
 from .puesto_schema import PuestoResponse
+from ..hotel.hotel_response import HotelResponse
 
 class EmpleadoResponse(EmpleadoBase):
     id_empleado: int=Field(
@@ -13,6 +14,7 @@ class EmpleadoResponse(EmpleadoBase):
         
     domicilio: Optional[DomicilioBase] = None
     puestos: Optional[List[PuestoResponse]] = None  
+    hoteles: Optional[List[HotelResponse]] = None
 
     class Config:
         from_attributes = True

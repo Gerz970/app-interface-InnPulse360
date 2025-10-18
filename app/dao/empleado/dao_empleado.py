@@ -8,8 +8,7 @@ from schemas.empleado.empleado_response import EmpleadoResponse
 from models.empleados.domicilio_model import Domicilio
 from models.empleados.domicilio_empleado_model import DomicilioEmpleado
 from models.empleados.puesto_model import Puesto
-from models.empleados.puesto_model import puesto_empleado
-
+from models.hotel.hotel_model import Hotel
 class EmpleadoDAO:
     __status_active__ = 1
     __status_inactive__ = 0
@@ -53,6 +52,10 @@ class EmpleadoDAO:
             if puesto:
                 db_empleado.puestos.append(puesto)
 
+            hotel = self.db.query(Hotel).filter(Hotel.id_hotel == empleado_data.hotel_id).first()
+            if hotel:
+                db_empleado.hoteles.append(hotel)
+
             # Guardar todo junto
             self.db.commit()
             self.db.refresh(db_empleado)
@@ -73,7 +76,8 @@ class EmpleadoDAO:
             self.db.query(Empleado)
             .options(
                 joinedload(Empleado.domicilio_relacion).joinedload(DomicilioEmpleado.domicilio),
-                joinedload(Empleado.puestos)
+                joinedload(Empleado.puestos),
+                joinedload(Empleado.hoteles)
             )
             .order_by(Empleado.id_empleado)
             .offset(skip)
@@ -87,7 +91,8 @@ class EmpleadoDAO:
             self.db.query(Empleado)
             .options(
                 joinedload(Empleado.domicilio_relacion).joinedload(DomicilioEmpleado.domicilio),
-                joinedload(Empleado.puestos)  
+                joinedload(Empleado.puestos),
+                joinedload(Empleado.hoteles)                
             )
             .filter(Empleado.id_empleado == empleado_id)
             .first()

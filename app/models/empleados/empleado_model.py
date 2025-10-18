@@ -18,11 +18,11 @@ class Empleado(Base):
 
     domicilio_relacion = relationship("DomicilioEmpleado", back_populates="empleado", uselist=False)
 
-    puestos = relationship(
+    puestos = relationship( 
         "Puesto",
-        secondary=puesto_empleado,
-        back_populates="empleado"
+        secondary=puesto_empleado,  # ← Usar el objeto directamente
+        back_populates="empleados"
     )
 
     def __repr__(self):
-        return f"<Empleado(id_empleado={self.id_empleado}, empleado='{self.empleado}')>"
+        return f"<Empleado(id_empleado={self.id_empleado})>"

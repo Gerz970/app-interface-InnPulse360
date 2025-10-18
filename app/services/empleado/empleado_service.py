@@ -25,41 +25,7 @@ class EmpleadoService:
     
     def obtener_empleado_por_id(self, empleado_id: int) -> Optional[EmpleadoResponse]:
         try:
-            empleado = (
-                self.db.query(Empleado)
-                .options(
-                    joinedload(Empleado.domicilio_relacion)
-                    .joinedload(DomicilioEmpleado.domicilio)
-                )
-                .filter(Empleado.id_empleado == empleado_id)
-                .first()
-            )
-
-            if not empleado:
-                return None
-
-            domicilio = None
-            if empleado.domicilio_relacion and empleado.domicilio_relacion.domicilio:
-                domicilio_obj = empleado.domicilio_relacion.domicilio
-                domicilio_dict = {
-                    "id_domicilio": domicilio_obj.id_domicilio,
-                    "domicilio_completo": domicilio_obj.domicilio_completo,
-                    "codigo_postal": domicilio_obj.codigo_postal,
-                    "estatus_id": domicilio_obj.estatus_id
-                }
-                domicilio = DomicilioBase.model_validate(domicilio_dict)
-
-            return EmpleadoResponse(
-                id_empleado=empleado.id_empleado,
-                clave_empleado=empleado.clave_empleado,
-                nombre=empleado.nombre,
-                apellido_paterno=empleado.apellido_paterno,
-                apellido_materno=empleado.apellido_materno,
-                fecha_nacimiento=empleado.fecha_nacimiento,
-                rfc=empleado.rfc,
-                curp=empleado.curp,
-                domicilio=domicilio
-            )
+            return(self.dao.get_by_id(empleado_id))
         except SQLAlchemyError as e:
             raise Exception(f"Error al obtener empleado de la base de datos: {str(e)}")
         except Exception as e:
@@ -67,45 +33,9 @@ class EmpleadoService:
     
     def obtener_todos_los_empleados(self, skip: int = 0, limit: int = 100) -> List[EmpleadoResponse]:
         try:
-            empleados = (
-                self.db.query(Empleado)
-                .options(
-                    joinedload(Empleado.domicilio_relacion)
-                    .joinedload(DomicilioEmpleado.domicilio)
-                )
-                .order_by(Empleado.id_empleado)
-                .offset(skip)
-                .limit(limit)
-                .all()
-            )
+            empleados = self.dao.get_all()
 
-            result = []
-            for emp in empleados:
-                domicilio = None
-                if emp.domicilio_relacion and emp.domicilio_relacion.domicilio:
-                    domicilio_obj = emp.domicilio_relacion.domicilio
-                    domicilio_dict = {
-                        "id_domicilio": domicilio_obj.id_domicilio,
-                        "domicilio_completo": domicilio_obj.domicilio_completo,
-                        "codigo_postal": domicilio_obj.codigo_postal,
-                        "estatus_id": domicilio_obj.estatus_id
-                    }
-                    domicilio = DomicilioBase.model_validate(domicilio_dict)
-
-                result.append(
-                    EmpleadoResponse(
-                        id_empleado=emp.id_empleado,
-                        clave_empleado=emp.clave_empleado,
-                        nombre=emp.nombre,
-                        apellido_paterno=emp.apellido_paterno,
-                        apellido_materno=emp.apellido_materno,
-                        fecha_nacimiento=emp.fecha_nacimiento,
-                        rfc=emp.rfc,
-                        curp=emp.curp,
-                        domicilio=domicilio
-                    )
-                )
-            return result
+            return empleados
         except SQLAlchemyError as e:
             raise Exception(f"Error al obtener empleados de la base de datos: {str(e)}")
         except Exception as e:

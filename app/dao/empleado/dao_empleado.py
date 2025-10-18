@@ -1,12 +1,15 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy.exc import SQLAlchemyError
 from models.empleados.empleado_model import Empleado
 from schemas.empleado.empleado_create import EmpleadoCreate
 from schemas.empleado.empleado_update import EmpleadoUpdate
+from schemas.empleado.empleado_response import EmpleadoResponse
 from models.empleados.domicilio_model import Domicilio
 from models.empleados.domicilio_empleado_model import DomicilioEmpleado
 from models.empleados.puesto_model import Puesto
+from models.empleados.puesto_model import puesto_empleado
+
 class EmpleadoDAO:
     __status_active__ = 1
     __status_inactive__ = 0
@@ -69,22 +72,37 @@ class EmpleadoDAO:
         return (
             self.db.query(Empleado)
             .options(
-                joinedload(Empleado.domicilio_relacion).joinedload(DomicilioEmpleado.domicilio)
+                joinedload(Empleado.domicilio_relacion).joinedload(DomicilioEmpleado.domicilio),
+                joinedload(Empleado.puestos)
             )
+            .order_by(Empleado.id_empleado)
             .offset(skip)
             .limit(limit)
             .all()
         )
 
+
     def get_by_id(self, empleado_id: int):
-        return (
+        empleado_db = (
             self.db.query(Empleado)
             .options(
-                joinedload(Empleado.domicilio_relacion).joinedload(DomicilioEmpleado.domicilio)
+                joinedload(Empleado.domicilio_relacion).joinedload(DomicilioEmpleado.domicilio),
+                joinedload(Empleado.puestos)  
             )
             .filter(Empleado.id_empleado == empleado_id)
             .first()
         )
+
+        if not empleado_db:
+            return None
+
+        print("Empleado encontrado:", empleado_db)
+        print("Puestos asociados:", empleado_db.puestos)  # 👈 Aquí deberías ver los puestos cargados
+
+        # Retornar el objeto convertido a Pydantic
+        return EmpleadoResponse.model_validate(empleado_db)
+
+        
     
     def update(self, empleado_id: int, empleado_update: EmpleadoUpdate) -> Optional[Empleado]:
         try:

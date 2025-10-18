@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from .empleado_base import EmpleadoBase
-from typing import Optional
+from typing import Optional, List
 from .domicilio_base import DomicilioBase
 from .puesto_schema import PuestoResponse
 
@@ -10,11 +10,11 @@ class EmpleadoResponse(EmpleadoBase):
         description="ID único del empleado",
         example=1
     )
-    
+        
     domicilio: Optional[DomicilioBase] = None
-    puesto: Optional[PuestoResponse] = None
+    puestos: Optional[List[PuestoResponse]] = None  
 
-    class Config: 
+    class Config:
         from_attributes = True
         json_schema_extra = {
             "example": {
@@ -32,11 +32,13 @@ class EmpleadoResponse(EmpleadoBase):
                     "codigo_postal": "01234",
                     "estatus_id": 1
                 },
-                "puesto": {
-                    "id_puesto" : 1,
-                    "puesto": "Recepcionista",
-                    "descripcion": "Responsable de agendar reservaciones, recibir a clientes, etc.",
-                    "estatus_id": 1
-                }
+                "puestos": [
+                    {
+                        "id_puesto": 1,
+                        "puesto": "Recepcionista",
+                        "descripcion": "Responsable de agendar reservaciones, recibir a clientes, etc.",
+                        "estatus_id": 1
+                    }
+                ]
             }
         }

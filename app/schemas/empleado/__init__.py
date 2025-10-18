@@ -3,5 +3,6 @@ from .empleado_create import EmpleadoCreate
 from .empleado_update import EmpleadoUpdate
 from .empleado_response import EmpleadoResponse
 from .domicilio_base import DomicilioBase
+from .puesto_schema import PuestoResponse
 
-__all__ = ["EmpleadoBase", "EmpleadoCreate", "EmpleadoUpdate", "EmpleadoResponse", "DomicilioBase"]
+__all__ = ["EmpleadoBase", "EmpleadoCreate", "EmpleadoUpdate", "EmpleadoResponse", "DomicilioBase", "PuestoResponse"]

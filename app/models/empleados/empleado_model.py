@@ -24,12 +24,13 @@ class Empleado(Base):
     rfc = Column(String(13), nullable=False)
     curp = Column(String(18), nullable=False)
 
-    domicilio_relacion = relationship("DomicilioEmpleado", back_populates="empleado", uselist=False)
+    domicilio_relacion = relationship("DomicilioEmpleado", back_populates="empleado", cascade="all, delete-orphan")
 
     puestos = relationship( 
         "Puesto",
         secondary=puesto_empleado,  # ← Usar el objeto directamente
-        back_populates="empleados"
+        back_populates="empleados",
+        cascade="all"
     )
 
     hoteles = relationship(

@@ -133,11 +133,10 @@ class EmpleadoDAO:
         Retorna True si se eliminó, False si no existe.
         """
         try:
-            db_empleado = self.get_by_id(empleado_id)
-            if not db_empleado:
-                return False
-
-            self.db.delete(db_empleado)
+            empleado = self.db.query(Empleado).filter(Empleado.id_empleado == empleado_id).first()
+            if not empleado:
+                raise Exception("Empleado no encontrado")
+            self.db.delete(empleado)
             self.db.commit()
             return True
 

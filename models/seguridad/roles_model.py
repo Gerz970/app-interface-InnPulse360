@@ -31,6 +31,12 @@ class Roles(Base):
         secondary=rol_usuario, 
         back_populates="roles"
     )
+    
+    modulos = relationship(
+        "Modulos", 
+        secondary="SEGURIDAD.Tb_modulo_rol", 
+        back_populates="roles"
+    )
 
     def __repr__(self):
         return f"<Roles(id_rol={self.id_rol}, rol='{self.rol}')>"

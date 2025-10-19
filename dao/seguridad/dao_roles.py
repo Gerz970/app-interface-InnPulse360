@@ -95,6 +95,18 @@ class RolesDAO:
         except SQLAlchemyError as e:
             raise e
     
+    def get_by_nombre(self, nombre: str) -> Optional[Roles]:
+        """
+        Alias de get_by_rol para mantener consistencia con otros DAOs
+        
+        Args:
+            nombre (str): Nombre del rol a buscar
+            
+        Returns:
+            Optional[Roles]: Rol encontrado o None si no existe
+        """
+        return self.get_by_rol(nombre)
+    
     def get_all(self, skip: int = 0, limit: int = 100) -> List[Roles]:
         """
         Obtiene una lista de roles con paginación

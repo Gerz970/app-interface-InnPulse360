@@ -13,13 +13,25 @@ from fastapi import HTTPException, status
 from dao.seguridad.dao_usuario import UsuarioDAO
 from dao.seguridad.dao_roles import RolesDAO
 from dao.seguridad.dao_rol_usuario import RolUsuarioDAO
+from dao.seguridad.dao_usuario_asignacion import UsuarioAsignacionDAO
+from dao.cliente.dao_cliente import ClienteDAO
 from models.seguridad.usuario_model import Usuario
 from schemas.seguridad.usuario_create import UsuarioCreate
 from schemas.seguridad.usuario_update import UsuarioUpdate
 from schemas.seguridad.usuario_response import UsuarioResponse
 from schemas.seguridad.auth_schemas import UsuarioLogin, Token, TokenData
 from schemas.seguridad.usuario_rol_schemas import RolSimpleResponse
+from schemas.seguridad.registro_cliente_schemas import (
+    VerificarDisponibilidadRequest,
+    VerificarDisponibilidadResponse,
+    RegistroClienteRequest,
+    RegistroClienteResponse,
+    CambiarPasswordTemporalRequest,
+    CambiarPasswordTemporalResponse,
+    ClienteEncontradoInfo
+)
 from core.config import AuthSettings
+from utils.password_generator import generar_password_temporal, validar_fortaleza_password
 
 # Configuración para encriptación de contraseñas
 # Argon2 es más moderno y seguro que bcrypt, sin limitaciones de longitud
@@ -43,6 +55,8 @@ class UsuarioService:
         self.dao = UsuarioDAO(db_session)
         self.roles_dao = RolesDAO(db_session)
         self.rol_usuario_dao = RolUsuarioDAO(db_session)
+        self.asignacion_dao = UsuarioAsignacionDAO(db_session)
+        self.cliente_dao = ClienteDAO(db_session)
     
     def _hash_password(self, password: str) -> str:
         """
@@ -359,6 +373,29 @@ class UsuarioService:
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
+        # ⚠️ VALIDAR SI TIENE PASSWORD TEMPORAL
+        password_temporal_info = None
+        if usuario.password_temporal:
+            # Verificar si la password temporal ha expirado
+            if usuario.password_expira and datetime.utcnow() > usuario.password_expira:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="La contraseña temporal ha expirado. Por favor, contacte al administrador.",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            
+            # Calcular días restantes
+            dias_restantes = 0
+            if usuario.password_expira:
+                dias_restantes = (usuario.password_expira - datetime.utcnow()).days
+            
+            password_temporal_info = {
+                "requiere_cambio": True,
+                "password_expira": usuario.password_expira.isoformat() if usuario.password_expira else None,
+                "dias_restantes": dias_restantes,
+                "mensaje": f"Debe cambiar su contraseña temporal. Expira en {dias_restantes} días."
+            }
+        
         # Crear token de acceso
         access_token_expires = timedelta(minutes=AuthSettings.access_token_expire_minutes)
         access_token = self._create_access_token(
@@ -370,7 +407,8 @@ class UsuarioService:
             expires_delta=access_token_expires
         )
         
-        return Token(
+        # Preparar respuesta del token
+        token_response = Token(
             access_token=access_token,
             token_type="bearer",
             expires_in=AuthSettings.access_token_expire_minutes * 60,  # En segundos
@@ -380,6 +418,12 @@ class UsuarioService:
                 "correo_electronico": usuario.correo_electronico
             }
         )
+        
+        # Agregar información de password temporal si aplica
+        if password_temporal_info:
+            token_response.user_info["password_temporal"] = password_temporal_info
+        
+        return token_response
     
     def get_current_user(self, token: str) -> Optional[UsuarioResponse]:
         """
@@ -428,4 +472,219 @@ class UsuarioService:
             correo_electronico=usuario.correo_electronico,
             estatus_id=usuario.estatus_id,
             roles=roles
+        )
+    
+    # ==================== MÉTODOS PARA REGISTRO DE CLIENTES ====================
+    
+    def verificar_disponibilidad_registro(
+        self, 
+        request: VerificarDisponibilidadRequest
+    ) -> VerificarDisponibilidadResponse:
+        """
+        Verifica disponibilidad de login y si existe cliente con el correo
+        
+        Args:
+            request (VerificarDisponibilidadRequest): Datos a verificar
+            
+        Returns:
+            VerificarDisponibilidadResponse: Resultado de verificación
+        """
+        # Verificar si el login ya existe
+        login_existe = self.dao.exists_by_login(request.login)
+        login_disponible = not login_existe
+        
+        # Buscar cliente por correo
+        cliente = self.cliente_dao.get_by_correo_electronico(request.correo_electronico)
+        correo_en_clientes = cliente is not None
+        
+        # Preparar info del cliente si existe
+        cliente_info = None
+        if cliente:
+            cliente_info = ClienteEncontradoInfo(
+                id_cliente=cliente.id_cliente,
+                nombre_razon_social=cliente.nombre_razon_social,
+                rfc=cliente.rfc,
+                tipo_persona=cliente.tipo_persona,
+                correo_electronico=cliente.correo_electronico
+            )
+        
+        # Determinar si puede registrar
+        puede_registrar = login_disponible and correo_en_clientes
+        
+        # Generar mensaje
+        if not login_disponible:
+            mensaje = f"El login '{request.login}' ya está en uso"
+        elif not correo_en_clientes:
+            mensaje = f"No se encontró cliente con el correo '{request.correo_electronico}'"
+        else:
+            mensaje = f"Login disponible. Se encontró cliente '{cliente.nombre_razon_social}'"
+        
+        return VerificarDisponibilidadResponse(
+            login_disponible=login_disponible,
+            correo_en_clientes=correo_en_clientes,
+            cliente_encontrado=cliente_info,
+            puede_registrar=puede_registrar,
+            mensaje=mensaje
+        )
+    
+    def registrar_usuario_cliente(
+        self,
+        request: RegistroClienteRequest
+    ) -> RegistroClienteResponse:
+        """
+        Registra un nuevo usuario asociado a un cliente
+        
+        Args:
+            request (RegistroClienteRequest): Datos del registro
+            
+        Returns:
+            RegistroClienteResponse: Resultado del registro
+            
+        Raises:
+            ValueError: Si hay errores de validación
+        """
+        # 1. Verificar que login no exista
+        if self.dao.exists_by_login(request.login):
+            raise ValueError(f"El login '{request.login}' ya está en uso")
+        
+        # 2. Verificar que cliente existe
+        cliente = self.cliente_dao.get_by_id(request.cliente_id)
+        if not cliente:
+            raise ValueError(f"No se encontró cliente con ID {request.cliente_id}")
+        
+        # 3. Verificar que el correo coincide con el del cliente
+        if cliente.correo_electronico != request.correo_electronico:
+            raise ValueError("El correo no coincide con el del cliente")
+        
+        # 4. Generar o validar password
+        password_temporal_generada = False
+        password_temp = None
+        password_expira = None
+        
+        if request.password:
+            # Validar fortaleza de password proporcionada
+            es_valida, mensaje = validar_fortaleza_password(request.password)
+            if not es_valida:
+                raise ValueError(mensaje)
+            password_final = request.password
+        else:
+            # Generar password temporal
+            password_temp = generar_password_temporal()
+            password_final = password_temp
+            password_temporal_generada = True
+            password_expira = datetime.utcnow() + timedelta(days=7)
+        
+        # 5. Crear usuario
+        usuario_data = UsuarioCreate(
+            login=request.login,
+            correo_electronico=request.correo_electronico,
+            password=password_final,
+            estatus_id=1,
+            roles_ids=[]  # Se asignará el rol después
+        )
+        
+        usuario_creado = self.create_usuario(usuario_data)
+        
+        # 6. Actualizar campos de password temporal si aplica
+        if password_temporal_generada:
+            usuario_db = self.dao.get_by_id(usuario_creado.id_usuario)
+            usuario_db.password_temporal = True
+            usuario_db.password_expira = password_expira
+            self.db.commit()
+        
+        # 7. Obtener rol "Cliente"
+        rol_cliente = self.roles_dao.get_by_nombre("Cliente")
+        if not rol_cliente:
+            raise ValueError("No se encontró el rol 'Cliente'. Debe crearse en la base de datos.")
+        
+        # 8. Asignar rol "Cliente"
+        self.rol_usuario_dao.assign_role_to_user(usuario_creado.id_usuario, rol_cliente.id_rol)
+        
+        # 9. Crear asignación usuario-cliente
+        self.asignacion_dao.crear_asignacion_cliente(usuario_creado.id_usuario, cliente.id_cliente)
+        
+        # 10. Enviar email con credenciales si password temporal
+        email_enviado = False
+        if password_temporal_generada:
+            try:
+                # Aquí se integraría con el servicio de email
+                # Por ahora marcamos como no enviado
+                email_enviado = False
+                # TODO: Integrar con EmailService para enviar credenciales
+            except Exception as e:
+                print(f"Error al enviar email: {e}")
+        
+        # 11. Preparar respuesta
+        cliente_info = ClienteEncontradoInfo(
+            id_cliente=cliente.id_cliente,
+            nombre_razon_social=cliente.nombre_razon_social,
+            rfc=cliente.rfc,
+            tipo_persona=cliente.tipo_persona,
+            correo_electronico=cliente.correo_electronico
+        )
+        
+        return RegistroClienteResponse(
+            usuario_creado=True,
+            id_usuario=usuario_creado.id_usuario,
+            login=usuario_creado.login,
+            correo_electronico=usuario_creado.correo_electronico,
+            cliente_asociado=cliente_info,
+            rol_asignado="Cliente",
+            password_temporal_generada=password_temporal_generada,
+            password_temporal=password_temp if password_temporal_generada else None,
+            password_expira=password_expira,
+            email_enviado=email_enviado,
+            mensaje="Usuario creado y asociado al cliente exitosamente"
+        )
+    
+    def cambiar_password_temporal(
+        self,
+        request: CambiarPasswordTemporalRequest
+    ) -> CambiarPasswordTemporalResponse:
+        """
+        Cambia una contraseña temporal por una definitiva
+        
+        Args:
+            request (CambiarPasswordTemporalRequest): Datos del cambio
+            
+        Returns:
+            CambiarPasswordTemporalResponse: Resultado del cambio
+            
+        Raises:
+            ValueError: Si hay errores de validación
+        """
+        # 1. Buscar usuario por login
+        usuario = self.dao.get_by_login(request.login)
+        if not usuario:
+            raise ValueError("Usuario no encontrado")
+        
+        # 2. Verificar que la password actual es correcta
+        if not self._verify_password(request.password_actual, usuario.password):
+            raise ValueError("Contraseña actual incorrecta")
+        
+        # 3. Verificar que tiene password temporal
+        if not usuario.password_temporal:
+            raise ValueError("Este usuario no tiene una contraseña temporal")
+        
+        # 4. Verificar que no ha expirado
+        if usuario.password_expira and datetime.utcnow() > usuario.password_expira:
+            raise ValueError("La contraseña temporal ha expirado. Solicite una nueva.")
+        
+        # 5. Validar nueva password
+        es_valida, mensaje = validar_fortaleza_password(request.password_nueva)
+        if not es_valida:
+            raise ValueError(mensaje)
+        
+        # 6. Actualizar password
+        usuario.password = self._hash_password(request.password_nueva)
+        usuario.password_temporal = False
+        usuario.password_expira = None
+        usuario.fecha_ultimo_cambio_password = datetime.utcnow()
+        
+        self.db.commit()
+        
+        return CambiarPasswordTemporalResponse(
+            success=True,
+            mensaje="Contraseña actualizada exitosamente. Por favor, inicie sesión con su nueva contraseña.",
+            requiere_login=True
         )

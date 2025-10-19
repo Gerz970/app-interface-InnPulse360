@@ -14,6 +14,14 @@ from schemas.seguridad.usuario_create import UsuarioCreate
 from schemas.seguridad.usuario_update import UsuarioUpdate
 from schemas.seguridad.usuario_response import UsuarioResponse
 from schemas.seguridad.auth_schemas import UsuarioLogin, Token
+from schemas.seguridad.registro_cliente_schemas import (
+    VerificarDisponibilidadRequest,
+    VerificarDisponibilidadResponse,
+    RegistroClienteRequest,
+    RegistroClienteResponse,
+    CambiarPasswordTemporalRequest,
+    CambiarPasswordTemporalResponse
+)
 
 # Configurar router
 router = APIRouter(
@@ -258,3 +266,82 @@ async def update_my_profile(
             detail="Usuario no encontrado"
         )
     return usuario
+
+
+# ==================== ENDPOINTS PARA REGISTRO DE CLIENTES ====================
+
+@router.post("/verificar-disponibilidad", response_model=VerificarDisponibilidadResponse)
+async def verificar_disponibilidad_registro(
+    request_data: VerificarDisponibilidadRequest,
+    db: Session = Depends(get_database_session)
+):
+    """
+    Verificar disponibilidad de login y correo para registro de cliente
+    
+    - **login**: Login a verificar
+    - **correo_electronico**: Correo a verificar
+    """
+    try:
+        usuario_service = UsuarioService(db)
+        return usuario_service.verificar_disponibilidad_registro(request_data)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al verificar disponibilidad: {str(e)}"
+        )
+
+
+@router.post("/registro-cliente", response_model=RegistroClienteResponse, status_code=status.HTTP_201_CREATED)
+async def registrar_usuario_cliente(
+    request_data: RegistroClienteRequest,
+    db: Session = Depends(get_database_session)
+):
+    """
+    Registrar un nuevo usuario asociado a un cliente
+    
+    - **login**: Login del usuario
+    - **correo_electronico**: Correo (debe coincidir con el del cliente)
+    - **password**: Contraseña (opcional, se genera si no se envía)
+    - **cliente_id**: ID del cliente a asociar
+    """
+    try:
+        usuario_service = UsuarioService(db)
+        return usuario_service.registrar_usuario_cliente(request_data)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al registrar usuario-cliente: {str(e)}"
+        )
+
+
+@router.post("/cambiar-password-temporal", response_model=CambiarPasswordTemporalResponse)
+async def cambiar_password_temporal(
+    request_data: CambiarPasswordTemporalRequest,
+    db: Session = Depends(get_database_session)
+):
+    """
+    Cambiar una contraseña temporal por una definitiva
+    
+    - **login**: Login del usuario
+    - **password_actual**: Password temporal actual
+    - **password_nueva**: Nueva contraseña
+    - **password_confirmacion**: Confirmación de nueva contraseña
+    """
+    try:
+        usuario_service = UsuarioService(db)
+        return usuario_service.cambiar_password_temporal(request_data)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al cambiar contraseña temporal: {str(e)}"
+        )

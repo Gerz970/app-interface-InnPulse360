@@ -192,6 +192,23 @@ class ClienteDAO:
         except SQLAlchemyError as e:
             raise e
     
+    def get_by_correo_electronico(self, correo: str) -> Optional[Cliente]:
+        """
+        Obtiene un cliente por su correo electrónico
+        
+        Args:
+            correo (str): Correo electrónico del cliente
+            
+        Returns:
+            Optional[Cliente]: Cliente encontrado o None si no existe
+        """
+        try:
+            if not correo:
+                return None
+            return self.db.query(Cliente).filter(Cliente.correo_electronico == correo.strip()).first()
+        except SQLAlchemyError as e:
+            raise e
+    
     def get_by_tipo_persona(self, tipo_persona: int, skip: int = 0, limit: int = 100) -> List[Cliente]:
         """
         Obtiene clientes filtrados por tipo de persona

@@ -29,5 +29,7 @@ class Hotel(Base):
         back_populates="hoteles"
     )
 
+    pisos = relationship("Piso", back_populates="hotel", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Hotel(id_hotel={self.id_hotel}, nombre='{self.nombre}')>"

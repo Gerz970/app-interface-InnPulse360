@@ -6,7 +6,8 @@ Incluye CRUD completo y gestión de asociaciones con roles
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-
+from core.config import Settings
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from core.database_connection import get_database_session
 from services.seguridad.modulos_service import ModulosService
 from schemas.seguridad.modulos_create import ModulosCreate
@@ -17,6 +18,13 @@ from schemas.seguridad.modulo_rol_schemas import (
     ModuloRolAsignacionMultiple, 
     ModuloRolResponse
 )
+
+# Crear instancia de settings
+settings = Settings()
+
+# Configurar seguridad
+security = HTTPBearer()
+
 
 # Configurar router
 router = APIRouter(
@@ -46,7 +54,8 @@ def get_modulos_service(
 @router.post("/", response_model=ModulosResponse, status_code=status.HTTP_201_CREATED)
 def crear_modulo(
     modulo_data: ModulosCreate,
-    modulo_service: ModulosService = Depends(get_modulos_service)
+    modulo_service: ModulosService = Depends(get_modulos_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Crear un nuevo módulo
@@ -65,7 +74,8 @@ def obtener_modulos(
     skip: int = Query(0, ge=0, description="Número de registros a omitir"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros"),
     activos_only: bool = Query(False, description="Solo obtener módulos activos"),
-    modulo_service: ModulosService = Depends(get_modulos_service)
+    modulo_service: ModulosService = Depends(get_modulos_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Obtener todos los módulos con paginación
@@ -80,7 +90,8 @@ def obtener_modulos(
 @router.get("/{id_modulo}", response_model=ModulosResponse)
 def obtener_modulo_por_id(
     id_modulo: int,
-    modulo_service: ModulosService = Depends(get_modulos_service)
+    modulo_service: ModulosService = Depends(get_modulos_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Obtener un módulo por su ID
@@ -94,7 +105,8 @@ def obtener_modulo_por_id(
 def actualizar_modulo(
     id_modulo: int,
     modulo_data: ModulosUpdate,
-    modulo_service: ModulosService = Depends(get_modulos_service)
+    modulo_service: ModulosService = Depends(get_modulos_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Actualizar un módulo existente
@@ -108,7 +120,8 @@ def actualizar_modulo(
 @router.delete("/{id_modulo}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_modulo(
     id_modulo: int,
-    modulo_service: ModulosService = Depends(get_modulos_service)
+    modulo_service: ModulosService = Depends(get_modulos_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Eliminar un módulo (soft delete)
@@ -124,7 +137,8 @@ def eliminar_modulo(
 @router.post("/asignar-rol", status_code=status.HTTP_200_OK)
 def asignar_modulo_a_rol(
     asignacion: ModuloRolAsignacion,
-    modulo_service: ModulosService = Depends(get_modulos_service)
+    modulo_service: ModulosService = Depends(get_modulos_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Asignar un módulo a un rol
@@ -140,7 +154,8 @@ def asignar_modulo_a_rol(
 def desasignar_modulo_de_rol(
     modulo_id: int = Query(..., description="ID del módulo"),
     rol_id: int = Query(..., description="ID del rol"),
-    modulo_service: ModulosService = Depends(get_modulos_service)
+    modulo_service: ModulosService = Depends(get_modulos_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Desasignar un módulo de un rol
@@ -155,7 +170,8 @@ def desasignar_modulo_de_rol(
 @router.post("/asignar-multiples", status_code=status.HTTP_200_OK)
 def asignar_multiples_modulos_a_rol(
     asignacion: ModuloRolAsignacionMultiple,
-    modulo_service: ModulosService = Depends(get_modulos_service)
+    modulo_service: ModulosService = Depends(get_modulos_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Asignar múltiples módulos a un rol
@@ -170,7 +186,8 @@ def asignar_multiples_modulos_a_rol(
 @router.get("/por-rol/{rol_id}", response_model=List[ModulosResponse])
 def obtener_modulos_por_rol(
     rol_id: int,
-    modulo_service: ModulosService = Depends(get_modulos_service)
+    modulo_service: ModulosService = Depends(get_modulos_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Obtener todos los módulos asignados a un rol
@@ -185,7 +202,8 @@ def obtener_modulos_por_rol(
 @router.get("/buscar/nombre/{nombre}", response_model=Optional[ModulosResponse])
 def buscar_modulo_por_nombre(
     nombre: str,
-    modulo_service: ModulosService = Depends(get_modulos_service)
+    modulo_service: ModulosService = Depends(get_modulos_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Buscar un módulo por su nombre
@@ -212,7 +230,8 @@ def buscar_modulo_por_nombre(
 def obtener_modulos_activos(
     skip: int = Query(0, ge=0, description="Número de registros a omitir"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros"),
-    modulo_service: ModulosService = Depends(get_modulos_service)
+    modulo_service: ModulosService = Depends(get_modulos_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
     Obtener solo los módulos activos

@@ -233,7 +233,7 @@
             {% endif %}
             
             <div class="main-content">
-                {{contenido_principal}}
+                {{contenido_principal|safe}}
             </div>
             
             {% if boton_url and boton_texto %}
@@ -244,14 +244,14 @@
             
             {% if info_adicional %}
             <div class="info-box">
-                {{info_adicional}}
+                {{info_adicional|safe}}
             </div>
             {% endif %}
             
             {% if contenido_secundario %}
             <div class="divider"></div>
             <div class="main-content">
-                {{contenido_secundario}}
+                {{contenido_secundario|safe}}
             </div>
             {% endif %}
         </div>

@@ -84,6 +84,8 @@ class RegistroClienteRequest(BaseModel):
 class RegistroClienteResponse(BaseModel):
     """
     Respuesta de registro de usuario-cliente
+    SEGURIDAD: La contraseña temporal NO se devuelve en la respuesta, 
+    se envía directamente al correo electrónico del cliente
     """
     usuario_creado: bool = Field(..., description="Si el usuario fue creado")
     id_usuario: int = Field(..., description="ID del usuario creado")
@@ -94,10 +96,8 @@ class RegistroClienteResponse(BaseModel):
     cliente_asociado: ClienteEncontradoInfo = Field(..., description="Cliente asociado")
     rol_asignado: str = Field(..., description="Rol asignado (Cliente)")
     
-    # Password temporal
+    # Password temporal - Solo indicadores, NO se devuelve la contraseña
     password_temporal_generada: bool = Field(..., description="Si se generó password temporal")
-    password_temporal: Optional[str] = Field(None, description="Password temporal (solo si se generó)")
-    password_expira: Optional[datetime] = Field(None, description="Fecha de expiración")
     email_enviado: bool = Field(..., description="Si se envió email con credenciales")
     
     mensaje: str = Field(..., description="Mensaje de éxito")
@@ -118,10 +118,8 @@ class RegistroClienteResponse(BaseModel):
                 },
                 "rol_asignado": "Cliente",
                 "password_temporal_generada": True,
-                "password_temporal": "A1b2C3d4E5f6",
-                "password_expira": "2024-01-22T10:30:00",
                 "email_enviado": True,
-                "mensaje": "Usuario creado y asociado al cliente exitosamente"
+                "mensaje": "Usuario creado exitosamente. Se han enviado las credenciales al correo electrónico proporcionado."
             }
         }
 

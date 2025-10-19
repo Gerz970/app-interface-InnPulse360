@@ -603,16 +603,14 @@ class UsuarioService:
         # 9. Crear asignación usuario-cliente
         self.asignacion_dao.crear_asignacion_cliente(usuario_creado.id_usuario, cliente.id_cliente)
         
-        # 10. Enviar email con credenciales si password temporal
-        email_enviado = False
-        if password_temporal_generada:
-            try:
-                # Aquí se integraría con el servicio de email
-                # Por ahora marcamos como no enviado
-                email_enviado = False
-                # TODO: Integrar con EmailService para enviar credenciales
-            except Exception as e:
-                print(f"Error al enviar email: {e}")
+        # 10. Enviar credenciales por email si se generó password temporal
+        email_enviado = self._enviar_credenciales_email(
+            password_temporal_generada=password_temporal_generada,
+            cliente=cliente,
+            login=request.login,
+            password_temp=password_temp,
+            password_expira=password_expira
+        )
         
         # 11. Preparar respuesta
         cliente_info = ClienteEncontradoInfo(
@@ -623,6 +621,17 @@ class UsuarioService:
             correo_electronico=cliente.correo_electronico
         )
         
+        # Preparar mensaje basado en el resultado
+        if password_temporal_generada:
+            if email_enviado:
+                mensaje = "Usuario creado exitosamente. Se han enviado las credenciales al correo electrónico proporcionado."
+            else:
+                mensaje = "Usuario creado exitosamente. ADVERTENCIA: No se pudo enviar el email con las credenciales. Contacte al administrador."
+        else:
+            mensaje = "Usuario creado y asociado al cliente exitosamente."
+        
+        # IMPORTANTE: NO devolver password_temporal ni password_expira por seguridad
+        # Las credenciales se envían ÚNICAMENTE por email
         return RegistroClienteResponse(
             usuario_creado=True,
             id_usuario=usuario_creado.id_usuario,
@@ -631,10 +640,8 @@ class UsuarioService:
             cliente_asociado=cliente_info,
             rol_asignado="Cliente",
             password_temporal_generada=password_temporal_generada,
-            password_temporal=password_temp if password_temporal_generada else None,
-            password_expira=password_expira,
             email_enviado=email_enviado,
-            mensaje="Usuario creado y asociado al cliente exitosamente"
+            mensaje=mensaje
         )
     
     def cambiar_password_temporal(
@@ -688,3 +695,64 @@ class UsuarioService:
             mensaje="Contraseña actualizada exitosamente. Por favor, inicie sesión con su nueva contraseña.",
             requiere_login=True
         )
+    
+    def _enviar_credenciales_email(self, password_temporal_generada: bool, cliente, 
+                                   login: str, password_temp: str, password_expira) -> bool:
+        """
+        Envía las credenciales de acceso por email al cliente
+        
+        Este método está separado para mantener el código del registro más limpio
+        y enfocado en su responsabilidad principal.
+        
+        Args:
+            password_temporal_generada: Si se generó una contraseña temporal
+            cliente: Objeto del cliente con sus datos
+            login: Usuario del sistema
+            password_temp: Contraseña temporal generada
+            password_expira: Fecha de expiración de la contraseña
+            
+        Returns:
+            bool: True si el email se envió correctamente, False si falló
+        """
+        # Si no se generó password temporal, no enviar email
+        if not password_temporal_generada:
+            return False
+        
+        try:
+            from services.email.email_service import EmailService
+            
+            # 1. Formatear la fecha de expiración
+            fecha_expira_formateada = self._formatear_fecha_expiracion(password_expira)
+            
+            # 2. Enviar email con las credenciales
+            email_service = EmailService()
+            email_result = email_service.send_client_credentials_email_sync(
+                destinatario_email=cliente.correo_electronico,
+                destinatario_nombre=cliente.nombre_razon_social,
+                login=login,
+                password_temporal=password_temp,
+                fecha_expiracion=fecha_expira_formateada
+            )
+            
+            # 3. Retornar el resultado
+            return email_result.success
+            
+        except Exception as e:
+            # Si falla el envío, loguear pero NO fallar el registro
+            print(f"Error al enviar email con credenciales: {e}")
+            return False
+    
+    def _formatear_fecha_expiracion(self, password_expira) -> str:
+        """
+        Formatea la fecha de expiración en formato legible en español
+        
+        Args:
+            password_expira: datetime o None
+            
+        Returns:
+            str: Fecha formateada o 'No definida'
+        """
+        if not password_expira:
+            return 'No definida'
+        
+        return password_expira.strftime('%d/%m/%Y a las %H:%M')

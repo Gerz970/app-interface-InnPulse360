@@ -33,7 +33,7 @@ class EmailSettings:
     from_name: str = os.getenv("FROM_NAME", "InnPulse360")
     
     # Configuración de plantillas
-    template_dir: str = os.getenv("EMAIL_TEMPLATE_DIR", "app/core/email_templates")
+    template_dir: str = os.getenv("EMAIL_TEMPLATE_DIR", "core/email_templates")
     default_language: str = os.getenv("DEFAULT_LANGUAGE", "es")
     
     # Configuración de cola de emails (para procesamiento asíncrono)

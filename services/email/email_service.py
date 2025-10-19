@@ -192,6 +192,199 @@ class EmailService:
                 error=str(e)
             )
     
+    async def send_client_credentials_email(self, destinatario_email: str, destinatario_nombre: str,
+                                           login: str, password_temporal: str, 
+                                           fecha_expiracion: str) -> EmailResponseBasic:
+        """
+        Envía email con credenciales de acceso para nuevo cliente (ASYNC)
+        
+        Args:
+            destinatario_email (str): Email del destinatario
+            destinatario_nombre (str): Nombre del destinatario
+            login (str): Login/usuario del cliente
+            password_temporal (str): Contraseña temporal generada
+            fecha_expiracion (str): Fecha de expiración formateada
+            
+        Returns:
+            EmailResponseBasic: Resultado del envío
+        """
+        try:
+            # Generar HTML usando la plantilla de credenciales
+            html_content = self.template_service.create_client_credentials_email(
+                destinatario_nombre, login, password_temporal, fecha_expiracion
+            )
+            
+            # Crear datos del email
+            email_data = EmailSendBasic(
+                destinatario_email=destinatario_email,
+                asunto="Bienvenido a InnPulse 360 - Tus Credenciales de Acceso",
+                contenido_html=html_content
+            )
+            
+            return await self.send_email(email_data)
+            
+        except Exception as e:
+            logger.error(f"Error al enviar email de credenciales: {str(e)}")
+            return EmailResponseBasic(
+                success=False,
+                message="Error al procesar email de credenciales",
+                fecha_envio=None,
+                error=str(e)
+            )
+    
+    def send_client_credentials_email_sync(self, destinatario_email: str, destinatario_nombre: str,
+                                           login: str, password_temporal: str, 
+                                           fecha_expiracion: str) -> EmailResponseBasic:
+        """
+        Envía email con credenciales de acceso para nuevo cliente (MÉTODO SÍNCRONO)
+        
+        Este método es completamente síncrono y puede ser llamado desde cualquier parte
+        del código sin preocuparse por event loops o async/await.
+        
+        Args:
+            destinatario_email: Email del destinatario
+            destinatario_nombre: Nombre del destinatario  
+            login: Usuario para acceder al sistema
+            password_temporal: Contraseña temporal generada
+            fecha_expiracion: Fecha de expiración (formato: "DD/MM/YYYY a las HH:MM")
+            
+        Returns:
+            EmailResponseBasic con el resultado del envío
+        """
+        try:
+            # 1. Generar contenido HTML del email
+            html_content = self._generar_html_credenciales(
+                destinatario_nombre, login, password_temporal, fecha_expiracion
+            )
+            
+            # 2. Crear y enviar el mensaje SMTP
+            return self._enviar_email_smtp(
+                destinatario_email=destinatario_email,
+                asunto="Bienvenido a InnPulse 360 - Tus Credenciales de Acceso",
+                contenido_html=html_content
+            )
+            
+        except Exception as e:
+            logger.error(f"Error al enviar credenciales: {str(e)}")
+            return EmailResponseBasic(
+                success=False,
+                message="Error al enviar email",
+                fecha_envio=None,
+                error=str(e)
+            )
+    
+    def _generar_html_credenciales(self, destinatario_nombre: str, login: str,
+                                   password_temporal: str, fecha_expiracion: str) -> str:
+        """
+        Genera el contenido HTML para email de credenciales
+        
+        Args:
+            destinatario_nombre: Nombre del destinatario
+            login: Usuario del sistema
+            password_temporal: Contraseña temporal
+            fecha_expiracion: Fecha de expiración formateada
+            
+        Returns:
+            HTML del email
+        """
+        return self.template_service.create_client_credentials_email(
+            destinatario_nombre, login, password_temporal, fecha_expiracion
+        )
+    
+    def _enviar_email_smtp(self, destinatario_email: str, asunto: str, 
+                          contenido_html: str) -> EmailResponseBasic:
+        """
+        Envía un email via SMTP de forma síncrona
+        
+        Args:
+            destinatario_email: Email del destinatario
+            asunto: Asunto del email
+            contenido_html: Contenido HTML del mensaje
+            
+        Returns:
+            EmailResponseBasic con el resultado
+        """
+        try:
+            # 1. Validar configuración SMTP
+            if not self._validate_config():
+                return EmailResponseBasic(
+                    success=False,
+                    message="Configuración de email incompleta",
+                    fecha_envio=None,
+                    error="Faltan credenciales SMTP"
+                )
+            
+            # 2. Crear mensaje MIME
+            message = self._crear_mensaje_mime(destinatario_email, asunto, contenido_html)
+            
+            # 3. Enviar por SMTP
+            self._send_smtp(message, destinatario_email)
+            
+            # 4. Retornar éxito
+            logger.info(f"Email enviado exitosamente a {destinatario_email}")
+            return EmailResponseBasic(
+                success=True,
+                message="Email enviado exitosamente",
+                fecha_envio=datetime.utcnow(),
+                error=None
+            )
+            
+        except smtplib.SMTPAuthenticationError as e:
+            error_msg = "Error de autenticación SMTP"
+            logger.error(f"{error_msg}: {str(e)}")
+            return EmailResponseBasic(
+                success=False,
+                message=error_msg,
+                fecha_envio=None,
+                error=str(e)
+            )
+            
+        except smtplib.SMTPException as e:
+            error_msg = f"Error SMTP: {str(e)}"
+            logger.error(error_msg)
+            return EmailResponseBasic(
+                success=False,
+                message="Error al enviar email",
+                fecha_envio=None,
+                error=error_msg
+            )
+            
+        except Exception as e:
+            error_msg = f"Error inesperado: {str(e)}"
+            logger.error(error_msg)
+            return EmailResponseBasic(
+                success=False,
+                message="Error al procesar email",
+                fecha_envio=None,
+                error=error_msg
+            )
+    
+    def _crear_mensaje_mime(self, destinatario_email: str, asunto: str, 
+                           contenido_html: str) -> MIMEMultipart:
+        """
+        Crea un mensaje MIME con el contenido del email
+        
+        Args:
+            destinatario_email: Email del destinatario
+            asunto: Asunto del mensaje
+            contenido_html: Contenido HTML (ya viene con la plantilla base aplicada)
+            
+        Returns:
+            MIMEMultipart con el mensaje completo
+        """
+        # Crear mensaje multipart
+        message = MIMEMultipart("alternative")
+        message["Subject"] = asunto
+        message["From"] = f"{self.from_name} <{self.from_email}>"
+        message["To"] = destinatario_email
+        
+        # El HTML ya viene procesado con la plantilla base desde template_service
+        # No necesitamos volver a aplicar la plantilla aquí
+        html_part = MIMEText(contenido_html, "html", "utf-8")
+        message.attach(html_part)
+        
+        return message
+    
     async def send_password_reset_email(self, destinatario_email: str, destinatario_nombre: str,
                                       reset_token: str) -> EmailResponseBasic:
         """

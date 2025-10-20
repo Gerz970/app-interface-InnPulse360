@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, SmallInteger, ForeignKey
 from sqlalchemy.orm import relationship
 from core.base import Base
+from .habitacionArea_model import HabitacionArea
 
 class Piso(Base):
     __tablename__ = "Tb_piso"
@@ -15,6 +16,7 @@ class Piso(Base):
 
     # Relación con Hotel (muchos pisos pertenecen a un hotel)
     hotel = relationship("Hotel", back_populates="pisos")
+    habitaciones = relationship("HabitacionArea", back_populates="piso", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Piso(id_piso={self.id_piso}, nombre='{self.nombre}')>"

@@ -13,7 +13,7 @@ from .routes_empleado import api_router as empleado_router
 from .routes_puesto import api_router as puesto_router
 from .routes_piso import router as piso_router
 from .routes_habitacion_area import router as habitacion_area_router
-
+from .routes_periodicidad import router as periodicidad_router
 api_router = APIRouter()
 
 
@@ -31,3 +31,4 @@ api_router.include_router(empleado_router)
 api_router.include_router(puesto_router)
 api_router.include_router(piso_router)
 api_router.include_router(habitacion_area_router)
+api_router.include_router(periodicidad_router)

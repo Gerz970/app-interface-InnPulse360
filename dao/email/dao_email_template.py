@@ -44,19 +44,11 @@ class EmailTemplateDAO:
             if template_data.es_default:
                 self._unset_default_for_type(template_data.tipo_template)
             
-            db_template = EmailTemplate(
-                nombre=template_data.nombre,
-                descripcion=template_data.descripcion,
-                tipo_template=template_data.tipo_template,
-                asunto=template_data.asunto,
-                contenido_html=template_data.contenido_html,
-                contenido_texto=template_data.contenido_texto,
-                variables_disponibles=template_data.variables_disponibles,
-                idioma=template_data.idioma,
-                es_default=template_data.es_default,
-                activo=True,
-                estatus_id=1
-            )
+            # Crear template usando **data
+            template_dict = template_data.model_dump()
+            template_dict['activo'] = True
+            template_dict['estatus_id'] = 1
+            db_template = EmailTemplate(**template_dict)
             
             self.db.add(db_template)
             self.db.commit()

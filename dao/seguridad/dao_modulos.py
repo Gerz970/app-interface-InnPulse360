@@ -43,14 +43,8 @@ class ModulosDAO:
             SQLAlchemyError: Si hay un error en la base de datos
         """
         try:
-            # Crear objeto Módulo desde los datos del schema
-            db_modulo = Modulos(
-                nombre=modulo_data.nombre,
-                descripcion=modulo_data.descripcion,
-                icono=modulo_data.icono,
-                ruta=modulo_data.ruta,
-                id_estatus=modulo_data.id_estatus
-            )
+            # Crear objeto Módulo usando **data
+            db_modulo = Modulos(**modulo_data.model_dump())
             
             # Agregar a la sesión y hacer commit
             self.db.add(db_modulo)

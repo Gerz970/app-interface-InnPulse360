@@ -39,25 +39,27 @@ class EmailLogDAO:
             EmailLog: Log creado
         """
         try:
-            db_log = EmailLog(
-                destinatario_email=str(email_data.destinatario_email),
-                destinatario_nombre=email_data.destinatario_nombre,
-                remitente_email=kwargs.get('remitente_email', ''),
-                remitente_nombre=kwargs.get('remitente_nombre', ''),
-                asunto=email_data.asunto,
-                contenido_html=email_data.contenido_html,
-                contenido_texto=email_data.contenido_texto,
-                id_template=email_data.id_template,
-                tipo_email=email_data.tipo_email,
-                variables_utilizadas=email_data.variables,
-                estado_envio=EmailStatus.PENDING,
-                ip_origen=kwargs.get('ip_origen'),
-                user_agent=kwargs.get('user_agent'),
-                usuario_id=kwargs.get('usuario_id'),
-                proveedor_email=kwargs.get('proveedor_email', 'smtp'),
-                max_intentos=kwargs.get('max_intentos', 3),
-                estatus_id=1
-            )
+            # Crear log usando **data
+            log_data = {
+                'destinatario_email': str(email_data.destinatario_email),
+                'destinatario_nombre': email_data.destinatario_nombre,
+                'remitente_email': kwargs.get('remitente_email', ''),
+                'remitente_nombre': kwargs.get('remitente_nombre', ''),
+                'asunto': email_data.asunto,
+                'contenido_html': email_data.contenido_html,
+                'contenido_texto': email_data.contenido_texto,
+                'id_template': email_data.id_template,
+                'tipo_email': email_data.tipo_email,
+                'variables_utilizadas': email_data.variables,
+                'estado_envio': EmailStatus.PENDING,
+                'ip_origen': kwargs.get('ip_origen'),
+                'user_agent': kwargs.get('user_agent'),
+                'usuario_id': kwargs.get('usuario_id'),
+                'proveedor_email': kwargs.get('proveedor_email', 'smtp'),
+                'max_intentos': kwargs.get('max_intentos', 3),
+                'estatus_id': 1
+            }
+            db_log = EmailLog(**log_data)
             
             self.db.add(db_log)
             self.db.commit()

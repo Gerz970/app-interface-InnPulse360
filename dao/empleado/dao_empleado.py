@@ -18,25 +18,16 @@ class EmpleadoDAO:
 
     def create(self, empleado_data: EmpleadoCreate) -> Empleado:
         try:
-            # Crear empleado
-            db_empleado = Empleado(
-                clave_empleado=empleado_data.clave_empleado,
-                nombre=empleado_data.nombre,
-                apellido_paterno=empleado_data.apellido_paterno,
-                apellido_materno=empleado_data.apellido_materno,
-                fecha_nacimiento=empleado_data.fecha_nacimiento,
-                rfc=empleado_data.rfc,
-                curp=empleado_data.curp,
-            )
+            # Crear empleado usando **data
+            empleado_dict = empleado_data.model_dump(exclude={'domicilio'})
+            db_empleado = Empleado(**empleado_dict)
             self.db.add(db_empleado)
             self.db.flush()  # obtiene el ID antes del commit
 
-            # Crear domicilio
-            db_domicilio = Domicilio(
-                domicilio_completo=empleado_data.domicilio.domicilio_completo,
-                codigo_postal=empleado_data.domicilio.codigo_postal,
-                estatus_id=1
-            )
+            # Crear domicilio usando **data
+            domicilio_dict = empleado_data.domicilio.model_dump()
+            domicilio_dict['estatus_id'] = 1
+            db_domicilio = Domicilio(**domicilio_dict)
             self.db.add(db_domicilio)
             self.db.flush()
 

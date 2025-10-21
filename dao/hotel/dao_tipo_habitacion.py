@@ -22,13 +22,11 @@ class TipoHabitacionDAO:
     
     def create(self, tipo_habitacion_data: TipoHabitacionCreate) -> TipoHabitacion:
         try:
-            db_tipo_habitacion = TipoHabitacion(
-                clave=tipo_habitacion_data.clave,
-                tipo_habitacion=tipo_habitacion_data.tipo_habitacion,
-                estatus_id=tipo_habitacion_data.estatus_id or self.__status_active__,
-                precio_unitario=Decimal(tipo_habitacion_data.precio_unitario),
-                periodicidad_id=tipo_habitacion_data.periodicidad_id
-            )
+            # Crear objeto TipoHabitacion usando **data
+            tipo_habitacion_dict = tipo_habitacion_data.model_dump()
+            tipo_habitacion_dict['estatus_id'] = tipo_habitacion_dict.get('estatus_id') or self.__status_active__
+            tipo_habitacion_dict['precio_unitario'] = Decimal(tipo_habitacion_dict['precio_unitario'])
+            db_tipo_habitacion = TipoHabitacion(**tipo_habitacion_dict)
             self.db.add(db_tipo_habitacion)
             self.db.commit()
             self.db.refresh(db_tipo_habitacion)

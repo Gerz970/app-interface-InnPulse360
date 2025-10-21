@@ -43,13 +43,10 @@ class UsuarioDAO:
             SQLAlchemyError: Si hay un error en la base de datos
         """
         try:
-            # Crear objeto Usuario desde los datos del schema
-            db_usuario = Usuario(
-                login=usuario_data.login,
-                correo_electronico=usuario_data.correo_electronico,
-                password=usuario_data.password,  # Ya viene encriptada del servicio
-                estatus_id=usuario_data.estatus_id or self.__status_active__
-            )
+            # Crear objeto Usuario usando **data
+            usuario_dict = usuario_data.model_dump()
+            usuario_dict['estatus_id'] = usuario_dict.get('estatus_id') or self.__status_active__
+            db_usuario = Usuario(**usuario_dict)
             
             # Agregar a la sesión y hacer commit
             self.db.add(db_usuario)

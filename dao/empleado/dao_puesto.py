@@ -13,11 +13,8 @@ class PuestoDAO:
     
     def create(self, puesto_data: PuestoCreate) -> Puesto:
         try:
-            db_puesto = Puesto(
-                puesto = puesto_data.puesto,
-                descripcion = puesto_data.descripcion,
-                estatus_id = puesto_data.estatus_id
-            )
+            # Crear puesto usando **data
+            db_puesto = Puesto(**puesto_data.model_dump())
 
             self.db.add(db_puesto)
             self.db.commit()

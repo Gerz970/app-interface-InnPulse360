@@ -21,7 +21,8 @@ class PeriodicidadService:
         return periodicidad
 
     def crear(self, data: PeriodicidadCreate):
-        nueva = Periodicidad(**data.dict())
+        # Crear usando **data
+        nueva = Periodicidad(**data.model_dump())
         return self.dao.create(nueva)
 
     def actualizar(self, id_periodicidad: int, data: PeriodicidadUpdate):
@@ -31,7 +32,8 @@ class PeriodicidadService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Periodicidad no encontrada"
             )
-        return self.dao.update(db_periodicidad, data.dict(exclude_unset=True))
+        # Actualizar usando **data
+        return self.dao.update(db_periodicidad, data.model_dump(exclude_unset=True))
 
     def eliminar(self, id_periodicidad: int):
         db_periodicidad = self.dao.get_by_id(id_periodicidad)

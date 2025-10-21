@@ -42,12 +42,10 @@ class EstadoDAO:
             SQLAlchemyError: Si hay un error en la base de datos
         """
         try:
-            # Crear objeto Estado desde los datos del schema
-            db_estado = Estado(
-                id_pais=estado_data.id_pais,
-                nombre=estado_data.nombre,
-                id_estatus=estado_data.id_estatus or self.__status_active__
-            )
+            # Crear objeto Estado usando **data
+            estado_data_dict = estado_data.model_dump()
+            estado_data_dict['id_estatus'] = estado_data_dict.get('id_estatus') or self.__status_active__
+            db_estado = Estado(**estado_data_dict)
             
             # Agregar a la sesión y hacer commit
             self.db.add(db_estado)

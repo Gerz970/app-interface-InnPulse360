@@ -42,11 +42,10 @@ class PaisDAO:
             SQLAlchemyError: Si hay un error en la base de datos
         """
         try:
-            # Crear objeto País desde los datos del schema
-            db_pais = Pais(
-                nombre=pais_data.nombre,
-                id_estatus=pais_data.id_estatus or self.__status_active__
-            )
+            # Crear objeto País usando **data
+            pais_data_dict = pais_data.model_dump()
+            pais_data_dict['id_estatus'] = pais_data_dict.get('id_estatus') or self.__status_active__
+            db_pais = Pais(**pais_data_dict)
             
             # Agregar a la sesión y hacer commit
             self.db.add(db_pais)

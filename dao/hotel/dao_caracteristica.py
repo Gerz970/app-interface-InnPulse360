@@ -39,11 +39,8 @@ class CaracteristicaDAO:
             SQLAlchemyError: Si hay un error en la base de datos
         """
         try:
-            # Crear objeto Caracteristica desde los datos del schema
-            db_caracteristica = Caracteristica(
-                caracteristica=caracteristica_data.caracteristica,
-                descripcion=caracteristica_data.descripcion
-            )
+            # Crear objeto Caracteristica usando **data
+            db_caracteristica = Caracteristica(**caracteristica_data.model_dump())
             
             # Agregar a la sesión y hacer commit
             self.db.add(db_caracteristica)

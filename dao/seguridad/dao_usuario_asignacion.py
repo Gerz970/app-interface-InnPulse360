@@ -42,13 +42,10 @@ class UsuarioAsignacionDAO:
             SQLAlchemyError: Si hay un error en la base de datos
         """
         try:
-            db_asignacion = UsuarioAsignacion(
-                usuario_id=asignacion_data.usuario_id,
-                empleado_id=asignacion_data.empleado_id,
-                cliente_id=asignacion_data.cliente_id,
-                tipo_asignacion=asignacion_data.tipo_asignacion,
-                estatus=1
-            )
+            # Crear asignación usando **data
+            asignacion_dict = asignacion_data.model_dump()
+            asignacion_dict['estatus'] = 1
+            db_asignacion = UsuarioAsignacion(**asignacion_dict)
             
             self.db.add(db_asignacion)
             self.db.commit()
@@ -71,6 +68,7 @@ class UsuarioAsignacionDAO:
         Returns:
             UsuarioAsignacion: Asignación creada
         """
+        # Crear datos de asignación
         asignacion_data = UsuarioAsignacionCreate(
             usuario_id=usuario_id,
             empleado_id=None,
@@ -90,6 +88,7 @@ class UsuarioAsignacionDAO:
         Returns:
             UsuarioAsignacion: Asignación creada
         """
+        # Crear datos de asignación
         asignacion_data = UsuarioAsignacionCreate(
             usuario_id=usuario_id,
             empleado_id=empleado_id,

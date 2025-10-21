@@ -43,18 +43,10 @@ class HotelDAO:
             SQLAlchemyError: Si hay un error en la base de datos
         """
         try:
-            # Crear objeto Hotel desde los datos del schema
-            db_hotel = Hotel(
-                nombre=hotel_data.nombre,
-                direccion=hotel_data.direccion,
-                id_pais=hotel_data.id_pais,
-                id_estado=hotel_data.id_estado,
-                codigo_postal=hotel_data.codigo_postal,
-                telefono=hotel_data.telefono,
-                email_contacto=hotel_data.email_contacto,
-                numero_estrellas=hotel_data.numero_estrellas,
-                estatus_id=self.__status_active__
-            )
+            # Crear objeto Hotel usando **data
+            hotel_data_dict = hotel_data.model_dump()
+            hotel_data_dict['estatus_id'] = self.__status_active__
+            db_hotel = Hotel(**hotel_data_dict)
             
             # Agregar a la sesión
             self.db.add(db_hotel)

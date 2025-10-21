@@ -43,12 +43,10 @@ class RolesDAO:
             SQLAlchemyError: Si hay un error en la base de datos
         """
         try:
-            # Crear objeto Roles desde los datos del schema
-            db_roles = Roles(
-                rol=roles_data.rol,
-                descripcion=roles_data.descripcion,
-                estatus_id=roles_data.estatus_id or self.__status_active__
-            )
+            # Crear objeto Roles usando **data
+            roles_dict = roles_data.model_dump()
+            roles_dict['estatus_id'] = roles_dict.get('estatus_id') or self.__status_active__
+            db_roles = Roles(**roles_dict)
             
             # Agregar a la sesión y hacer commit
             self.db.add(db_roles)

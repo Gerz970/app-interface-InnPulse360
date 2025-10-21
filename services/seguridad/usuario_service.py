@@ -501,7 +501,7 @@ class UsuarioService:
         # Preparar datos del cliente si existe
         cliente_data = None
         if cliente:
-            # Crear datos completos del cliente usando **data - ¡Automático!
+            # Crear datos completos del cliente usando **data
             cliente_data = ClienteFormularioData.model_validate(cliente)
         
         # Determinar si puede registrar

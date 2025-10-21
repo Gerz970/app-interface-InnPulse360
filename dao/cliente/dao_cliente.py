@@ -44,23 +44,8 @@ class ClienteDAO:
             SQLAlchemyError: Si hay un error en la base de datos
         """
         try:
-            # Crear objeto Cliente desde los datos del schema
-            db_cliente = Cliente(
-                tipo_persona=cliente_data.tipo_persona,
-                documento_identificacion=cliente_data.documento_identificacion,
-                nombre_razon_social=cliente_data.nombre_razon_social,
-                apellido_paterno=cliente_data.apellido_paterno,
-                apellido_materno=cliente_data.apellido_materno,
-                rfc=cliente_data.rfc,
-                curp=cliente_data.curp,
-                telefono=cliente_data.telefono,
-                direccion=cliente_data.direccion,
-                pais_id=cliente_data.pais_id,
-                estado_id=cliente_data.estado_id,
-                correo_electronico=cliente_data.correo_electronico,
-                representante=cliente_data.representante,
-                id_estatus=cliente_data.id_estatus
-            )
+            # Crear objeto Cliente usando **data - ¡Automático!
+            db_cliente = Cliente(**cliente_data.model_dump())
             
             # Agregar a la sesión y hacer commit
             self.db.add(db_cliente)
@@ -252,8 +237,8 @@ class ClienteDAO:
             if not db_cliente:
                 return None
             
-            # Actualizar solo los campos proporcionados
-            update_data = cliente_data.dict(exclude_unset=True)
+            # Actualizar usando **data - ¡Automático!
+            update_data = cliente_data.model_dump(exclude_unset=True)
             for field, value in update_data.items():
                 setattr(db_cliente, field, value)
             

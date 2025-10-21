@@ -30,6 +30,7 @@ from schemas.seguridad.registro_cliente_schemas import (
     CambiarPasswordTemporalResponse,
     ClienteEncontradoInfo
 )
+from schemas.cliente.cliente_formulario import ClienteFormularioData
 from core.config import AuthSettings
 from utils.password_generator import generar_password_temporal, validar_fortaleza_password
 
@@ -497,16 +498,11 @@ class UsuarioService:
         cliente = self.cliente_dao.get_by_correo_electronico(request.correo_electronico)
         correo_en_clientes = cliente is not None
         
-        # Preparar info del cliente si existe
-        cliente_info = None
+        # Preparar datos del cliente si existe
+        cliente_data = None
         if cliente:
-            cliente_info = ClienteEncontradoInfo(
-                id_cliente=cliente.id_cliente,
-                nombre_razon_social=cliente.nombre_razon_social,
-                rfc=cliente.rfc,
-                tipo_persona=cliente.tipo_persona,
-                correo_electronico=cliente.correo_electronico
-            )
+            # Crear datos completos del cliente usando **data - ¡Automático!
+            cliente_data = ClienteFormularioData.model_validate(cliente)
         
         # Determinar si puede registrar
         puede_registrar = login_disponible and correo_en_clientes
@@ -522,7 +518,7 @@ class UsuarioService:
         return VerificarDisponibilidadResponse(
             login_disponible=login_disponible,
             correo_en_clientes=correo_en_clientes,
-            cliente_encontrado=cliente_info,
+            cliente=cliente_data,
             puede_registrar=puede_registrar,
             mensaje=mensaje
         )

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
+from schemas.cliente.cliente_formulario import ClienteFormularioData
 
 
 class VerificarDisponibilidadRequest(BaseModel):
@@ -21,7 +22,7 @@ class VerificarDisponibilidadRequest(BaseModel):
 
 class ClienteEncontradoInfo(BaseModel):
     """
-    Información del cliente encontrado
+    Información básica del cliente encontrado
     """
     id_cliente: int
     nombre_razon_social: str
@@ -39,7 +40,7 @@ class VerificarDisponibilidadResponse(BaseModel):
     """
     login_disponible: bool = Field(..., description="Si el login está disponible")
     correo_en_clientes: bool = Field(..., description="Si el correo existe en tabla clientes")
-    cliente_encontrado: Optional[ClienteEncontradoInfo] = Field(None, description="Datos del cliente si existe")
+    cliente: Optional[ClienteFormularioData] = Field(None, description="Datos completos del cliente si existe")
     puede_registrar: bool = Field(..., description="Si puede continuar con el registro")
     mensaje: str = Field(..., description="Mensaje descriptivo")
     
@@ -48,12 +49,21 @@ class VerificarDisponibilidadResponse(BaseModel):
             "example": {
                 "login_disponible": True,
                 "correo_en_clientes": True,
-                "cliente_encontrado": {
-                    "id_cliente": 123,
-                    "nombre_razon_social": "Juan Pérez González",
-                    "rfc": "PEGJ800101XXX",
+                "cliente": {
                     "tipo_persona": 1,
-                    "correo_electronico": "cliente@email.com"
+                    "documento_identificacion": 123456789,
+                    "nombre_razon_social": "Juan Pérez González",
+                    "apellido_paterno": "Pérez",
+                    "apellido_materno": "González",
+                    "rfc": "PEGJ800101XXX",
+                    "curp": "PEGJ800101HDFRRN01",
+                    "telefono": "5512345678",
+                    "direccion": "Calle Principal 123, Col. Centro",
+                    "pais_id": 1,
+                    "estado_id": 15,
+                    "correo_electronico": "cliente@email.com",
+                    "representante": "Juan Pérez",
+                    "id_estatus": 1
                 },
                 "puede_registrar": True,
                 "mensaje": "Login disponible. Se encontró cliente con este correo."

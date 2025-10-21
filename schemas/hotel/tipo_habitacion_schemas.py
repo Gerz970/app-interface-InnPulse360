@@ -1,107 +1,35 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, condecimal
 from typing import Optional, List
+from decimal import Decimal
+from ..catalogos.periodicidad_schemas import PeriodicidadResponse
 
+Precio = condecimal(max_digits=6, decimal_places=2, ge=0, le=9999.99)
 
-class TipoHabitacionCreate(BaseModel):
-    """
-    Schema para crear un nuevo tipo de habitación
-    """
-    clave: Optional[str] = Field(
-        None,
-        max_length=10,
-        description="Clave del tipo de habitación",
-        example="SGL"
-    )
-    
-    tipo_habitacion: str = Field(
-        ...,
-        min_length=1,
-        max_length=25,
-        description="Nombre del tipo de habitación",
-        example="Individual"
-    )
-    
-    estatus_id: Optional[int] = Field(
-        1,  # Valor por defecto activo
-        gt=0,
-        description="Estatus del tipo de habitación (1=Activo por defecto)",
-        example=1
-    )
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "clave": "SGL",
-                "tipo_habitacion": "Individual",
-                "estatus_id": 1
-            }
-        }
+class TipoHabitacionBase(BaseModel):
+    """Schema base con campos comunes"""
+    clave: str = Field(..., max_length=10, description="Clave del tipo de habitación")
+    precio_unitario: Decimal = Field(..., ge=0, decimal_places=2, description="Precio unitario")
+    periodicidad_id: int = Field(..., gt=0, description="ID de periodicidad")
+    tipo_habitacion: str = Field(..., max_length=25, description="Nombre del tipo de habitación")
+    estatus_id: int = Field(..., gt=0, description="ID de estatus")
 
+class TipoHabitacionCreate(TipoHabitacionBase):
+    """Schema para crear un tipo de habitación"""
+    pass
 
+# Schema para actualizar
 class TipoHabitacionUpdate(BaseModel):
-    """
-    Schema para actualizar un tipo de habitación existente
-    """
-    clave: Optional[str] = Field(
-        None,
-        max_length=10,
-        description="Clave del tipo de habitación",
-        example="SGL"
-    )
-    
-    tipo_habitacion: Optional[str] = Field(
-        None,
-        min_length=1,
-        max_length=25,
-        description="Nombre del tipo de habitación",
-        example="Individual Actualizado"
-    )
-    
-    estatus_id: Optional[int] = Field(
-        None,
-        gt=0,
-        description="Estatus del tipo de habitación",
-        example=1
-    )
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "clave": "SGL",
-                "tipo_habitacion": "Individual Actualizado",
-                "estatus_id": 1
-            }
-        }
+    clave: Optional[str] = Field(None, max_length=10, example="SGL")
+    tipo_habitacion: Optional[str] = Field(None, min_length=1, max_length=25, example="Individual Actualizado")
+    precio_unitario: Optional[Decimal] = Field(None, gt=0, example=1200.50)
+    periodicidad_id: Optional[int] = Field(None, example=2)
+    estatus_id: Optional[int] = Field(None, gt=0, example=1)
 
-
-class TipoHabitacionResponse(BaseModel):
-    """
-    Schema para respuesta de tipo de habitación
-    """
-    id_tipoHabitacion: int = Field(
-        ...,
-        description="ID único del tipo de habitación",
-        example=1
-    )
-    
-    clave: Optional[str] = Field(
-        None,
-        description="Clave del tipo de habitación",
-        example="SGL"
-    )
-    
-    tipo_habitacion: str = Field(
-        ...,
-        description="Nombre del tipo de habitación",
-        example="Individual"
-    )
-    
-    estatus_id: int = Field(
-        ...,
-        description="Estatus del tipo de habitación",
-        example=1
-    )
-    
+# Schema de respuesta
+class TipoHabitacionResponse(TipoHabitacionBase):
+    """Schema para respuestas (incluye el ID)"""
+    id_tipoHabitacion: int = Field(..., description="ID único del tipo de habitación")
+    periodicidad: Optional[PeriodicidadResponse]
     class Config:
         from_attributes = True
         json_schema_extra = {
@@ -109,6 +37,13 @@ class TipoHabitacionResponse(BaseModel):
                 "id_tipoHabitacion": 1,
                 "clave": "SGL",
                 "tipo_habitacion": "Individual",
+                "precio_unitario": 1000,
+                "periodicidad": {
+                "id_periodicidad": 1,
+                "periodicidad": "Temporal",
+                "descripcion": "Tiempo indefinido",
+                "id_estatus": 1
+                },
                 "estatus_id": 1
             }
         }

@@ -19,7 +19,7 @@ class Puesto(Base):
     descripcion = Column(String(250), nullable=False)
     estatus_id = Column(Integer(), nullable=False)
 
-    empleado = relationship(
+    empleados = relationship(
         "Empleado", 
         secondary=puesto_empleado,
         back_populates="puestos"

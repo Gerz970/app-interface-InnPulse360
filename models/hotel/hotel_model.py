@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, SmallInteger
 from core.base import Base
-
+from sqlalchemy.orm import relationship
+from ..empleados.empleado_model import empresa_empleado
 
 class Hotel(Base):
     """
@@ -22,5 +23,13 @@ class Hotel(Base):
     numero_estrellas = Column(SmallInteger, nullable=True)
     estatus_id = Column(SmallInteger, nullable=False)
     
+    empleados = relationship(
+        "Empleado",
+        secondary=empresa_empleado,
+        back_populates="hoteles"
+    )
+
+    pisos = relationship("Piso", back_populates="hotel", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<Hotel(id_hotel={self.id_hotel}, nombre='{self.nombre}')>"

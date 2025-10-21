@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Numeric, ForeignKey
 from sqlalchemy.orm import relationship
 from core.base import Base
 
@@ -14,10 +14,14 @@ class TipoHabitacion(Base):
     # Campos de la tabla
     id_tipoHabitacion = Column(Integer, primary_key=True, autoincrement=True, index=True)
     clave = Column(String(10), nullable=True)
+    precio_unitario = Column(Numeric(18, 2), nullable=False, comment="Precio unitario")
+    periodicidad_id = Column(Integer, ForeignKey("CATALOGOS.Tb_periodicidad.id_periodicidad"), nullable=False)
     tipo_habitacion = Column(String(25), nullable=False)
     estatus_id = Column(Integer, nullable=False)
     
     # Relaciones
+    periodicidad = relationship("Periodicidad")  # carga la relación con Periodicidad
+
     caracteristicas = relationship(
         "Caracteristica", 
         secondary="HOTEL.Tb_tipoHabitacionCaracteristicas",

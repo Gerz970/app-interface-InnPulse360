@@ -1,4 +1,5 @@
 from .empleado_base import EmpleadoBase
+from pydantic import Field
 
 class EmpleadoCreate(EmpleadoBase):
     """
@@ -6,6 +7,18 @@ class EmpleadoCreate(EmpleadoBase):
     Hereda todos los campos de EmpleadoBase
     No incluye el ID porque se genera automáticamente
     """
+
+    puesto_id: int=Field(
+        ...,
+        description= "ID del puesto del empleado",
+        example= 1
+    )
+
+    hotel_id: int=Field(
+        ...,
+        description= "ID del hotel al que pertenece el empleado",
+        example= 1
+    )
 
     class Config: 
         json_schema_extra = {
@@ -20,6 +33,8 @@ class EmpleadoCreate(EmpleadoBase):
                 "domicilio": {
                     "domicilio_completo": "Calle Los Olivos #123, Col. Centro, CDMX",
                     "codigo_postal": "06000"
-                }
+                },
+                "puesto_id" : 1,
+                "hotel_id": 1
             }
         }

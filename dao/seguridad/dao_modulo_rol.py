@@ -259,3 +259,33 @@ class ModuloRolDAO:
             
         except SQLAlchemyError as e:
             raise e
+    
+    def get_modulos_por_usuario(self, usuario_id: int) -> List[Modulos]:
+        """
+        Obtiene todos los módulos a los que un usuario tiene acceso basándose en sus roles
+        
+        Args:
+            usuario_id (int): ID del usuario
+            
+        Returns:
+            List[Modulos]: Lista de módulos únicos a los que el usuario tiene acceso
+        """
+        try:
+            from models.seguridad.roles_model import rol_usuario
+            
+            # Query que obtiene módulos únicos del usuario a través de sus roles
+            query = (
+                self.db.query(Modulos)
+                .join(modulo_rol, Modulos.id_modulo == modulo_rol.c.modulo_id)
+                .join(rol_usuario, modulo_rol.c.rol_id == rol_usuario.c.rol_id)
+                .filter(rol_usuario.c.usuario_id == usuario_id)
+                .filter(Modulos.id_estatus == 1)  # Solo módulos activos
+                .distinct()  # Evitar duplicados
+                .order_by(Modulos.id_modulo.asc())
+                .all()
+            )
+            
+            return query
+            
+        except SQLAlchemyError as e:
+            raise e

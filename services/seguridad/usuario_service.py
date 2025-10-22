@@ -14,12 +14,13 @@ from dao.seguridad.dao_usuario import UsuarioDAO
 from dao.seguridad.dao_roles import RolesDAO
 from dao.seguridad.dao_rol_usuario import RolUsuarioDAO
 from dao.seguridad.dao_usuario_asignacion import UsuarioAsignacionDAO
+from dao.seguridad.dao_modulo_rol import ModuloRolDAO
 from dao.cliente.dao_cliente import ClienteDAO
 from models.seguridad.usuario_model import Usuario
 from schemas.seguridad.usuario_create import UsuarioCreate
 from schemas.seguridad.usuario_update import UsuarioUpdate
 from schemas.seguridad.usuario_response import UsuarioResponse
-from schemas.seguridad.auth_schemas import UsuarioLogin, Token, TokenData
+from schemas.seguridad.auth_schemas import UsuarioLogin, Token, TokenData, ModuloSimpleResponse, PasswordTemporalInfo, UsuarioInfo
 from schemas.seguridad.usuario_rol_schemas import RolSimpleResponse
 from schemas.seguridad.registro_cliente_schemas import (
     VerificarDisponibilidadRequest,
@@ -58,6 +59,7 @@ class UsuarioService:
         self.rol_usuario_dao = RolUsuarioDAO(db_session)
         self.asignacion_dao = UsuarioAsignacionDAO(db_session)
         self.cliente_dao = ClienteDAO(db_session)
+        self.modulo_rol_dao = ModuloRolDAO(db_session)
     
     def _hash_password(self, password: str) -> str:
         """
@@ -346,13 +348,13 @@ class UsuarioService:
     
     def login(self, login_data: UsuarioLogin) -> Token:
         """
-        Realiza el login del usuario y retorna un token JWT
+        Realiza el login del usuario y retorna un token JWT con módulos accesibles
         
         Args:
             login_data (UsuarioLogin): Datos de login
             
         Returns:
-            Token: Token JWT con información del usuario
+            Token: Token JWT con información del usuario, módulos y estado de contraseña
             
         Raises:
             HTTPException: Si las credenciales son inválidas
@@ -389,13 +391,30 @@ class UsuarioService:
             dias_restantes = 0
             if usuario.password_expira:
                 dias_restantes = (usuario.password_expira - datetime.utcnow()).days
+                # Si es negativo, establecer en 0
+                if dias_restantes < 0:
+                    dias_restantes = 0
             
-            password_temporal_info = {
-                "requiere_cambio": True,
-                "password_expira": usuario.password_expira.isoformat() if usuario.password_expira else None,
-                "dias_restantes": dias_restantes,
-                "mensaje": f"Debe cambiar su contraseña temporal. Expira en {dias_restantes} días."
-            }
+            # Crear objeto estructurado de información de password temporal
+            password_temporal_info = PasswordTemporalInfo(
+                requiere_cambio=True,
+                password_expira=usuario.password_expira.isoformat() if usuario.password_expira else None,
+                dias_restantes=dias_restantes,
+                mensaje=f"Debe cambiar su contraseña temporal. Expira en {dias_restantes} días."
+            )
+        
+        # 📦 OBTENER MÓDULOS A LOS QUE EL USUARIO TIENE ACCESO
+        modulos_db = self.modulo_rol_dao.get_modulos_por_usuario(usuario.id_usuario)
+        modulos_response = [
+            ModuloSimpleResponse(
+                id_modulo=modulo.id_modulo,
+                nombre=modulo.nombre,
+                descripcion=modulo.descripcion,
+                icono=modulo.icono,
+                ruta=modulo.ruta
+            )
+            for modulo in modulos_db
+        ]
         
         # Crear token de acceso
         access_token_expires = timedelta(minutes=AuthSettings.access_token_expire_minutes)
@@ -408,21 +427,22 @@ class UsuarioService:
             expires_delta=access_token_expires
         )
         
-        # Preparar respuesta del token
+        # Preparar información básica del usuario
+        usuario_info = UsuarioInfo(
+            id_usuario=usuario.id_usuario,
+            login=usuario.login,
+            correo_electronico=usuario.correo_electronico
+        )
+        
+        # Preparar respuesta del token (estructura limpia sin redundancia)
         token_response = Token(
             access_token=access_token,
             token_type="bearer",
             expires_in=AuthSettings.access_token_expire_minutes * 60,  # En segundos
-            user_info={
-                "id_usuario": usuario.id_usuario,
-                "login": usuario.login,
-                "correo_electronico": usuario.correo_electronico
-            }
+            usuario=usuario_info,
+            modulos=modulos_response,
+            password_temporal_info=password_temporal_info
         )
-        
-        # Agregar información de password temporal si aplica
-        if password_temporal_info:
-            token_response.user_info["password_temporal"] = password_temporal_info
         
         return token_response
     

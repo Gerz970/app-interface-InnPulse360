@@ -87,6 +87,7 @@ class ClienteDAO:
         try:
             return (
                 self.db.query(Cliente)
+                .order_by(Cliente.id_cliente)
                 .offset(skip)
                 .limit(limit)
                 .all()
@@ -108,6 +109,7 @@ class ClienteDAO:
         try:
             return (
                 self.db.query(Cliente)
+                .order_by(Cliente.id_cliente)
                 .filter(Cliente.id_estatus == self.__status_active__)
                 .offset(skip)
                 .limit(limit)
@@ -209,6 +211,7 @@ class ClienteDAO:
         try:
             return (
                 self.db.query(Cliente)
+                .order_by(Cliente.id_cliente)
                 .filter(Cliente.tipo_persona == tipo_persona)
                 .offset(skip)
                 .limit(limit)

@@ -2,6 +2,9 @@ from pydantic import BaseModel, Field
 from decimal import Decimal
 from pydantic import BaseModel
 from .tipo_cargo_schema import TipoCargoResponse
+from typing import List, Optional
+from .servicios_transporte_schema import ServicioTransporteResponse
+
 class CargoBase(BaseModel):
     reservacion_id: int = Field(
         ...,
@@ -41,6 +44,7 @@ class CargoCreate(CargoBase):
 class CargoResponse(CargoBase):
     id_cargo: int
     tipo_cargo : TipoCargoResponse
+    servicios_transporte: Optional[List[ServicioTransporteResponse]] = None
 
     class Config:
         from_attributes = True

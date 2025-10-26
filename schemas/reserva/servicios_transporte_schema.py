@@ -2,6 +2,7 @@
 from pydantic import BaseModel
 from datetime import date, time
 from typing import Optional
+from ..empleado.empleado_response import EmpleadoResponse
 
 class ServicioTransporteBase(BaseModel):
     destino: str
@@ -31,6 +32,7 @@ class ServicioTransporteUpdate(BaseModel):
 
 class ServicioTransporteResponse(ServicioTransporteBase):
     id_servicio_transporte: int
+    empleado: EmpleadoResponse
 
     class Config:
         from_attributes = True

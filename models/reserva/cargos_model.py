@@ -15,3 +15,10 @@ class Cargo(Base):
 
     tipo_cargo = relationship("TipoCargo", back_populates="cargos",uselist=False)
     reservacion = relationship("Reservacion", back_populates="cargos")
+
+    servicios_transporte = relationship(
+        "ServicioTransporte",
+        secondary="RESERVA.Tb_cargo_servicio_transporte",
+        back_populates="cargo"
+    )
+

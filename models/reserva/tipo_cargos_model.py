@@ -11,3 +11,5 @@ class TipoCargo(Base):
     descripcion = Column(String(100), nullable=False)
     id_estatus = Column(Integer, nullable=False)
 
+    cargos = relationship("Cargo", back_populates="tipo_cargo")
+

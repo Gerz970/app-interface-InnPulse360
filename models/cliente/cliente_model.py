@@ -22,3 +22,6 @@ class Cliente(Base):
     representante = Column(String(100))
     id_estatus = Column(Integer)
 
+    reservacion = relationship("Reservacion", back_populates="cliente")
+
+

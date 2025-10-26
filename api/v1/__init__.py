@@ -18,6 +18,7 @@ from .routes_habitacion_area import router as habitacion_area_router
 from .routes_periodicidad import router as periodicidad_router
 from .routes_tipo_cargo import router as tipo_cargo_router
 from .routes_cargo import router as cargo_router
+from .routes_reservacion import router as reservacion_router
 
 api_router = APIRouter()
 
@@ -40,3 +41,4 @@ api_router.include_router(habitacion_area_router)
 api_router.include_router(periodicidad_router)
 api_router.include_router(tipo_cargo_router)
 api_router.include_router(cargo_router)
+api_router.include_router(reservacion_router)

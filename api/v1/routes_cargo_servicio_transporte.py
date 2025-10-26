@@ -23,9 +23,9 @@ def obtener_por_cargo(cargo_id: int, db: Session = Depends(get_database_session)
 def obtener_por_servicio(servicio_id: int, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
     return service.obtener_por_servicio(db, servicio_id)
 
-@router.post("/", response_model=CargoServicioTransporteResponse)
-def crear_relacion(data: CargoServicioTransporteCreate, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
-    return service.crear_relacion(db, data)
+# @router.post("/", response_model=CargoServicioTransporteResponse)
+#def crear_relacion(data: CargoServicioTransporteCreate, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
+#    return service.crear_relacion(db, data)
 
 @router.delete("/", response_model=CargoServicioTransporteResponse)
 def eliminar_relacion(cargo_id: int, servicio_id: int, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):

@@ -33,6 +33,13 @@ def listar_cargos(id_reserva: int, credentials: HTTPAuthorizationCredentials = D
 def crear_cargo(cargo_data: CargoCreate, credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_database_session)):
     return service.crear(db, cargo_data)
 
+@router.post("/create-cargo-servicio-transporte", response_model=CargoResponse, status_code=status.HTTP_201_CREATED)
+def crear_cargo_con_servicio(cargo_data: CargoCreate, servicio_transporte_id:int, credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_database_session)):
+    try:
+        nuevo_cargo = service.crearCargoConServicio(db, cargo_data, servicio_transporte_id)
+        return nuevo_cargo
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.put("/{id_cargo}", response_model=CargoResponse)
 def actualizar_cargo(id_cargo: int, cargo_data: CargoCreate, credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_database_session)):

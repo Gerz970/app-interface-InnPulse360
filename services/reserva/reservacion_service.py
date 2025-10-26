@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 from dao.reserva.dao_reservacion import ReservacionDao
 from models.reserva.reservaciones_model import Reservacion
 from schemas.reserva.reservacion_schema import ReservacionCreate, ReservacionUpdate
+from datetime import datetime
+from typing import List
 
 class ReservacionService:
     def __init__(self):
@@ -12,6 +14,15 @@ class ReservacionService:
 
     def obtener_reservacion(self, db: Session, id_reservacion: int):
         return self.dao.get_by_id(db, id_reservacion)
+
+    def obtener_por_cliente(self, db: Session, id_cliente: int) -> List[Reservacion]:
+        return self.dao.get_by_cliente(db, id_cliente)
+
+    def obtener_por_habitacion(self, db: Session, habitacion_area_id: int) -> List[Reservacion]:
+        return self.dao.get_by_habitacion(db, habitacion_area_id)
+
+    def obtener_por_fechas(self, db: Session, fecha_inicio: datetime, fecha_fin: datetime) -> List[Reservacion]:
+        return self.dao.get_by_fechas(db, fecha_inicio, fecha_fin)
 
     def crear_reservacion(self, db: Session, reservacion_data: ReservacionCreate):
         nueva_reservacion = Reservacion(**reservacion_data.dict())

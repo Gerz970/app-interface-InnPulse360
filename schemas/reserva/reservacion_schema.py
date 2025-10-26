@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from ..hotel.habitacion_area_schema import HabitacionAreaResponse
+from ..cliente.cliente_response import ClienteResponse
 
 class ReservacionBase(BaseModel):
     cliente_id: int
@@ -22,6 +24,8 @@ class ReservacionUpdate(BaseModel):
 
 class ReservacionResponse(ReservacionBase):
     id_reservacion: int
+    habitacion: HabitacionAreaResponse
+    cliente: ClienteResponse
 
     class Config:
         from_attributes = True

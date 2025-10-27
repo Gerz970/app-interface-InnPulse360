@@ -22,3 +22,18 @@ class IncidenciaService:
 
     def eliminar(self, db: Session, id_incidencia: int):
         return self.dao.eliminar(db, id_incidencia)
+    
+    def obtener_por_estatus(self, db: Session, id_estatus: int):
+        return db.query(Incidencia).filter(Incidencia.id_estatus == id_estatus).all()
+
+    def obtener_por_habitacion(self, db: Session, habitacion_area_id: int):
+        return (db.query(Incidencia)
+                .filter(Incidencia.habitacion_area_id == habitacion_area_id)
+                .order_by(Incidencia.id_estatus)
+                .all())
+
+    def obtener_por_fecha(self, db: Session, fecha_inicio):
+        return (db.query(Incidencia)
+                .filter(Incidencia.fecha_incidencia >= fecha_inicio)
+                .order_by(Incidencia.id_estatus)
+                .all())

@@ -39,7 +39,7 @@ class Empleado(Base):
     )
 
     servicios_transporte = relationship("ServicioTransporte", back_populates="empleado")
-
+    mantenimientos = relationship("Mantenimiento", back_populates="empleado")
     @property
     def domicilio(self):
         """Acceso directo al domicilio a través de la tabla intermedia."""

@@ -15,4 +15,8 @@ class Incidencia(Base):
 
     habitacion_area = relationship("HabitacionArea", back_populates="incidencias")
 
-
+    mantenimientos = relationship(
+        "Mantenimiento",
+        secondary="MANTENIMIENTO.Tb_incidencia_mantenimiento",
+        back_populates="incidencias"
+    )

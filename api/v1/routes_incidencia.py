@@ -69,3 +69,13 @@ def listar_por_fecha(fecha_inicio: datetime, db: Session = Depends(get_database_
     if not incidencias:
         raise HTTPException(status_code=404, detail="No se encontraron incidencias a partir de esa fecha")
     return incidencias
+
+@router.post("/{id_incidencia}/mantenimientos/{id_mantenimiento}")
+def asociar_incidencia_mantenimiento(
+    id_incidencia: int,
+    id_mantenimiento: int,
+    db: Session = Depends(get_database_session),
+    credentials: HTTPAuthorizationCredentials = Depends(security)):
+    from services.mantenimiento.incidencia_mantenimiento_service import IncidenciaMantenimientoService
+    service_relacion = IncidenciaMantenimientoService()
+    return service_relacion.asociar_incidencia_mantenimiento(db, id_incidencia, id_mantenimiento)

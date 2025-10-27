@@ -14,5 +14,11 @@ class Mantenimiento(Base):
 
     empleado = relationship("Empleado", back_populates="mantenimientos")
 
+    incidencias = relationship(
+        "Incidencia",
+        secondary="MANTENIMIENTO.Tb_incidencia_mantenimiento",
+        back_populates="mantenimientos"
+    )
+    
     def __repr__(self):
         return f"<Mantenimiento(id_mantenimiento={self.id_mantenimiento}, descripcion='{self.descripcion}')>"

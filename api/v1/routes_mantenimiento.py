@@ -23,8 +23,8 @@ def obtener_mantenimiento(id_mantenimiento: int, db: Session = Depends(get_datab
     return mantenimiento
 
 @router.post("/", response_model=MantenimientoResponse)
-def crear_mantenimiento(data: MantenimientoCreate, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
-    return service.crear(db, data)
+def crear_mantenimiento(data: MantenimientoCreate, incidencia_id:int, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    return service.crear(db, data, incidencia_id)
 
 @router.put("/{id_mantenimiento}", response_model=MantenimientoResponse)
 def actualizar_mantenimiento(id_mantenimiento: int, data: MantenimientoUpdate, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):

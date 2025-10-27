@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from dao.mantenimiento.dao_mantenimiento import MantenimientoDao
 from models.mantenimiento.mantenimiento_model import Mantenimiento
 from schemas.mantenimiento.mantenimiento_schema import MantenimientoCreate, MantenimientoUpdate
+from datetime import datetime
 
 class MantenimientoService:
     def __init__(self):
@@ -22,3 +23,17 @@ class MantenimientoService:
 
     def eliminar(self, db: Session, id_mantenimiento: int):
         return self.dao.delete(db, id_mantenimiento)
+    
+    def obtener_por_empleado(self, db: Session, empleado_id: int):
+        return db.query(Mantenimiento).filter(Mantenimiento.empleado_id == empleado_id).all()
+
+    def obtener_por_fecha(self, db: Session, fecha_inicio: datetime):
+        return db.query(Mantenimiento).filter(Mantenimiento.fecha >= fecha_inicio).all()
+
+    def obtener_por_empleado_fecha(self, db: Session, empleado_id: int, fecha:datetime):
+        return( 
+            db.query(Mantenimiento).filter(
+            Mantenimiento.empleado_id == empleado_id,
+            Mantenimiento.fecha >= fecha
+            ).all()
+        )

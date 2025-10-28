@@ -23,6 +23,7 @@ from .routes_cargo_servicio_transporte import router as cargo_servicio_transport
 from .routes_servicio_transporte import router as servicio_transporte_router
 from .routes_mantenimiento import router as router_mantenimiento
 from .routes_incidencia import router as router_incidencia
+from .routes_tipo_limpieza import router as router_tipo_limpieza
 api_router = APIRouter()
 
 api_router.include_router(usuario_router)
@@ -49,3 +50,4 @@ api_router.include_router(servicio_transporte_router)
 api_router.include_router(cargo_servicio_transporte_router)
 api_router.include_router(router_mantenimiento)
 api_router.include_router(router_incidencia)
+api_router.include_router(router_tipo_limpieza)

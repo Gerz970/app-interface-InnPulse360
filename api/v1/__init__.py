@@ -25,6 +25,7 @@ from .routes_mantenimiento import router as router_mantenimiento
 from .routes_incidencia import router as router_incidencia
 from .routes_tipo_limpieza import router as router_tipo_limpieza
 from .routes_estatus_limpieza import router as router_estatus_limpieza
+from .routes_limpieza import router as router_limpieza
 
 api_router = APIRouter()
 
@@ -54,3 +55,4 @@ api_router.include_router(router_mantenimiento)
 api_router.include_router(router_incidencia)
 api_router.include_router(router_tipo_limpieza)
 api_router.include_router(router_estatus_limpieza)
+api_router.include_router(router_limpieza)

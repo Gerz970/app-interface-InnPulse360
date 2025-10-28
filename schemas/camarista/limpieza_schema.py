@@ -1,6 +1,9 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from .tipos_limpieza_schema import TipoLimpiezaResponse
+from ..hotel.habitacion_area_schema import HabitacionAreaBase
+from ..empleado.empleado_base import EmpleadoBase
 
 class LimpiezaBase(BaseModel):
     habitacion_area_id: int
@@ -26,6 +29,9 @@ class LimpiezaUpdate(BaseModel):
 
 class LimpiezaResponse(LimpiezaBase):
     id_limpieza: int
+    tipo_limpieza: TipoLimpiezaResponse
+    habitacion_area: HabitacionAreaBase
+    empleado: EmpleadoBase
 
     class Config:
         from_attributes = True

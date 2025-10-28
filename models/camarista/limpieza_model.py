@@ -17,10 +17,10 @@ class Limpieza(Base):
     empleado_id = Column(Integer, ForeignKey("EMPLEADOS.Tb_empleado.id_empleado"), nullable=False)
 
     # Relaciones
-    habitacion_area = relationship("HabitacionArea")
-    tipo_limpieza = relationship("TiposLimpieza")
+    habitacion_area = relationship("HabitacionArea", back_populates="limpiezas")
+    tipo_limpieza = relationship("TiposLimpieza", back_populates="limpiezas")
     estatus_limpieza = relationship("EstatusLimpieza")
-    empleado = relationship("Empleado")
+    empleado = relationship("Empleado", back_populates="limpiezas")
 
     def __repr__(self):
         return f"<Limpieza(id_limpieza={self.id_limpieza}, estatus_limpieza_id={self.estatus_limpieza_id})>"

@@ -19,6 +19,6 @@ class HabitacionArea(Base):
     reservas = relationship("Reservacion", back_populates="habitacion", cascade="all, delete-orphan")
 
     incidencias = relationship("Incidencia", back_populates="habitacion_area", cascade="all, delete-orphan")
-
+    limpiezas = relationship("Limpieza", back_populates="habitacion_area")
     def __repr__(self):
         return f"<HabitacionArea(id={self.id_habitacion_area}, nombre_clave='{self.nombre_clave}')>"

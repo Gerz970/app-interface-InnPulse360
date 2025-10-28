@@ -11,6 +11,6 @@ class TiposLimpieza(Base):
     descripcion = Column(String(25), nullable=False)
     id_estatus = Column(Integer, nullable=False)
 
-    
+    limpiezas = relationship("Limpieza", back_populates="tipo_limpieza")
     def __repr__(self):
         return f"<TiposLimpieza(id_tipo_limpieza={self.id_tipo_limpieza}, nombre_tipo='{self.nombre_tipo}')>"

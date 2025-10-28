@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from schemas.camarista.limpieza_schema import LimpiezaCreate, LimpiezaUpdate, LimpiezaResponse
 from services.camarista.limpieza_service import LimpiezaService
 from core.database_connection import get_database_session
 from typing import List
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
+from datetime import datetime
 
 router = APIRouter(prefix="/limpiezas", tags=["Limpiezas"])
 service = LimpiezaService()
@@ -39,3 +39,19 @@ def eliminar_limpieza(id_limpieza: int, db: Session = Depends(get_database_sessi
     if not limpieza_eliminada:
         raise HTTPException(status_code=404, detail="Limpieza no encontrada")
     return {"message": "Limpieza marcada como eliminada (estatus_limpieza_id = 4)"}
+
+@router.get("/empleado/{empleado_id}", response_model=List[LimpiezaResponse])
+def obtener_por_empleado(empleado_id: int, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    return service.obtener_por_empleado(db, empleado_id)
+
+@router.get("/habitacion-area/{habitacion_area_id}", response_model=List[LimpiezaResponse])
+def obtener_por_habitacion_area(habitacion_area_id: int, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    return service.obtener_por_habitacion_area(db, habitacion_area_id)
+
+@router.get("/estatus/{estatus_limpieza_id}", response_model=List[LimpiezaResponse])
+def obtener_por_estatus(estatus_limpieza_id: int, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    return service.obtener_por_estatus(db, estatus_limpieza_id)
+
+@router.get("/fecha/", response_model=List[LimpiezaResponse])
+def obtener_por_fecha(fecha_programada: datetime = Query(...), db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    return service.obtener_por_fecha(db, fecha_programada)

@@ -19,7 +19,7 @@ class EmpleadoDAO:
     def create(self, empleado_data: EmpleadoCreate) -> Empleado:
         try:
             # Crear empleado usando **data
-            empleado_dict = empleado_data.model_dump(exclude={'domicilio'})
+            empleado_dict = empleado_data.model_dump(exclude={'domicilio', 'puesto_id', 'hotel_id'})
             db_empleado = Empleado(**empleado_dict)
             self.db.add(db_empleado)
             self.db.flush()  # obtiene el ID antes del commit

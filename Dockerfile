@@ -86,4 +86,4 @@ COPY . .
 # Ejecutar uvicorn cuando el contenedor inicie
 # --host 0.0.0.0: Escuchar en todas las interfaces de red (necesario para Docker)
 # --port 8000: Puerto donde la aplicación estará disponible
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]

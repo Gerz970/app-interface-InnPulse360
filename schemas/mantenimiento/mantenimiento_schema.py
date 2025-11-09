@@ -6,7 +6,7 @@ from ..empleado.empleado_response import EmpleadoResponse
 class MantenimientoBase(BaseModel):
     descripcion: str
     fecha: datetime
-    fecha_termino: date
+    fecha_termino: Optional[date] = None
     empleado_id: int
 
 class MantenimientoCreate(MantenimientoBase):

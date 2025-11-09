@@ -31,6 +31,7 @@ class RolesBase(BaseModel):
     )
     
     class Config:
+        from_attributes = True
         json_schema_extra = {
             "example": {
                 "rol": "Administrador",

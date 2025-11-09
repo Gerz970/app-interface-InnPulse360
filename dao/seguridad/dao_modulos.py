@@ -86,6 +86,7 @@ class ModulosDAO:
         try:
             return (
                 self.db.query(Modulos)
+                .order_by(Modulos.id_modulo.asc())
                 .offset(skip)
                 .limit(limit)
                 .all()
@@ -108,6 +109,7 @@ class ModulosDAO:
             return (
                 self.db.query(Modulos)
                 .filter(Modulos.id_estatus == self.__status_active__)
+                .order_by(Modulos.id_modulo.asc())
                 .offset(skip)
                 .limit(limit)
                 .all()

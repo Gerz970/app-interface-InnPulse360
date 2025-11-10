@@ -26,6 +26,10 @@ from .routes_incidencia import router as router_incidencia
 from .routes_tipo_limpieza import router as router_tipo_limpieza
 from .routes_estatus_limpieza import router as router_estatus_limpieza
 from .routes_limpieza import router as router_limpieza
+from .routes_imagenes import router as router_imagenes
+from .routes_hotel_imagenes import router as router_hotel_imagenes
+from .routes_mantenimiento_imagenes import router as router_mantenimiento_imagenes
+from .routes_limpieza_imagenes import router as router_limpieza_imagenes
 
 api_router = APIRouter()
 
@@ -56,3 +60,7 @@ api_router.include_router(router_incidencia)
 api_router.include_router(router_tipo_limpieza)
 api_router.include_router(router_estatus_limpieza)
 api_router.include_router(router_limpieza)
+api_router.include_router(router_imagenes)
+api_router.include_router(router_hotel_imagenes)
+api_router.include_router(router_mantenimiento_imagenes)
+api_router.include_router(router_limpieza_imagenes)

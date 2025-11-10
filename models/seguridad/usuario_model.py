@@ -25,6 +25,7 @@ class Usuario(Base):
     password_expira = Column(DateTime, nullable=True)
     fecha_ultimo_cambio_password = Column(DateTime, nullable=True)
     intentos_login_fallidos = Column(Integer, default=0)
+    url_foto_perfil = Column(String(500), nullable=True)
     
     # Relaciones
     roles = relationship(

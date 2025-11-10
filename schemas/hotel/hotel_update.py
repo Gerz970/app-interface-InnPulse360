@@ -66,6 +66,13 @@ class HotelUpdate(BaseModel):
         example=5
     )
     
+    url_foto_perfil: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Ruta relativa de la foto de perfil del hotel",
+        example="hotel/123/123.jpg"
+    )
+    
     class Config:
         json_schema_extra = {
             "example": {

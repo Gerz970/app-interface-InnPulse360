@@ -22,6 +22,7 @@ class Hotel(Base):
     email_contacto = Column(String(150), nullable=True)
     numero_estrellas = Column(SmallInteger, nullable=True)
     estatus_id = Column(SmallInteger, nullable=False)
+    url_foto_perfil = Column(String(500), nullable=True)
     
     empleados = relationship(
         "Empleado",

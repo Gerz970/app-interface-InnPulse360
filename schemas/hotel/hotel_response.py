@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import Optional
 from .hotel_base import HotelBase
 
 
@@ -11,6 +12,12 @@ class HotelResponse(HotelBase):
         ..., 
         description="ID único del hotel",
         example=1
+    )
+    
+    url_foto_perfil: Optional[str] = Field(
+        None,
+        description="URL pública de la foto de perfil del hotel",
+        example="https://innpulse360.supabase.co/storage/v1/object/public/images/hotel/123/123.jpg"
     )
     
     class Config:

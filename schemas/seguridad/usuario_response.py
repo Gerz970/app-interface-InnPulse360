@@ -38,6 +38,12 @@ class UsuarioResponse(BaseModel):
         description="Lista de roles asignados al usuario"
     )
     
+    url_foto_perfil: Optional[str] = Field(
+        None,
+        description="URL pública de la foto de perfil",
+        example="https://innpulse360.supabase.co/storage/v1/object/public/images/usuarios/perfil/123.jpg"
+    )
+    
     class Config:
         from_attributes = True  # Para compatibilidad con SQLAlchemy
         json_schema_extra = {

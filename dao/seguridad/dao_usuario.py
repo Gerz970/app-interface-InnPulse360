@@ -44,7 +44,8 @@ class UsuarioDAO:
         """
         try:
             # Crear objeto Usuario usando **data
-            usuario_dict = usuario_data.model_dump()
+            # Excluir roles_ids ya que no es un campo del modelo Usuario
+            usuario_dict = usuario_data.model_dump(exclude={'roles_ids'})
             usuario_dict['estatus_id'] = usuario_dict.get('estatus_id') or self.__status_active__
             db_usuario = Usuario(**usuario_dict)
             

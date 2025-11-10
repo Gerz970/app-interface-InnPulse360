@@ -32,7 +32,7 @@ from schemas.seguridad.registro_cliente_schemas import (
     ClienteEncontradoInfo
 )
 from schemas.cliente.cliente_formulario import ClienteFormularioData
-from core.config import AuthSettings
+from core.config import AuthSettings, SupabaseSettings
 from utils.password_generator import generar_password_temporal, validar_fortaleza_password
 
 # Configuración para encriptación de contraseñas
@@ -60,6 +60,7 @@ class UsuarioService:
         self.asignacion_dao = UsuarioAsignacionDAO(db_session)
         self.cliente_dao = ClienteDAO(db_session)
         self.modulo_rol_dao = ModuloRolDAO(db_session)
+        self.supabase_settings = SupabaseSettings()
     
     def _hash_password(self, password: str) -> str:
         """
@@ -104,6 +105,27 @@ class UsuarioService:
             )
             for rol in roles
         ]
+    
+    def _build_foto_perfil_url(self, ruta_storage: Optional[str]) -> Optional[str]:
+        """
+        Construye la URL pública de una foto de perfil desde la ruta de storage
+        
+        Args:
+            ruta_storage (Optional[str]): Ruta del archivo en storage (ej: "usuarios/perfil/123.jpg")
+            
+        Returns:
+            Optional[str]: URL pública completa o None si no hay ruta o configuración
+        """
+        if not ruta_storage:
+            return None
+        
+        if not self.supabase_settings.public_base_url:
+            return None
+        
+        base_url = self.supabase_settings.public_base_url.rstrip('/')
+        bucket = self.supabase_settings.bucket_images
+        
+        return f"{base_url}/storage/v1/object/public/{bucket}/{ruta_storage}"
     
     def _create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None) -> str:
         """
@@ -170,20 +192,35 @@ class UsuarioService:
         usuario_data.password = hashed_password
         db_usuario = self.dao.create(usuario_data)
         
+        # Asignar foto de perfil por defecto si no se proporciona
+        if not db_usuario.url_foto_perfil:
+            ruta_default = "usuarios/perfil/default.jpg"
+            # Guardar solo la ruta relativa, no la URL completa
+            update_data = UsuarioUpdate(url_foto_perfil=ruta_default)
+            self.dao.update(db_usuario.id_usuario, update_data)
+            # Refrescar el objeto para obtener la ruta actualizada
+            self.db.refresh(db_usuario)
+        
         # Asignar roles si se proporcionaron
         if usuario_data.roles_ids:
-            self.rol_usuario_dao.bulk_assign_roles_to_usuario(db_usuario.id_usuario, usuario_data.roles_ids)
+            self.rol_usuario_dao.assign_multiple_roles_to_user(db_usuario.id_usuario, usuario_data.roles_ids)
         
         # Obtener roles asignados
         roles = self._get_usuario_roles(db_usuario.id_usuario)
         
         # Retornar con los roles
+        # Construir URL completa desde la ruta almacenada
+        url_foto_completa = None
+        if db_usuario.url_foto_perfil:
+            url_foto_completa = self._build_foto_perfil_url(db_usuario.url_foto_perfil)
+        
         return UsuarioResponse(
             id_usuario=db_usuario.id_usuario,
             login=db_usuario.login,
             correo_electronico=db_usuario.correo_electronico,
             estatus_id=db_usuario.estatus_id,
-            roles=roles
+            roles=roles,
+            url_foto_perfil=url_foto_completa
         )
     
     def get_usuario_by_id(self, id_usuario: int) -> Optional[UsuarioResponse]:
@@ -203,12 +240,18 @@ class UsuarioService:
         # Obtener roles del usuario
         roles = self._get_usuario_roles(id_usuario)
         
+        # Construir URL completa desde la ruta almacenada
+        url_foto_completa = None
+        if db_usuario.url_foto_perfil:
+            url_foto_completa = self._build_foto_perfil_url(db_usuario.url_foto_perfil)
+        
         return UsuarioResponse(
             id_usuario=db_usuario.id_usuario,
             login=db_usuario.login,
             correo_electronico=db_usuario.correo_electronico,
             estatus_id=db_usuario.estatus_id,
-            roles=roles
+            roles=roles,
+            url_foto_perfil=url_foto_completa
         )
     
     def get_usuario_by_login(self, login: str) -> Optional[UsuarioResponse]:
@@ -228,12 +271,18 @@ class UsuarioService:
         # Obtener roles del usuario
         roles = self._get_usuario_roles(db_usuario.id_usuario)
         
+        # Construir URL completa desde la ruta almacenada
+        url_foto_completa = None
+        if db_usuario.url_foto_perfil:
+            url_foto_completa = self._build_foto_perfil_url(db_usuario.url_foto_perfil)
+        
         return UsuarioResponse(
             id_usuario=db_usuario.id_usuario,
             login=db_usuario.login,
             correo_electronico=db_usuario.correo_electronico,
             estatus_id=db_usuario.estatus_id,
-            roles=roles
+            roles=roles,
+            url_foto_perfil=url_foto_completa
         )
     
     def get_all_usuarios(self, skip: int = 0, limit: int = 100) -> List[UsuarioResponse]:
@@ -254,7 +303,8 @@ class UsuarioService:
                 login=usuario.login,
                 correo_electronico=usuario.correo_electronico,
                 estatus_id=usuario.estatus_id,
-                roles=self._get_usuario_roles(usuario.id_usuario)
+                roles=self._get_usuario_roles(usuario.id_usuario),
+                url_foto_perfil=self._build_foto_perfil_url(usuario.url_foto_perfil) if usuario.url_foto_perfil else None
             )
             for usuario in db_usuarios
         ]
@@ -306,12 +356,18 @@ class UsuarioService:
         # Obtener roles del usuario
         roles = self._get_usuario_roles(id_usuario)
         
+        # Construir URL completa desde la ruta almacenada
+        url_foto_completa = None
+        if db_usuario.url_foto_perfil:
+            url_foto_completa = self._build_foto_perfil_url(db_usuario.url_foto_perfil)
+        
         return UsuarioResponse(
             id_usuario=db_usuario.id_usuario,
             login=db_usuario.login,
             correo_electronico=db_usuario.correo_electronico,
             estatus_id=db_usuario.estatus_id,
-            roles=roles
+            roles=roles,
+            url_foto_perfil=url_foto_completa
         )
     
     def delete_usuario(self, id_usuario: int) -> bool:
@@ -487,13 +543,44 @@ class UsuarioService:
         # Obtener roles del usuario
         roles = self._get_usuario_roles(usuario.id_usuario)
         
+        # Construir URL completa desde la ruta almacenada
+        url_foto_completa = None
+        if usuario.url_foto_perfil:
+            url_foto_completa = self._build_foto_perfil_url(usuario.url_foto_perfil)
+        
         return UsuarioResponse(
             id_usuario=usuario.id_usuario,
             login=usuario.login,
             correo_electronico=usuario.correo_electronico,
             estatus_id=usuario.estatus_id,
-            roles=roles
+            roles=roles,
+            url_foto_perfil=url_foto_completa
         )
+    
+    def actualizar_url_foto_perfil(self, id_usuario: int, url_publica: Optional[str], ruta_storage: str) -> None:
+        """
+        Actualiza la ruta de foto de perfil de un usuario en la base de datos
+        Guarda solo la ruta relativa al bucket, no la URL completa
+        
+        Args:
+            id_usuario (int): ID del usuario
+            url_publica (Optional[str]): URL pública completa (no se usa, solo para compatibilidad)
+            ruta_storage (str): Ruta del archivo en storage (ej: "usuarios/perfil/123.jpg")
+            
+        Raises:
+            HTTPException: Si el usuario no existe
+        """
+        usuario = self.dao.get_by_id(id_usuario)
+        if not usuario:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuario no encontrado"
+            )
+        
+        # Guardar solo la ruta relativa al bucket, no la URL completa
+        # Esto hace el sistema más flexible y portable
+        update_data = UsuarioUpdate(url_foto_perfil=ruta_storage)
+        self.dao.update(id_usuario, update_data)
     
     # ==================== MÉTODOS PARA REGISTRO DE CLIENTES ====================
     

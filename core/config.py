@@ -41,3 +41,20 @@ class EmailSettings:
     # Configuración del remitente
     from_email: str = os.getenv("FromEmail", "noreply@innpulse360.com")
     from_name: str = os.getenv("FROM_NAME", "InnPulse360")
+
+class SupabaseSettings:
+    """
+    Configuración para el servicio de Supabase Storage
+    """
+    url: str = os.getenv("SUPABASE_URL", "")
+    anon_key: str = os.getenv("SUPABASE_ANON_KEY", "")
+    service_key: str = os.getenv("SUPABASE_SERVICE_KEY", "")
+    
+    @property
+    def default_service_key(self) -> str:
+        """Retorna la service key si está disponible, sino la anon key"""
+        return self.service_key if self.service_key else self.anon_key
+    
+    bucket_images: str = os.getenv("SUPABASE_BUCKET_IMAGES", "images")
+    bucket_pdfs: str = os.getenv("SUPABASE_BUCKET_PDFS", "pdfs")
+    public_base_url: str = os.getenv("SUPABASE_PUBLIC_BASE_URL", "")

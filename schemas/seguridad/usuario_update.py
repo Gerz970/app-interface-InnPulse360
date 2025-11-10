@@ -38,6 +38,13 @@ class UsuarioUpdate(BaseModel):
         example=1
     )
     
+    url_foto_perfil: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="URL pública de la foto de perfil",
+        example="https://innpulse360.supabase.co/storage/v1/object/public/images/usuarios/perfil/123.jpg"
+    )
+    
     class Config:
         json_schema_extra = {
             "example": {

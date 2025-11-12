@@ -136,3 +136,42 @@ class RutasImagenes:
         """
         return f"habitacion/{id_habitacion_area}"
     
+    def get_ruta_foto_perfil_tipo_habitacion(self, id_tipoHabitacion: int) -> str:
+        """
+        Obtiene la ruta base para la foto de perfil de un tipo de habitación
+        La foto de perfil se guarda como: tipo_habitacion/{id_tipoHabitacion}/{id_tipoHabitacion}.{extension}
+        
+        Args:
+            id_tipoHabitacion (int): ID del tipo de habitación
+            
+        Returns:
+            str: Ruta base sin extensión (ej: "tipo_habitacion/123/123")
+        """
+        return f"tipo_habitacion/{id_tipoHabitacion}/{id_tipoHabitacion}"
+    
+    def get_ruta_default_tipo_habitacion(self, id_tipoHabitacion: int) -> str:
+        """
+        Obtiene la ruta de la imagen por defecto de un tipo de habitación
+        La imagen por defecto se encuentra en: tipo_habitacion/{id_tipoHabitacion}/default.jpg
+        
+        Args:
+            id_tipoHabitacion (int): ID del tipo de habitación
+            
+        Returns:
+            str: Ruta de la imagen por defecto (ej: "tipo_habitacion/123/default.jpg")
+        """
+        return f"tipo_habitacion/{id_tipoHabitacion}/default.jpg"
+    
+    def get_ruta_galeria_tipo_habitacion(self, id_tipoHabitacion: int) -> str:
+        """
+        Obtiene la ruta base para la galería de un tipo de habitación
+        Las imágenes de galería se guardan en: tipo_habitacion/{id_tipoHabitacion}/galeria/
+        
+        Args:
+            id_tipoHabitacion (int): ID del tipo de habitación
+            
+        Returns:
+            str: Ruta de la galería (ej: "tipo_habitacion/123/galeria")
+        """
+        return f"tipo_habitacion/{id_tipoHabitacion}/galeria"
+    

@@ -18,6 +18,7 @@ class TipoHabitacion(Base):
     periodicidad_id = Column(Integer, ForeignKey("CATALOGOS.Tb_periodicidad.id_periodicidad"), nullable=False)
     tipo_habitacion = Column(String(25), nullable=False)
     estatus_id = Column(Integer, nullable=False)
+    url_foto_perfil = Column(String(500), nullable=True)
     
     # Relaciones
     periodicidad = relationship("Periodicidad")  # carga la relación con Periodicidad

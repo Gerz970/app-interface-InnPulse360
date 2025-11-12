@@ -10,6 +10,8 @@ from schemas.hotel.tipo_habitacion_schemas import (
     TipoHabitacionResponse,
     PeriodicidadResponse
 )
+from core.config import SupabaseSettings
+from utils.rutas_imagenes import RutasImagenes
 
 
 class TipoHabitacionService:
@@ -20,6 +22,79 @@ class TipoHabitacionService:
     def __init__(self, db_session: Session):
         self.db = db_session
         self.dao = TipoHabitacionDAO(db_session)
+        self.supabase_settings = SupabaseSettings()
+        self.rutas_imagenes = RutasImagenes()
+    
+    def _build_foto_perfil_url(self, ruta_storage: Optional[str]) -> Optional[str]:
+        """
+        Construye la URL pública de una foto de perfil desde la ruta de storage
+        
+        Args:
+            ruta_storage (Optional[str]): Ruta del archivo en storage (ej: "tipo_habitacion/123/123.jpg")
+            
+        Returns:
+            Optional[str]: URL pública completa o None si no hay ruta o configuración
+        """
+        if not ruta_storage:
+            return None
+        
+        if not self.supabase_settings.public_base_url:
+            return None
+        
+        base_url = self.supabase_settings.public_base_url.rstrip('/')
+        bucket = self.supabase_settings.bucket_images
+        
+        return f"{base_url}/storage/v1/object/public/{bucket}/{ruta_storage}"
+    
+    def _build_tipo_habitacion_response(self, tipo_habitacion: TipoHabitacion) -> TipoHabitacionResponse:
+        """
+        Construye un TipoHabitacionResponse desde un modelo TipoHabitacion, incluyendo URL de foto de perfil
+        
+        Args:
+            tipo_habitacion (TipoHabitacion): Modelo de tipo de habitación
+            
+        Returns:
+            TipoHabitacionResponse: Schema de respuesta con URL de foto construida
+        """
+        # Construir URL completa desde la ruta almacenada
+        url_foto_completa = None
+        if tipo_habitacion.url_foto_perfil:
+            url_foto_completa = self._build_foto_perfil_url(tipo_habitacion.url_foto_perfil)
+        
+        # Construir diccionario con todos los campos
+        tipo_dict = {
+            "id_tipoHabitacion": tipo_habitacion.id_tipoHabitacion,
+            "clave": tipo_habitacion.clave,
+            "precio_unitario": tipo_habitacion.precio_unitario,
+            "periodicidad_id": tipo_habitacion.periodicidad_id,
+            "tipo_habitacion": tipo_habitacion.tipo_habitacion,
+            "estatus_id": tipo_habitacion.estatus_id,
+            "url_foto_perfil": url_foto_completa
+        }
+        
+        # Agregar periodicidad si está cargada
+        if tipo_habitacion.periodicidad:
+            from schemas.catalogos.periodicidad_schemas import PeriodicidadResponse
+            tipo_dict["periodicidad"] = PeriodicidadResponse.model_validate(tipo_habitacion.periodicidad)
+        else:
+            tipo_dict["periodicidad"] = None
+        
+        return TipoHabitacionResponse(**tipo_dict)
+    
+    def actualizar_url_foto_perfil(self, id_tipoHabitacion: int, ruta_storage: str) -> bool:
+        """
+        Actualiza la URL de foto de perfil en la base de datos
+        
+        Args:
+            id_tipoHabitacion (int): ID del tipo de habitación
+            ruta_storage (str): Ruta relativa del archivo en storage
+            
+        Returns:
+            bool: True si se actualizó correctamente
+        """
+        update_data = TipoHabitacionUpdate(url_foto_perfil=ruta_storage)
+        db_tipo = self.dao.update(id_tipoHabitacion, update_data)
+        return db_tipo is not None
 
     def create_tipo_habitacion(self, tipo_habitacion_data: TipoHabitacionCreate) -> TipoHabitacionResponse:
         # Verificar clave
@@ -33,26 +108,35 @@ class TipoHabitacionService:
                                 detail="El nombre del tipo de habitación ya está en uso")
 
         db_tipo = self.dao.create(tipo_habitacion_data)
+        
+        # Asignar foto de perfil por defecto si no se proporciona
+        if not db_tipo.url_foto_perfil:
+            ruta_default = self.rutas_imagenes.get_ruta_default_tipo_habitacion(db_tipo.id_tipoHabitacion)
+            # Guardar solo la ruta relativa, no la URL completa
+            update_data = TipoHabitacionUpdate(url_foto_perfil=ruta_default)
+            self.dao.update(db_tipo.id_tipoHabitacion, update_data)
+            # Refrescar el objeto para obtener la ruta actualizada
+            self.db.refresh(db_tipo)
 
-        return TipoHabitacionResponse.from_orm(db_tipo)
+        return self._build_tipo_habitacion_response(db_tipo)
 
     def get_tipo_habitacion_by_id(self, id_tipoHabitacion: int) -> Optional[TipoHabitacionResponse]:
         db_tipo = self.dao.get_by_id(id_tipoHabitacion)
         if not db_tipo:
             return None
-        return TipoHabitacionResponse.from_orm(db_tipo)
+        return self._build_tipo_habitacion_response(db_tipo)
 
     def get_tipo_habitacion_by_clave(self, clave: str) -> Optional[TipoHabitacionResponse]:
         db_tipo = self.dao.get_by_clave(clave)
         if not db_tipo:
             return None
-        return TipoHabitacionResponse.from_orm(db_tipo)
+        return self._build_tipo_habitacion_response(db_tipo)
 
     def get_tipo_habitacion_by_nombre(self, tipo_habitacion: str) -> Optional[TipoHabitacionResponse]:
         db_tipo = self.dao.get_by_nombre(tipo_habitacion)
         if not db_tipo:
             return None
-        return TipoHabitacionResponse.from_orm(db_tipo)
+        return self._build_tipo_habitacion_response(db_tipo)
 
     def get_all_tipos_habitacion(self, skip: int = 0, limit: int = 100) -> List[TipoHabitacionResponse]:
         db_tipos = (
@@ -64,7 +148,7 @@ class TipoHabitacionService:
             .limit(limit)
             .all()
         )
-        return [TipoHabitacionResponse.from_orm(t) for t in db_tipos]
+        return [self._build_tipo_habitacion_response(t) for t in db_tipos]
 
     def update_tipo_habitacion(self, id_tipoHabitacion: int, tipo_habitacion_data: TipoHabitacionUpdate) -> Optional[TipoHabitacionResponse]:
         existing_tipo = self.dao.get_by_id(id_tipoHabitacion)
@@ -87,7 +171,7 @@ class TipoHabitacionService:
         if not db_tipo:
             return None
 
-        return TipoHabitacionResponse.from_orm(db_tipo)
+        return self._build_tipo_habitacion_response(db_tipo)
 
     def delete_tipo_habitacion(self, id_tipoHabitacion: int) -> bool:
         return self.dao.delete_logical(id_tipoHabitacion)

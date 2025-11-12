@@ -24,12 +24,14 @@ class TipoHabitacionUpdate(BaseModel):
     precio_unitario: Optional[Decimal] = Field(None, gt=0, example=1200.50)
     periodicidad_id: Optional[int] = Field(None, example=2)
     estatus_id: Optional[int] = Field(None, gt=0, example=1)
+    url_foto_perfil: Optional[str] = Field(None, max_length=500, description="Ruta relativa de la foto de perfil")
 
 # Schema de respuesta
 class TipoHabitacionResponse(TipoHabitacionBase):
     """Schema para respuestas (incluye el ID)"""
     id_tipoHabitacion: int = Field(..., description="ID único del tipo de habitación")
     periodicidad: Optional[PeriodicidadResponse]
+    url_foto_perfil: Optional[str] = Field(None, description="URL pública de la foto de perfil")
     class Config:
         from_attributes = True
         json_schema_extra = {
@@ -44,6 +46,7 @@ class TipoHabitacionResponse(TipoHabitacionBase):
                 "descripcion": "Tiempo indefinido",
                 "id_estatus": 1
                 },
-                "estatus_id": 1
+                "estatus_id": 1,
+                "url_foto_perfil": "https://tu-proyecto.supabase.co/storage/v1/object/public/images/tipo_habitacion/1/default.jpg"
             }
         }

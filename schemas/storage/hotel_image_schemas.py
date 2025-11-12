@@ -72,13 +72,19 @@ class GaleriaImageResponse(BaseModel):
         description="Tamaño del archivo en bytes"
     )
     
+    tipo: Optional[str] = Field(
+        None,
+        description="Tipo de imagen: 'antes' o 'despues' (solo para mantenimientos)"
+    )
+    
     model_config = {
         "json_schema_extra": {
             "example": {
                 "nombre": "1a2b3c.jpg",
                 "ruta": "hotel/123/galeria/1a2b3c.jpg",
                 "url_publica": "https://tu-proyecto.supabase.co/storage/v1/object/public/images/hotel/123/galeria/1a2b3c.jpg",
-                "tamaño": 245678
+                "tamaño": 245678,
+                "tipo": None
             }
         }
     }

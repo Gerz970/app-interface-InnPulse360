@@ -3,9 +3,10 @@ Rutas API para gestión de imágenes de limpieza
 Incluye endpoints para galería de imágenes
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
+from typing import Optional
 import os
 
 from services.storage import LimpiezaStorageService
@@ -60,6 +61,7 @@ def get_limpieza_service(db: Session = Depends(get_database_session)) -> Limpiez
 )
 async def upload_galeria_limpieza(
     id_limpieza: int,
+    tipo: str = Query(..., description="Tipo de imagen: 'antes' o 'despues'", pattern="^(antes|despues)$"),
     file: UploadFile = File(..., description="Archivo de imagen (JPG, PNG, WebP)"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     limpieza_storage_service: LimpiezaStorageService = Depends(get_limpieza_storage_service),
@@ -70,13 +72,22 @@ async def upload_galeria_limpieza(
     Sube una imagen a la galería de la limpieza
     
     - **id_limpieza**: ID de la limpieza
+    - **tipo**: Tipo de imagen ("antes" o "despues") - requerido
     - **file**: Archivo de imagen (debe ser JPG, PNG o WebP)
     
     La imagen se guardará automáticamente con el nombre: `img_{id_limpieza}_item{identificador}.{extension}`
-    El nombre se genera automáticamente, no es necesario proporcionarlo.
+    en la subcarpeta correspondiente según el tipo especificado.
     
     Requiere autenticación.
     """
+    # Validar tipo
+    tipo = tipo.lower()
+    if tipo not in ("antes", "despues"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tipo no permitido. Tipos permitidos: 'antes' o 'despues'"
+        )
+    
     # Verificar que la limpieza existe
     limpieza = limpieza_service.obtener_por_id(db, id_limpieza)
     if not limpieza:
@@ -108,6 +119,7 @@ async def upload_galeria_limpieza(
             id_limpieza=id_limpieza,
             file_bytes=file_bytes,
             file_extension=file_extension,
+            tipo=tipo,
             content_type=content_type
         )
         
@@ -141,21 +153,32 @@ async def upload_galeria_limpieza(
 )
 async def list_galeria_limpieza(
     id_limpieza: int,
+    tipo: Optional[str] = Query(None, description="Tipo de imagen a listar: 'antes', 'despues' o None para ambas"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     limpieza_storage_service: LimpiezaStorageService = Depends(get_limpieza_storage_service),
     limpieza_service: LimpiezaService = Depends(get_limpieza_service),
     db: Session = Depends(get_database_session)
 ):
     """
-    Lista todas las imágenes de la galería de una limpieza
+    Lista las imágenes de la galería de una limpieza
     
     - **id_limpieza**: ID de la limpieza
+    - **tipo**: Tipo de imagen a listar ("antes", "despues" o None para ambas) - opcional
     
-    Retorna una lista de todas las imágenes almacenadas en la carpeta
-    `limpieza/{id_limpieza}/` con sus URLs públicas.
+    Si se especifica `tipo`, retorna solo las imágenes de esa categoría.
+    Si no se especifica, retorna todas las imágenes (antes y despues) con el campo `tipo` indicando su categoría.
     
     Requiere autenticación.
     """
+    # Validar tipo si se proporciona
+    if tipo:
+        tipo = tipo.lower()
+        if tipo not in ("antes", "despues"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tipo no permitido. Tipos permitidos: 'antes' o 'despues'"
+            )
+    
     # Verificar que la limpieza existe
     limpieza = limpieza_service.obtener_por_id(db, id_limpieza)
     if not limpieza:
@@ -165,7 +188,7 @@ async def list_galeria_limpieza(
         )
     
     # Listar imágenes de la galería
-    result = limpieza_storage_service.list_galeria(id_limpieza)
+    result = limpieza_storage_service.list_galeria(id_limpieza, tipo=tipo)
     
     if not result.get("success"):
         raise HTTPException(
@@ -194,6 +217,7 @@ async def list_galeria_limpieza(
 async def delete_galeria_limpieza(
     id_limpieza: int,
     nombre_archivo: str,
+    tipo: str = Query(..., description="Tipo de imagen: 'antes' o 'despues'", pattern="^(antes|despues)$"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     limpieza_storage_service: LimpiezaStorageService = Depends(get_limpieza_storage_service),
     limpieza_service: LimpiezaService = Depends(get_limpieza_service),
@@ -204,9 +228,18 @@ async def delete_galeria_limpieza(
     
     - **id_limpieza**: ID de la limpieza
     - **nombre_archivo**: Nombre del archivo a eliminar (ej: "img_123_itema1b2c3d4.jpg")
+    - **tipo**: Tipo de imagen ("antes" o "despues") - requerido
     
     Requiere autenticación.
     """
+    # Validar tipo
+    tipo = tipo.lower()
+    if tipo not in ("antes", "despues"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tipo no permitido. Tipos permitidos: 'antes' o 'despues'"
+        )
+    
     # Verificar que la limpieza existe
     limpieza = limpieza_service.obtener_por_id(db, id_limpieza)
     if not limpieza:
@@ -216,7 +249,7 @@ async def delete_galeria_limpieza(
         )
     
     # Eliminar imagen de la galería
-    result = limpieza_storage_service.delete_galeria(id_limpieza, nombre_archivo)
+    result = limpieza_storage_service.delete_galeria(id_limpieza, nombre_archivo, tipo=tipo)
     
     if not result.get("success"):
         raise HTTPException(

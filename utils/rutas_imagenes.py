@@ -58,6 +58,32 @@ class RutasImagenes:
         """
         return f"mantenimiento/{id_mantenimiento}"
     
+    def get_ruta_galeria_mantenimiento_antes(self, id_mantenimiento: int) -> str:
+        """
+        Obtiene la ruta para la galería de imágenes "antes" del mantenimiento
+        Las imágenes se guardan en: mantenimiento/{id_mantenimiento}/antes/
+        
+        Args:
+            id_mantenimiento (int): ID del mantenimiento
+            
+        Returns:
+            str: Ruta de la galería "antes" (ej: "mantenimiento/123/antes")
+        """
+        return f"mantenimiento/{id_mantenimiento}/antes"
+    
+    def get_ruta_galeria_mantenimiento_despues(self, id_mantenimiento: int) -> str:
+        """
+        Obtiene la ruta para la galería de imágenes "despues" del mantenimiento
+        Las imágenes se guardan en: mantenimiento/{id_mantenimiento}/despues/
+        
+        Args:
+            id_mantenimiento (int): ID del mantenimiento
+            
+        Returns:
+            str: Ruta de la galería "despues" (ej: "mantenimiento/123/despues")
+        """
+        return f"mantenimiento/{id_mantenimiento}/despues"
+    
     def get_ruta_galeria_limpieza(self, id_limpieza: int) -> str:
         """
         Obtiene la ruta base para la galería de una limpieza
@@ -70,4 +96,43 @@ class RutasImagenes:
             str: Ruta base (ej: "limpieza/123")
         """
         return f"limpieza/{id_limpieza}"
+    
+    def get_ruta_galeria_limpieza_antes(self, id_limpieza: int) -> str:
+        """
+        Obtiene la ruta para la galería de imágenes "antes" de la limpieza
+        Las imágenes se guardan en: limpieza/{id_limpieza}/antes/
+        
+        Args:
+            id_limpieza (int): ID de la limpieza
+            
+        Returns:
+            str: Ruta de la galería "antes" (ej: "limpieza/123/antes")
+        """
+        return f"limpieza/{id_limpieza}/antes"
+    
+    def get_ruta_galeria_limpieza_despues(self, id_limpieza: int) -> str:
+        """
+        Obtiene la ruta para la galería de imágenes "despues" de la limpieza
+        Las imágenes se guardan en: limpieza/{id_limpieza}/despues/
+        
+        Args:
+            id_limpieza (int): ID de la limpieza
+            
+        Returns:
+            str: Ruta de la galería "despues" (ej: "limpieza/123/despues")
+        """
+        return f"limpieza/{id_limpieza}/despues"
+    
+    def get_ruta_galeria_habitacion(self, id_habitacion_area: int) -> str:
+        """
+        Obtiene la ruta base para la galería de una habitación
+        Las imágenes se guardan directamente en: habitacion/{id_habitacion_area}/
+        
+        Args:
+            id_habitacion_area (int): ID de la habitación área
+            
+        Returns:
+            str: Ruta base (ej: "habitacion/123")
+        """
+        return f"habitacion/{id_habitacion_area}"
     

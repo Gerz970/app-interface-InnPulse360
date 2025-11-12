@@ -39,42 +39,68 @@ class LimpiezaStorageService(SupabaseStorageService):
         super().__init__(bucket=settings.bucket_images, client=client)
         self.rutas_imagenes = RutasImagenes()
     
-    def _validate_limpieza_path(self, file_path: str, id_limpieza: int) -> bool:
+    def _validate_limpieza_path(self, file_path: str, id_limpieza: int, tipo: Optional[str] = None) -> bool:
         """
         Valida que la ruta pertenezca a la limpieza especificada
         
         Args:
             file_path (str): Ruta del archivo
             id_limpieza (int): ID de la limpieza
+            tipo (Optional[str]): Tipo de imagen ("antes" o "despues")
             
         Returns:
             bool: True si la ruta es válida para la limpieza
         """
-        expected_prefix = f"limpieza/{id_limpieza}/"
+        if tipo:
+            expected_prefix = f"limpieza/{id_limpieza}/{tipo}/"
+        else:
+            expected_prefix = f"limpieza/{id_limpieza}/"
         return file_path.startswith(expected_prefix)
+    
+    def _validate_tipo(self, tipo: str) -> bool:
+        """
+        Valida que el tipo sea "antes" o "despues"
+        
+        Args:
+            tipo (str): Tipo a validar
+            
+        Returns:
+            bool: True si el tipo es válido
+        """
+        return tipo.lower() in ("antes", "despues")
     
     def upload_galeria(
         self,
         id_limpieza: int,
         file_bytes: bytes,
         file_extension: str,
+        tipo: str,
         content_type: Optional[str] = None
     ) -> dict:
         """
         Sube una imagen a la galería de la limpieza
         
-        Las imágenes se guardan en: limpieza/{id_limpieza}/img_{id_limpieza}_item{identificador}.{extension}
+        Las imágenes se guardan en: limpieza/{id_limpieza}/{tipo}/img_{id_limpieza}_item{identificador}.{extension}
         El nombre se genera automáticamente con formato: img_<id_limpieza>_item<uuid>
         
         Args:
             id_limpieza (int): ID de la limpieza
             file_bytes (bytes): Contenido de la imagen en bytes
             file_extension (str): Extensión del archivo (ej: ".jpg")
+            tipo (str): Tipo de imagen ("antes" o "despues")
             content_type (Optional[str]): Tipo MIME de la imagen
             
         Returns:
             dict: Resultado de la operación
         """
+        # Validar tipo
+        tipo = tipo.lower()
+        if not self._validate_tipo(tipo):
+            return {
+                "success": False,
+                "message": "Tipo no permitido. Tipos permitidos: 'antes' o 'despues'"
+            }
+        
         # Validar extensión
         if file_extension.lower() not in ALLOWED_IMAGE_EXTENSIONS:
             return {
@@ -87,8 +113,12 @@ class LimpiezaStorageService(SupabaseStorageService):
         identificador = str(uuid.uuid4()).replace("-", "")[:8]
         nombre_archivo = f"img_{id_limpieza}_item{identificador}"
         
-        # Construir ruta de galería
-        ruta_galeria = self.rutas_imagenes.get_ruta_galeria_limpieza(id_limpieza)
+        # Construir ruta de galería según el tipo
+        if tipo == "antes":
+            ruta_galeria = self.rutas_imagenes.get_ruta_galeria_limpieza_antes(id_limpieza)
+        else:  # tipo == "despues"
+            ruta_galeria = self.rutas_imagenes.get_ruta_galeria_limpieza_despues(id_limpieza)
+        
         file_path = f"{ruta_galeria}/{nombre_archivo}{file_extension}"
         
         # Detectar content type si no se proporciona
@@ -116,51 +146,75 @@ class LimpiezaStorageService(SupabaseStorageService):
             upsert=False
         )
     
-    def list_galeria(self, id_limpieza: int) -> dict:
+    def list_galeria(self, id_limpieza: int, tipo: Optional[str] = None) -> dict:
         """
-        Lista todas las imágenes de la galería de una limpieza
+        Lista las imágenes de la galería de una limpieza
         
         Args:
             id_limpieza (int): ID de la limpieza
+            tipo (Optional[str]): Tipo de imagen a listar ("antes", "despues" o None para ambas)
             
         Returns:
             dict: Resultado con lista de imágenes
         """
         try:
-            ruta_galeria = self.rutas_imagenes.get_ruta_galeria_limpieza(id_limpieza)
-            
-            # Listar archivos en la carpeta de galería
-            response = self._client.storage.from_(self._bucket).list(path=ruta_galeria)
-            
-            # Filtrar solo imágenes válidas
             imagenes = []
-            if response:
-                for item in response:
-                    # La respuesta puede ser una lista de diccionarios o objetos
-                    if isinstance(item, dict):
-                        nombre = item.get("name", "")
-                    else:
-                        # Si es un objeto, intentar acceder al atributo name
-                        nombre = getattr(item, "name", "")
-                    
-                    # Verificar que sea una imagen válida
-                    if nombre and any(nombre.lower().endswith(ext) for ext in ALLOWED_IMAGE_EXTENSIONS):
-                        ruta_completa = f"{ruta_galeria}/{nombre}"
-                        url_publica = self.build_public_url(ruta_completa)
-                        
-                        # Obtener tamaño si está disponible
-                        tamaño = 0
+            
+            # Determinar qué carpetas listar
+            tipos_a_listar = []
+            if tipo:
+                tipo = tipo.lower()
+                if not self._validate_tipo(tipo):
+                    return {
+                        "success": False,
+                        "imagenes": [],
+                        "total": 0,
+                        "message": "Tipo no permitido. Tipos permitidos: 'antes' o 'despues'"
+                    }
+                tipos_a_listar = [tipo]
+            else:
+                # Si no se especifica tipo, listar ambas carpetas
+                tipos_a_listar = ["antes", "despues"]
+            
+            # Listar imágenes de cada carpeta
+            for tipo_actual in tipos_a_listar:
+                if tipo_actual == "antes":
+                    ruta_galeria = self.rutas_imagenes.get_ruta_galeria_limpieza_antes(id_limpieza)
+                else:  # tipo_actual == "despues"
+                    ruta_galeria = self.rutas_imagenes.get_ruta_galeria_limpieza_despues(id_limpieza)
+                
+                # Listar archivos en la carpeta de galería
+                response = self._client.storage.from_(self._bucket).list(path=ruta_galeria)
+                
+                # Filtrar solo imágenes válidas
+                if response:
+                    for item in response:
+                        # La respuesta puede ser una lista de diccionarios o objetos
                         if isinstance(item, dict):
-                            tamaño = item.get("metadata", {}).get("size", 0) if item.get("metadata") else 0
+                            nombre = item.get("name", "")
                         else:
-                            tamaño = getattr(item, "size", 0) if hasattr(item, "size") else 0
+                            # Si es un objeto, intentar acceder al atributo name
+                            nombre = getattr(item, "name", "")
                         
-                        imagenes.append({
-                            "nombre": nombre,
-                            "ruta": ruta_completa,
-                            "url_publica": url_publica,
-                            "tamaño": tamaño
-                        })
+                        # Verificar que sea una imagen válida
+                        if nombre and any(nombre.lower().endswith(ext) for ext in ALLOWED_IMAGE_EXTENSIONS):
+                            ruta_completa = f"{ruta_galeria}/{nombre}"
+                            url_publica = self.build_public_url(ruta_completa)
+                            
+                            # Obtener tamaño si está disponible
+                            tamaño = 0
+                            if isinstance(item, dict):
+                                tamaño = item.get("metadata", {}).get("size", 0) if item.get("metadata") else 0
+                            else:
+                                tamaño = getattr(item, "size", 0) if hasattr(item, "size") else 0
+                            
+                            imagenes.append({
+                                "nombre": nombre,
+                                "ruta": ruta_completa,
+                                "url_publica": url_publica,
+                                "tamaño": tamaño,
+                                "tipo": tipo_actual
+                            })
             
             return {
                 "success": True,
@@ -178,22 +232,36 @@ class LimpiezaStorageService(SupabaseStorageService):
                 "message": error_msg
             }
     
-    def delete_galeria(self, id_limpieza: int, nombre_archivo: str) -> dict:
+    def delete_galeria(self, id_limpieza: int, nombre_archivo: str, tipo: str) -> dict:
         """
         Elimina una imagen de la galería de la limpieza
         
         Args:
             id_limpieza (int): ID de la limpieza
             nombre_archivo (str): Nombre del archivo a eliminar
+            tipo (str): Tipo de imagen ("antes" o "despues")
             
         Returns:
             dict: Resultado de la operación
         """
-        ruta_galeria = self.rutas_imagenes.get_ruta_galeria_limpieza(id_limpieza)
+        # Validar tipo
+        tipo = tipo.lower()
+        if not self._validate_tipo(tipo):
+            return {
+                "success": False,
+                "message": "Tipo no permitido. Tipos permitidos: 'antes' o 'despues'"
+            }
+        
+        # Construir ruta según el tipo
+        if tipo == "antes":
+            ruta_galeria = self.rutas_imagenes.get_ruta_galeria_limpieza_antes(id_limpieza)
+        else:  # tipo == "despues"
+            ruta_galeria = self.rutas_imagenes.get_ruta_galeria_limpieza_despues(id_limpieza)
+        
         file_path = f"{ruta_galeria}/{nombre_archivo}"
         
         # Validar que la ruta pertenezca a la limpieza
-        if not self._validate_limpieza_path(file_path, id_limpieza):
+        if not self._validate_limpieza_path(file_path, id_limpieza, tipo):
             return {
                 "success": False,
                 "message": "Ruta de archivo inválida para esta limpieza"

@@ -3,9 +3,10 @@ Rutas API para gestión de imágenes de mantenimiento
 Incluye endpoints para galería de imágenes
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import JSONResponse
+from typing import Optional
 import os
 
 from services.storage import MantenimientoStorageService
@@ -60,6 +61,7 @@ def get_mantenimiento_service(db: Session = Depends(get_database_session)) -> Ma
 )
 async def upload_galeria_mantenimiento(
     id_mantenimiento: int,
+    tipo: str = Query(..., description="Tipo de imagen: 'antes' o 'despues'", pattern="^(antes|despues)$"),
     file: UploadFile = File(..., description="Archivo de imagen (JPG, PNG, WebP)"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     mantenimiento_storage_service: MantenimientoStorageService = Depends(get_mantenimiento_storage_service),
@@ -70,13 +72,22 @@ async def upload_galeria_mantenimiento(
     Sube una imagen a la galería del mantenimiento
     
     - **id_mantenimiento**: ID del mantenimiento
+    - **tipo**: Tipo de imagen ("antes" o "despues") - requerido
     - **file**: Archivo de imagen (debe ser JPG, PNG o WebP)
     
     La imagen se guardará automáticamente con el nombre: `img_{id_mantenimiento}_item{identificador}.{extension}`
-    El nombre se genera automáticamente, no es necesario proporcionarlo.
+    en la subcarpeta correspondiente según el tipo especificado.
     
     Requiere autenticación.
     """
+    # Validar tipo
+    tipo = tipo.lower()
+    if tipo not in ("antes", "despues"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tipo no permitido. Tipos permitidos: 'antes' o 'despues'"
+        )
+    
     # Verificar que el mantenimiento existe
     mantenimiento = mantenimiento_service.obtener_por_id(db, id_mantenimiento)
     if not mantenimiento:
@@ -108,6 +119,7 @@ async def upload_galeria_mantenimiento(
             id_mantenimiento=id_mantenimiento,
             file_bytes=file_bytes,
             file_extension=file_extension,
+            tipo=tipo,
             content_type=content_type
         )
         
@@ -141,21 +153,32 @@ async def upload_galeria_mantenimiento(
 )
 async def list_galeria_mantenimiento(
     id_mantenimiento: int,
+    tipo: Optional[str] = Query(None, description="Tipo de imagen a listar: 'antes', 'despues' o None para ambas"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     mantenimiento_storage_service: MantenimientoStorageService = Depends(get_mantenimiento_storage_service),
     mantenimiento_service: MantenimientoService = Depends(get_mantenimiento_service),
     db: Session = Depends(get_database_session)
 ):
     """
-    Lista todas las imágenes de la galería de un mantenimiento
+    Lista las imágenes de la galería de un mantenimiento
     
     - **id_mantenimiento**: ID del mantenimiento
+    - **tipo**: Tipo de imagen a listar ("antes", "despues" o None para ambas) - opcional
     
-    Retorna una lista de todas las imágenes almacenadas en la carpeta
-    `mantenimiento/{id_mantenimiento}/` con sus URLs públicas.
+    Si se especifica `tipo`, retorna solo las imágenes de esa categoría.
+    Si no se especifica, retorna todas las imágenes (antes y despues) con el campo `tipo` indicando su categoría.
     
     Requiere autenticación.
     """
+    # Validar tipo si se proporciona
+    if tipo:
+        tipo = tipo.lower()
+        if tipo not in ("antes", "despues"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Tipo no permitido. Tipos permitidos: 'antes' o 'despues'"
+            )
+    
     # Verificar que el mantenimiento existe
     mantenimiento = mantenimiento_service.obtener_por_id(db, id_mantenimiento)
     if not mantenimiento:
@@ -165,7 +188,7 @@ async def list_galeria_mantenimiento(
         )
     
     # Listar imágenes de la galería
-    result = mantenimiento_storage_service.list_galeria(id_mantenimiento)
+    result = mantenimiento_storage_service.list_galeria(id_mantenimiento, tipo=tipo)
     
     if not result.get("success"):
         raise HTTPException(
@@ -194,6 +217,7 @@ async def list_galeria_mantenimiento(
 async def delete_galeria_mantenimiento(
     id_mantenimiento: int,
     nombre_archivo: str,
+    tipo: str = Query(..., description="Tipo de imagen: 'antes' o 'despues'", pattern="^(antes|despues)$"),
     credentials: HTTPAuthorizationCredentials = Depends(security),
     mantenimiento_storage_service: MantenimientoStorageService = Depends(get_mantenimiento_storage_service),
     mantenimiento_service: MantenimientoService = Depends(get_mantenimiento_service),
@@ -204,9 +228,18 @@ async def delete_galeria_mantenimiento(
     
     - **id_mantenimiento**: ID del mantenimiento
     - **nombre_archivo**: Nombre del archivo a eliminar (ej: "img_123_itema1b2c3d4.jpg")
+    - **tipo**: Tipo de imagen ("antes" o "despues") - requerido
     
     Requiere autenticación.
     """
+    # Validar tipo
+    tipo = tipo.lower()
+    if tipo not in ("antes", "despues"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tipo no permitido. Tipos permitidos: 'antes' o 'despues'"
+        )
+    
     # Verificar que el mantenimiento existe
     mantenimiento = mantenimiento_service.obtener_por_id(db, id_mantenimiento)
     if not mantenimiento:
@@ -216,7 +249,7 @@ async def delete_galeria_mantenimiento(
         )
     
     # Eliminar imagen de la galería
-    result = mantenimiento_storage_service.delete_galeria(id_mantenimiento, nombre_archivo)
+    result = mantenimiento_storage_service.delete_galeria(id_mantenimiento, nombre_archivo, tipo=tipo)
     
     if not result.get("success"):
         raise HTTPException(

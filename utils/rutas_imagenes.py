@@ -175,3 +175,16 @@ class RutasImagenes:
         """
         return f"tipo_habitacion/{id_tipoHabitacion}/galeria"
     
+    def get_ruta_galeria_incidencia(self, id_incidencia: int) -> str:
+        """
+        Obtiene la ruta base para la galería de una incidencia
+        Las imágenes se guardan directamente en: incidencia/{id_incidencia}/
+        
+        Args:
+            id_incidencia (int): ID de la incidencia
+            
+        Returns:
+            str: Ruta base (ej: "incidencia/123")
+        """
+        return f"incidencia/{id_incidencia}"
+    

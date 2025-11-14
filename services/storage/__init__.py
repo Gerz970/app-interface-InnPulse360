@@ -10,6 +10,7 @@ from .mantenimiento_storage_service import MantenimientoStorageService
 from .limpieza_storage_service import LimpiezaStorageService
 from .habitacion_storage_service import HabitacionStorageService
 from .tipo_habitacion_storage_service import TipoHabitacionStorageService
+from .incidencia_storage_service import IncidenciaStorageService
 
 __all__ = [
     "SupabaseStorageService",
@@ -19,6 +20,7 @@ __all__ = [
     "MantenimientoStorageService",
     "LimpiezaStorageService",
     "HabitacionStorageService",
-    "TipoHabitacionStorageService"
+    "TipoHabitacionStorageService",
+    "IncidenciaStorageService"
 ]
 

@@ -32,6 +32,7 @@ from .routes_mantenimiento_imagenes import router as router_mantenimiento_imagen
 from .routes_limpieza_imagenes import router as router_limpieza_imagenes
 from .routes_habitacion_imagenes import router as router_habitacion_imagenes
 from .routes_tipo_habitacion_imagenes import router as router_tipo_habitacion_imagenes
+from .routes_incidencia_imagenes import router as router_incidencia_imagenes
 
 api_router = APIRouter()
 
@@ -68,3 +69,4 @@ api_router.include_router(router_mantenimiento_imagenes)
 api_router.include_router(router_limpieza_imagenes)
 api_router.include_router(router_habitacion_imagenes)
 api_router.include_router(router_tipo_habitacion_imagenes)
+api_router.include_router(router_incidencia_imagenes)

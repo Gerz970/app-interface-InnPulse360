@@ -590,6 +590,7 @@ class UsuarioService:
     ) -> VerificarDisponibilidadResponse:
         """
         Verifica disponibilidad de login y si existe cliente con el correo
+        También verifica si el cliente ya tiene un usuario asociado
         
         Args:
             request (VerificarDisponibilidadRequest): Datos a verificar
@@ -605,6 +606,18 @@ class UsuarioService:
         cliente = self.cliente_dao.get_by_correo_electronico(request.correo_electronico)
         correo_en_clientes = cliente is not None
         
+        # Verificar si el cliente ya tiene un usuario asociado con ese correo
+        usuario_ya_existe = False
+        if cliente:
+            # Obtener usuarios asociados al cliente
+            asignaciones = self.asignacion_dao.get_usuarios_por_cliente(cliente.id_cliente)
+            
+            # Verificar si alguno de esos usuarios tiene el mismo correo electrónico
+            for asignacion in asignaciones:
+                if asignacion.usuario and asignacion.usuario.correo_electronico == request.correo_electronico:
+                    usuario_ya_existe = True
+                    break
+        
         # Preparar datos del cliente si existe
         cliente_data = None
         if cliente:
@@ -612,13 +625,16 @@ class UsuarioService:
             cliente_data = ClienteFormularioData.model_validate(cliente)
         
         # Determinar si puede registrar
-        puede_registrar = login_disponible and correo_en_clientes
+        # Solo puede registrar si: login disponible, cliente existe, y usuario NO existe
+        puede_registrar = login_disponible and correo_en_clientes and not usuario_ya_existe
         
-        # Generar mensaje
+        # Generar mensaje según el escenario
         if not login_disponible:
-            mensaje = f"El login '{request.login}' ya está en uso"
+            mensaje = f"El login '{request.login}' ya está en uso. Por favor, use otro."
         elif not correo_en_clientes:
-            mensaje = f"No se encontró cliente con el correo '{request.correo_electronico}'"
+            mensaje = f"No se encontró cliente con el correo '{request.correo_electronico}'. Debe crear el cliente primero."
+        elif usuario_ya_existe:
+            mensaje = f"Ya cuenta con un usuario registrado. Por favor, inicie sesión."
         else:
             mensaje = f"Login disponible. Se encontró cliente '{cliente.nombre_razon_social}'"
         
@@ -627,6 +643,7 @@ class UsuarioService:
             correo_en_clientes=correo_en_clientes,
             cliente=cliente_data,
             puede_registrar=puede_registrar,
+            usuario_ya_existe=usuario_ya_existe,
             mensaje=mensaje
         )
     
@@ -659,7 +676,13 @@ class UsuarioService:
         if cliente.correo_electronico != request.correo_electronico:
             raise ValueError("El correo no coincide con el del cliente")
         
-        # 4. Generar o validar password
+        # 4. Verificar que el cliente no tenga ya un usuario asociado con ese correo
+        asignaciones = self.asignacion_dao.get_usuarios_por_cliente(cliente.id_cliente)
+        for asignacion in asignaciones:
+            if asignacion.usuario and asignacion.usuario.correo_electronico == request.correo_electronico:
+                raise ValueError("El cliente ya tiene un usuario registrado con este correo electrónico. Por favor, inicie sesión.")
+        
+        # 5. Generar o validar password
         password_temporal_generada = False
         password_temp = None
         password_expira = None
@@ -677,7 +700,7 @@ class UsuarioService:
             password_temporal_generada = True
             password_expira = datetime.utcnow() + timedelta(days=7)
         
-        # 5. Crear usuario
+        # 6. Crear usuario
         usuario_data = UsuarioCreate(
             login=request.login,
             correo_electronico=request.correo_electronico,
@@ -688,25 +711,25 @@ class UsuarioService:
         
         usuario_creado = self.create_usuario(usuario_data)
         
-        # 6. Actualizar campos de password temporal si aplica
+        # 7. Actualizar campos de password temporal si aplica
         if password_temporal_generada:
             usuario_db = self.dao.get_by_id(usuario_creado.id_usuario)
             usuario_db.password_temporal = True
             usuario_db.password_expira = password_expira
             self.db.commit()
         
-        # 7. Obtener rol "Cliente"
+        # 8. Obtener rol "Cliente"
         rol_cliente = self.roles_dao.get_by_nombre("Cliente")
         if not rol_cliente:
             raise ValueError("No se encontró el rol 'Cliente'. Debe crearse en la base de datos.")
         
-        # 8. Asignar rol "Cliente"
+        # 9. Asignar rol "Cliente"
         self.rol_usuario_dao.assign_role_to_user(usuario_creado.id_usuario, rol_cliente.id_rol)
         
-        # 9. Crear asignación usuario-cliente
+        # 10. Crear asignación usuario-cliente
         self.asignacion_dao.crear_asignacion_cliente(usuario_creado.id_usuario, cliente.id_cliente)
         
-        # 10. Enviar credenciales por email si se generó password temporal
+        # 11. Enviar credenciales por email si se generó password temporal
         email_enviado = self._enviar_credenciales_email(
             password_temporal_generada=password_temporal_generada,
             cliente=cliente,
@@ -715,7 +738,7 @@ class UsuarioService:
             password_expira=password_expira
         )
         
-        # 11. Preparar respuesta
+        # 12. Preparar respuesta
         cliente_info = ClienteEncontradoInfo(
             id_cliente=cliente.id_cliente,
             nombre_razon_social=cliente.nombre_razon_social,

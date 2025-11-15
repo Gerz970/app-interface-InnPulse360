@@ -42,6 +42,7 @@ class VerificarDisponibilidadResponse(BaseModel):
     correo_en_clientes: bool = Field(..., description="Si el correo existe en tabla clientes")
     cliente: Optional[ClienteFormularioData] = Field(None, description="Datos completos del cliente si existe")
     puede_registrar: bool = Field(..., description="Si puede continuar con el registro")
+    usuario_ya_existe: bool = Field(default=False, description="Si el cliente ya tiene un usuario asociado con ese correo")
     mensaje: str = Field(..., description="Mensaje descriptivo")
     
     class Config:
@@ -66,6 +67,7 @@ class VerificarDisponibilidadResponse(BaseModel):
                     "id_estatus": 1
                 },
                 "puede_registrar": True,
+                "usuario_ya_existe": False,
                 "mensaje": "Login disponible. Se encontró cliente con este correo."
             }
         }

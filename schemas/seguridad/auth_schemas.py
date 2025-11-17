@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
+from schemas.seguridad.usuario_rol_schemas import RolSimpleResponse
 
 
 class UsuarioLogin(BaseModel):
@@ -154,6 +155,11 @@ class Token(BaseModel):
     modulos: List[ModuloSimpleResponse] = Field(
         default_factory=list,
         description="Lista de módulos a los que el usuario tiene acceso"
+    )
+    
+    roles: List[RolSimpleResponse] = Field(
+        default_factory=list,
+        description="Lista de roles del usuario con sus nombres"
     )
     
     password_temporal_info: Optional[PasswordTemporalInfo] = Field(

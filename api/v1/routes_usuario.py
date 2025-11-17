@@ -103,7 +103,11 @@ async def create_usuario(
     
     - **login**: Login único del usuario (máximo 25 caracteres)
     - **correo_electronico**: Email único del usuario (máximo 50 caracteres)
-    - **password**: Contraseña (mínimo 6 caracteres)
+    - **password**: Contraseña que debe cumplir:
+      - Mínimo 6 caracteres
+      - Al menos una letra mayúscula
+      - Al menos una letra minúscula
+      - Al menos un número
     - **estatus_id**: Estatus del usuario (1=Activo por defecto)
     
     La contraseña se encripta automáticamente antes de guardarse.
@@ -325,10 +329,13 @@ async def cambiar_password_temporal(
     db: Session = Depends(get_database_session)
 ):
     """
-    Cambiar una contraseña temporal por una definitiva
+    Cambiar la contraseña del usuario (temporal o definitiva)
+    
+    Permite cambiar la contraseña tanto si es temporal como si es definitiva.
+    Si la contraseña es temporal y ha expirado, se rechaza el cambio.
     
     - **login**: Login del usuario
-    - **password_actual**: Password temporal actual
+    - **password_actual**: Contraseña actual (temporal o definitiva)
     - **password_nueva**: Nueva contraseña
     - **password_confirmacion**: Confirmación de nueva contraseña
     """

@@ -67,6 +67,47 @@ def get_current_user(
     return usuario_service.get_current_user(credentials.credentials)
 
 
+@router.post("/publico", response_model=ClienteResponse, status_code=status.HTTP_201_CREATED)
+async def create_cliente_publico(
+    cliente_data: ClienteCreate,
+    db: Session = Depends(get_database_session)
+):
+    """
+    Crear un nuevo cliente (endpoint público, sin autenticación)
+    
+    ⚠️ **VALIDACIÓN IMPORTANTE**: El RFC debe ser único. Si ya existe, retorna error 400.
+    
+    Este endpoint está diseñado para el proceso de registro público de usuarios.
+    No requiere autenticación ya que se usa antes de que el usuario tenga credenciales.
+    
+    - **tipo_persona**: 1=Física, 2=Moral
+    - **documento_identificacion**: Documento de identificación (texto, máximo 50 caracteres)
+    - **nombre_razon_social**: Nombre completo o Razón Social
+    - **rfc**: RFC (12-13 caracteres, único, validado)
+    - **curp**: CURP (18 caracteres, validado)
+    - **pais_id**: ID del país
+    - **estado_id**: ID del estado (opcional)
+    - **correo_electronico**: Email del cliente
+    - **representante**: Nombre del representante
+    - **id_estatus**: Estatus (1=Activo, 0=Inactivo)
+    """
+    try:
+        cliente_service = ClienteService(db)
+        return cliente_service.crear_cliente(cliente_data)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error interno del servidor: {str(e)}"
+        )
+
+
 @router.post("/", response_model=ClienteResponse, status_code=status.HTTP_201_CREATED)
 async def create_cliente(
     cliente_data: ClienteCreate,
@@ -79,7 +120,7 @@ async def create_cliente(
     ⚠️ **VALIDACIÓN IMPORTANTE**: El RFC debe ser único. Si ya existe, retorna error 400.
     
     - **tipo_persona**: 1=Física, 2=Moral
-    - **documento_identificacion**: Número de identificación
+    - **documento_identificacion**: Documento de identificación (texto, máximo 50 caracteres)
     - **nombre_razon_social**: Nombre completo o Razón Social
     - **rfc**: RFC (12-13 caracteres, único, validado)
     - **curp**: CURP (18 caracteres, validado)

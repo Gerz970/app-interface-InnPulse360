@@ -16,11 +16,11 @@ class ClienteUpdate(BaseModel):
         example=1
     )
     
-    documento_identificacion: Optional[int] = Field(
+    documento_identificacion: Optional[str] = Field(
         None,
-        gt=0,
+        max_length=50,
         description="Número de documento de identificación",
-        example=123456789
+        example="123456789"
     )
     
     nombre_razon_social: Optional[str] = Field(

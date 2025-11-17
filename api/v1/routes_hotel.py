@@ -28,10 +28,7 @@ def get_hotel_service(db: Session = Depends(get_database_session)) -> HotelServi
     Returns:
         HotelService: Instancia del servicio de hotel
     """
-    try:
-        return HotelService(db)
-    finally:
-        db.close()
+    return HotelService(db)
 
 
 @api_router.get("/", response_model=List[HotelResponse])

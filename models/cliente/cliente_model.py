@@ -8,7 +8,7 @@ class Cliente(Base):
 
     id_cliente = Column(Integer, primary_key=True, autoincrement=True, index=True)
     tipo_persona = Column(SmallInteger, nullable=False)
-    documento_identificacion = Column(Integer)
+    documento_identificacion = Column(String(50), nullable=True)
     nombre_razon_social = Column(String(250), nullable=False)
     apellido_paterno = Column(String(250))
     apellido_materno = Column(String(250))
@@ -17,7 +17,7 @@ class Cliente(Base):
     telefono = Column(String(10))
     direccion = Column(String(100))
     pais_id = Column(Integer)
-    estado_id = Column(Integer)
+    estado_id = Column(Integer, nullable=True)
     correo_electronico = Column(String(20))
     representante = Column(String(100))
     id_estatus = Column(Integer)

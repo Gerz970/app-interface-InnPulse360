@@ -19,10 +19,11 @@ class ClienteResponse(BaseModel):
         example=1
     )
     
-    documento_identificacion: int = Field(
-        ...,
+    documento_identificacion: Optional[str] = Field(
+        None,
+        max_length=50,
         description="Número de documento de identificación",
-        example=123456789
+        example="123456789"
     )
     
     nombre_razon_social: str = Field(
@@ -73,9 +74,9 @@ class ClienteResponse(BaseModel):
         example=1
     )
     
-    estado_id: int = Field(
-        ...,
-        description="ID del estado",
+    estado_id: Optional[int] = Field(
+        None,
+        description="ID del estado (opcional)",
         example=15
     )
     
@@ -103,7 +104,7 @@ class ClienteResponse(BaseModel):
             "example": {
                 "id_cliente": 1,
                 "tipo_persona": 1,
-                "documento_identificacion": 123456789,
+                "documento_identificacion": "123456789",
                 "nombre_razon_social": "Juan Pérez González",
                 "apellido_paterno": "Pérez",
                 "apellido_materno": "González",

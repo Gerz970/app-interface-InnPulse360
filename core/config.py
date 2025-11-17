@@ -58,3 +58,11 @@ class SupabaseSettings:
     bucket_images: str = os.getenv("SUPABASE_BUCKET_IMAGES", "images")
     bucket_pdfs: str = os.getenv("SUPABASE_BUCKET_PDFS", "pdfs")
     public_base_url: str = os.getenv("SUPABASE_PUBLIC_BASE_URL", "")
+
+
+# Configuración de módulos permitidos por rol (movido al frontend)
+# Esta configuración ya no se usa en el backend, el filtrado se hace en la app móvil
+# Se mantiene comentada por si se necesita en el futuro
+# ROL_MODULOS_PERMITIDOS = {
+#     "Cliente": ["Reservaciones"]
+# }

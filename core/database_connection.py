@@ -7,7 +7,7 @@ import threading
 from typing import Optional
 from sqlalchemy import create_engine, Engine, text
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import QueuePool
 from .config import DatabaseSettings
 
 
@@ -80,11 +80,15 @@ class DatabaseConnection:
             # Construir URL de conexión para SQL Server
             connection_string = self._build_connection_string()
             
-            # Crear engine con configuración optimizada
+            # Crear engine con configuración optimizada para SQL Server
+            # QueuePool es más adecuado para aplicaciones web con múltiples requests concurrentes
             engine = create_engine(
                 connection_string,
-                poolclass=StaticPool,  # Pool estático para aplicaciones pequeñas
-                pool_pre_ping=True,    # Verificar conexión antes de usar
+                poolclass=QueuePool,
+                pool_size=10,          # Número de conexiones a mantener en el pool
+                max_overflow=20,       # Máximo de conexiones adicionales que se pueden crear
+                pool_pre_ping=True,    # Verificar conexión antes de usar (importante para SQL Server)
+                pool_recycle=3600,     # Reciclar conexiones después de 1 hora (evita conexiones stale)
                 echo=False,            # Cambiar a True para debug SQL
                 future=True            # Usar SQLAlchemy 2.0 style
             )
@@ -103,6 +107,9 @@ class DatabaseConnection:
         # Convertir el booleano a 'yes' o 'no' para ODBC Driver
         trust_cert = "yes" if self._database_settings.trust_server_certificate else "no"
         
+        # Parámetros adicionales para SQL Server/pyodbc que ayudan a evitar problemas de conexión
+        # MARS (Multiple Active Result Sets) permite múltiples consultas en la misma conexión
+        # pero puede causar problemas, así que lo deshabilitamos explícitamente
         return (
             f"mssql+pyodbc://{self._database_settings.username}:"
             f"{self._database_settings.password}@"
@@ -111,6 +118,7 @@ class DatabaseConnection:
             f"{self._database_settings.database}"
             f"?driver={self._database_settings.driver.replace(' ', '+')}"
             f"&TrustServerCertificate={trust_cert}"
+            f"&MARS_Connection=No"  # Deshabilitar MARS para evitar conflictos
         )
     
     def get_session(self) -> Session:
@@ -158,12 +166,19 @@ class DatabaseConnection:
 db_connection = DatabaseConnection()
 
 
-def get_database_session() -> Session:
+def get_database_session():
     """
     Función helper para obtener una sesión de base de datos
     Útil para usar con FastAPI dependency injection
+    
+    Usa yield para asegurar que la sesión se cierre correctamente
+    después de que se complete la operación, incluso en operaciones asíncronas
     """
-    return db_connection.get_session()
+    session = db_connection.get_session()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 def get_database_engine() -> Engine:

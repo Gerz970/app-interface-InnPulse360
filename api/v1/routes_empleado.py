@@ -19,10 +19,7 @@ def get_empleado_service(db: Session = Depends(get_database_session)) -> Emplead
     """
     Dependency para obtener la instancia del servicio de Empleado
     """
-    try:
-        return EmpleadoService(db)
-    finally:
-        db.close()
+    return EmpleadoService(db)
 
 
 @api_router.post("/", response_model=EmpleadoResponse, status_code=status.HTTP_201_CREATED)

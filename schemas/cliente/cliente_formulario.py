@@ -7,8 +7,9 @@ class ClienteFormularioData(BaseModel):
     Schema para datos del formulario de cliente
     Incluye todos los campos necesarios para crear/actualizar un cliente
     """
+    id_cliente: Optional[int] = Field(None, description="ID del cliente (opcional, solo para respuestas)")
     tipo_persona: int = Field(..., description="Tipo de persona (1=Física, 2=Moral)")
-    documento_identificacion: int = Field(..., description="Número de documento de identificación")
+    documento_identificacion: Optional[str] = Field(None, max_length=50, description="Número de documento de identificación")
     nombre_razon_social: str = Field(..., description="Nombre o razón social")
     apellido_paterno: Optional[str] = Field(None, description="Apellido paterno")
     apellido_materno: Optional[str] = Field(None, description="Apellido materno")
@@ -24,10 +25,14 @@ class ClienteFormularioData(BaseModel):
     
     class Config:
         from_attributes = True
+        # Incluir campos None en la serialización para asegurar que id_cliente se incluya
+        json_encoders = {
+            # No necesitamos encoders especiales, pero esto asegura la serialización correcta
+        }
         json_schema_extra = {
             "example": {
                 "tipo_persona": 1,
-                "documento_identificacion": 123456789,
+                "documento_identificacion": "123456789",
                 "nombre_razon_social": "Juan Pérez González",
                 "apellido_paterno": "Pérez",
                 "apellido_materno": "González",

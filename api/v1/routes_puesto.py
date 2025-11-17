@@ -11,10 +11,10 @@ security = HTTPBearer()
 api_router = APIRouter(prefix="/puesto", tags=["Puesto"])
 
 def get_puesto_service(db: Session = Depends(get_database_session)) -> PuestoService:
-    try:
-        return PuestoService(db)
-    finally:
-        db.close()
+    """
+    Dependency para obtener la instancia del servicio de Puesto
+    """
+    return PuestoService(db)
 
 # Crear un puesto
 @api_router.post("/", response_model=PuestoResponse,  status_code=status.HTTP_201_CREATED)

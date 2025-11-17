@@ -52,7 +52,7 @@ class VerificarDisponibilidadResponse(BaseModel):
                 "correo_en_clientes": True,
                 "cliente": {
                     "tipo_persona": 1,
-                    "documento_identificacion": 123456789,
+                    "documento_identificacion": "123456789",
                     "nombre_razon_social": "Juan Pérez González",
                     "apellido_paterno": "Pérez",
                     "apellido_materno": "González",

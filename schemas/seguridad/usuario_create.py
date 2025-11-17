@@ -27,8 +27,8 @@ class UsuarioCreate(BaseModel):
         ...,
         min_length=6,  # Mínimo 6 caracteres para seguridad
         max_length=255,  # Máximo razonable para contraseñas
-        description="Contraseña del usuario (mínimo 6 caracteres, sin límite superior)",
-        example="123456"
+        description="Contraseña del usuario. Debe cumplir: mínimo 6 caracteres, al menos una mayúscula, al menos una minúscula, y al menos un número",
+        example="Password123"
     )
     
     estatus_id: Optional[int] = Field(
@@ -49,7 +49,7 @@ class UsuarioCreate(BaseModel):
             "example": {
                 "login": "juan.perez",
                 "correo_electronico": "juan.perez@gmail.com",
-                "password": "123456",
+                "password": "Password123",
                 "roles_ids": [1, 2]
             }
         }

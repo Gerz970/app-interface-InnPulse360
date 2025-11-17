@@ -159,7 +159,7 @@ class UsuarioService:
             UsuarioResponse: Usuario creado (sin contraseña)
             
         Raises:
-            HTTPException: Si el login o email ya existen
+            HTTPException: Si el login o email ya existen, o si la contraseña no cumple los requisitos de fortaleza
         """
         # Verificar si el login ya existe
         if self.dao.exists_by_login(usuario_data.login):
@@ -173,6 +173,14 @@ class UsuarioService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El correo electrónico ya está en uso"
+            )
+        
+        # Validar fortaleza de password
+        es_valida, mensaje = validar_fortaleza_password(usuario_data.password)
+        if not es_valida:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=mensaje
             )
         
         # Verificar que todos los roles existen y están activos (si se proporcionan)
@@ -472,6 +480,9 @@ class UsuarioService:
             for modulo in modulos_db
         ]
         
+        # 📦 OBTENER ROLES DEL USUARIO
+        roles_usuario = self._get_usuario_roles(usuario.id_usuario)
+        
         # Crear token de acceso
         access_token_expires = timedelta(minutes=AuthSettings.access_token_expire_minutes)
         access_token = self._create_access_token(
@@ -497,6 +508,7 @@ class UsuarioService:
             expires_in=AuthSettings.access_token_expire_minutes * 60,  # En segundos
             usuario=usuario_info,
             modulos=modulos_response,
+            roles=roles_usuario,
             password_temporal_info=password_temporal_info
         )
         
@@ -622,7 +634,29 @@ class UsuarioService:
         cliente_data = None
         if cliente:
             # Crear datos completos del cliente usando **data
-            cliente_data = ClienteFormularioData.model_validate(cliente)
+            # Incluir id_cliente en el diccionario antes de validar
+            cliente_dict = {
+                'id_cliente': cliente.id_cliente,
+                'tipo_persona': cliente.tipo_persona,
+                'documento_identificacion': cliente.documento_identificacion,
+                'nombre_razon_social': cliente.nombre_razon_social,
+                'apellido_paterno': cliente.apellido_paterno,
+                'apellido_materno': cliente.apellido_materno,
+                'rfc': cliente.rfc,
+                'curp': cliente.curp,
+                'telefono': cliente.telefono,
+                'direccion': cliente.direccion,
+                'pais_id': cliente.pais_id,
+                'estado_id': cliente.estado_id,
+                'correo_electronico': cliente.correo_electronico,
+                'representante': cliente.representante,
+                'id_estatus': cliente.id_estatus,
+            }
+            cliente_data = ClienteFormularioData(**cliente_dict)
+            # Verificar que el id_cliente se incluyó correctamente
+            cliente_dump = cliente_data.model_dump(exclude_none=False)
+            print(f"DEBUG: Cliente data preparado - id_cliente: {cliente_dump.get('id_cliente')}")
+            print(f"DEBUG: Cliente dict completo: {cliente_dump}")
         
         # Determinar si puede registrar
         # Solo puede registrar si: login disponible, cliente existe, y usuario NO existe
@@ -775,7 +809,10 @@ class UsuarioService:
         request: CambiarPasswordTemporalRequest
     ) -> CambiarPasswordTemporalResponse:
         """
-        Cambia una contraseña temporal por una definitiva
+        Cambia la contraseña del usuario (temporal o definitiva)
+        
+        Permite cambiar la contraseña tanto si es temporal como si es definitiva.
+        Si la contraseña es temporal y ha expirado, se rechaza el cambio.
         
         Args:
             request (CambiarPasswordTemporalRequest): Datos del cambio
@@ -795,23 +832,22 @@ class UsuarioService:
         if not self._verify_password(request.password_actual, usuario.password):
             raise ValueError("Contraseña actual incorrecta")
         
-        # 3. Verificar que tiene password temporal
-        if not usuario.password_temporal:
-            raise ValueError("Este usuario no tiene una contraseña temporal")
+        # 3. Si tiene password temporal, verificar que no ha expirado
+        if usuario.password_temporal:
+            if usuario.password_expira and datetime.utcnow() > usuario.password_expira:
+                raise ValueError("La contraseña temporal ha expirado. Solicite una nueva.")
         
-        # 4. Verificar que no ha expirado
-        if usuario.password_expira and datetime.utcnow() > usuario.password_expira:
-            raise ValueError("La contraseña temporal ha expirado. Solicite una nueva.")
-        
-        # 5. Validar nueva password
+        # 4. Validar nueva password
         es_valida, mensaje = validar_fortaleza_password(request.password_nueva)
         if not es_valida:
             raise ValueError(mensaje)
         
-        # 6. Actualizar password
+        # 5. Actualizar password
         usuario.password = self._hash_password(request.password_nueva)
-        usuario.password_temporal = False
-        usuario.password_expira = None
+        # Si tenía password temporal, marcarla como definitiva
+        if usuario.password_temporal:
+            usuario.password_temporal = False
+            usuario.password_expira = None
         usuario.fecha_ultimo_cambio_password = datetime.utcnow()
         
         self.db.commit()

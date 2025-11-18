@@ -177,6 +177,59 @@ class EmailTemplateService:
         
         return self.render_base_template(variables)
     
+    def create_password_recovery_email(self, destinatario_nombre: str, login: str, 
+                                      password_temporal: str, fecha_expiracion: str) -> str:
+        """
+        Crea email con contraseña temporal para recuperación de contraseña
+        
+        Args:
+            destinatario_nombre (str): Nombre del destinatario
+            login (str): Login/usuario para acceder al sistema
+            password_temporal (str): Contraseña temporal generada
+            fecha_expiracion (str): Fecha de expiración de la contraseña temporal
+            
+        Returns:
+            str: HTML del email con contraseña temporal de recuperación
+        """
+        contenido_principal = f"""
+        <p>Recibimos una solicitud para recuperar tu contraseña en InnPulse 360.</p>
+        
+        <p>A continuación encontrarás tus credenciales de acceso temporales:</p>
+        
+        <div class="info-box" style="background-color: #F3F4F6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #1F2937; margin-top: 0;">🔐 Credenciales de Acceso Temporal</h3>
+            <p style="margin: 10px 0;"><strong>Usuario:</strong> <span class="code" style="background-color: #E5E7EB; padding: 5px 10px; border-radius: 4px; font-family: monospace;">{login}</span></p>
+            <p style="margin: 10px 0;"><strong>Contraseña Temporal:</strong> <span class="code" style="background-color: #E5E7EB; padding: 5px 10px; border-radius: 4px; font-family: monospace;">{password_temporal}</span></p>
+            <p style="margin: 10px 0; color: #DC2626;"><strong>⚠️ Expira:</strong> {fecha_expiracion}</p>
+        </div>
+        
+        <div style="background-color: #FEF3C7; border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; color: #92400E;"><strong>⚠️ IMPORTANTE:</strong></p>
+            <p style="margin: 5px 0 0 0; color: #92400E;">Esta es una contraseña temporal. Por seguridad, debes cambiarla inmediatamente después de iniciar sesión.</p>
+        </div>
+        
+        <p>Para acceder al sistema, haz clic en el botón de abajo:</p>
+        """
+        
+        variables = {
+            'destinatario_nombre': destinatario_nombre,
+            'contenido_principal': contenido_principal,
+            'boton_url': 'https://innpulse360.com/login',
+            'boton_texto': 'Iniciar Sesión',
+            'contenido_secundario': '''
+            <p><strong>Recomendaciones de seguridad:</strong></p>
+            <ul style="margin-left: 20px; color: #6B7280;">
+                <li>Esta contraseña es temporal y debe cambiarse al ingresar al sistema</li>
+                <li>No compartas tus credenciales con nadie</li>
+                <li>Utiliza una contraseña segura que incluya mayúsculas, minúsculas y números</li>
+                <li>Si no solicitaste esta recuperación de contraseña, contacta inmediatamente a soporte</li>
+            </ul>
+            <p>Si tienes alguna pregunta o necesitas ayuda, nuestro equipo de soporte está disponible para asistirte.</p>
+            '''
+        }
+        
+        return self.render_base_template(variables)
+    
     def create_password_reset_email(self, destinatario_nombre: str, reset_token: str) -> str:
         """
         Crea email de restablecimiento de contraseña

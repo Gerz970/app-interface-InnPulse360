@@ -22,6 +22,10 @@ from schemas.seguridad.registro_cliente_schemas import (
     CambiarPasswordTemporalRequest,
     CambiarPasswordTemporalResponse
 )
+from schemas.seguridad.recuperar_password_schemas import (
+    RecuperarPasswordRequest,
+    RecuperarPasswordResponse
+)
 
 # Configurar router
 router = APIRouter(
@@ -87,6 +91,31 @@ async def login(
     Retorna un token JWT válido por 30 minutos.
     """
     return usuario_service.login(login_data)
+
+
+@router.post("/recuperar-password", response_model=RecuperarPasswordResponse, summary="Recuperar contraseña")
+async def recuperar_password(
+    request_data: RecuperarPasswordRequest,
+    usuario_service: UsuarioService = Depends(get_usuario_service)
+):
+    """
+    Recuperar contraseña de usuario
+    
+    Solicita la recuperación de contraseña mediante correo electrónico.
+    Si el correo existe en el sistema, se generará una contraseña temporal
+    y se enviará por email. Por seguridad, siempre se retorna el mismo mensaje
+    sin revelar si el correo existe o no.
+    
+    - **correo_electronico**: Correo electrónico del usuario
+    
+    La contraseña temporal expira en 7 días y debe cambiarse al ingresar al sistema.
+    """
+    resultado = usuario_service.recuperar_password(request_data.correo_electronico)
+    return RecuperarPasswordResponse(
+        success=resultado["success"],
+        mensaje=resultado["mensaje"],
+        email_enviado=resultado["email_enviado"]
+    )
 
 
 # =============================================================================

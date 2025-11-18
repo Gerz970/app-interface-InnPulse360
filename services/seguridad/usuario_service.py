@@ -904,6 +904,122 @@ class UsuarioService:
             print(f"Error al enviar email con credenciales: {e}")
             return False
     
+    def recuperar_password(self, correo_electronico: str):
+        """
+        Recupera la contraseña de un usuario generando una contraseña temporal
+        
+        Por seguridad, siempre retorna un mensaje genérico sin revelar si el correo
+        existe o no en el sistema.
+        
+        Args:
+            correo_electronico (str): Correo electrónico del usuario
+            
+        Returns:
+            dict: Respuesta con success, mensaje y email_enviado
+        """
+        # Mensaje genérico para no revelar si el correo existe
+        mensaje_generico = "Si el correo existe en nuestro sistema, se ha enviado una contraseña temporal."
+        
+        try:
+            # 1. Buscar usuario por correo electrónico
+            usuario = self.dao.get_by_email(correo_electronico)
+            
+            # 2. Si no existe, retornar mensaje genérico (por seguridad)
+            if not usuario:
+                return {
+                    "success": True,
+                    "mensaje": mensaje_generico,
+                    "email_enviado": False
+                }
+            
+            # 3. Verificar que el usuario esté activo
+            if usuario.estatus_id != 1:
+                return {
+                    "success": True,
+                    "mensaje": mensaje_generico,
+                    "email_enviado": False
+                }
+            
+            # 4. Generar contraseña temporal
+            password_temp = generar_password_temporal()
+            
+            # 5. Encriptar la contraseña temporal
+            hashed_password = self._hash_password(password_temp)
+            
+            # 6. Calcular fecha de expiración (7 días)
+            password_expira = datetime.utcnow() + timedelta(days=7)
+            
+            # 7. Actualizar usuario con la nueva contraseña temporal
+            usuario.password = hashed_password
+            usuario.password_temporal = True
+            usuario.password_expira = password_expira
+            usuario.fecha_ultimo_cambio_password = datetime.utcnow()
+            
+            self.db.commit()
+            self.db.refresh(usuario)
+            
+            # 8. Enviar email con la contraseña temporal
+            email_enviado = self._enviar_email_recuperacion(
+                usuario=usuario,
+                password_temp=password_temp,
+                password_expira=password_expira
+            )
+            
+            # 9. Retornar respuesta exitosa
+            return {
+                "success": True,
+                "mensaje": mensaje_generico,
+                "email_enviado": email_enviado
+            }
+            
+        except Exception as e:
+            # En caso de error, retornar mensaje genérico para no revelar información
+            print(f"Error al recuperar contraseña: {e}")
+            return {
+                "success": True,
+                "mensaje": mensaje_generico,
+                "email_enviado": False
+            }
+    
+    def _enviar_email_recuperacion(self, usuario, password_temp: str, password_expira) -> bool:
+        """
+        Envía el email con la contraseña temporal de recuperación
+        
+        Args:
+            usuario: Objeto del usuario con sus datos
+            password_temp: Contraseña temporal generada
+            password_expira: Fecha de expiración de la contraseña
+            
+        Returns:
+            bool: True si el email se envió correctamente, False si falló
+        """
+        try:
+            from services.email.email_service import EmailService
+            
+            # 1. Formatear la fecha de expiración
+            fecha_expira_formateada = self._formatear_fecha_expiracion(password_expira)
+            
+            # 2. Obtener nombre del usuario (usar login si no hay otro nombre disponible)
+            nombre_usuario = usuario.login
+            
+            # 3. Enviar email con la contraseña temporal
+            email_service = EmailService()
+            email_result = email_service.send_password_recovery_email_sync(
+                destinatario_email=usuario.correo_electronico,
+                destinatario_nombre=nombre_usuario,
+                login=usuario.login,
+                password_temporal=password_temp,
+                fecha_expiracion=fecha_expira_formateada
+            )
+            
+            # 4. Retornar el resultado
+            return email_result.success
+            
+        except Exception as e:
+            # Si falla el envío, loguear pero NO fallar el proceso
+            print(f"Error al enviar email de recuperación: {e}")
+            return False
+    
     def _formatear_fecha_expiracion(self, password_expira) -> str:
         """
         Formatea la fecha de expiración en formato legible en español

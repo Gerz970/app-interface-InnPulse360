@@ -273,6 +273,47 @@ class EmailService:
                 error=str(e)
             )
     
+    def send_password_recovery_email_sync(self, destinatario_email: str, destinatario_nombre: str,
+                                         login: str, password_temporal: str, 
+                                         fecha_expiracion: str) -> EmailResponseBasic:
+        """
+        Envía email con contraseña temporal para recuperación de contraseña (MÉTODO SÍNCRONO)
+        
+        Este método es completamente síncrono y puede ser llamado desde cualquier parte
+        del código sin preocuparse por event loops o async/await.
+        
+        Args:
+            destinatario_email: Email del destinatario
+            destinatario_nombre: Nombre del destinatario  
+            login: Usuario para acceder al sistema
+            password_temporal: Contraseña temporal generada
+            fecha_expiracion: Fecha de expiración (formato: "DD/MM/YYYY a las HH:MM")
+            
+        Returns:
+            EmailResponseBasic con el resultado del envío
+        """
+        try:
+            # 1. Generar contenido HTML del email
+            html_content = self._generar_html_recuperacion(
+                destinatario_nombre, login, password_temporal, fecha_expiracion
+            )
+            
+            # 2. Crear y enviar el mensaje SMTP
+            return self._enviar_email_smtp(
+                destinatario_email=destinatario_email,
+                asunto="Recuperación de Contraseña - InnPulse 360",
+                contenido_html=html_content
+            )
+            
+        except Exception as e:
+            logger.error(f"Error al enviar email de recuperación: {str(e)}")
+            return EmailResponseBasic(
+                success=False,
+                message="Error al enviar email",
+                fecha_envio=None,
+                error=str(e)
+            )
+    
     def _generar_html_credenciales(self, destinatario_nombre: str, login: str,
                                    password_temporal: str, fecha_expiracion: str) -> str:
         """
@@ -288,6 +329,24 @@ class EmailService:
             HTML del email
         """
         return self.template_service.create_client_credentials_email(
+            destinatario_nombre, login, password_temporal, fecha_expiracion
+        )
+    
+    def _generar_html_recuperacion(self, destinatario_nombre: str, login: str,
+                                   password_temporal: str, fecha_expiracion: str) -> str:
+        """
+        Genera el contenido HTML para email de recuperación de contraseña
+        
+        Args:
+            destinatario_nombre: Nombre del destinatario
+            login: Usuario del sistema
+            password_temporal: Contraseña temporal
+            fecha_expiracion: Fecha de expiración formateada
+            
+        Returns:
+            HTML del email
+        """
+        return self.template_service.create_password_recovery_email(
             destinatario_nombre, login, password_temporal, fecha_expiracion
         )
     

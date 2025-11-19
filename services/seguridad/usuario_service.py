@@ -483,7 +483,12 @@ class UsuarioService:
         
         # 📦 OBTENER ROLES DEL USUARIO
         roles_usuario = self._get_usuario_roles(usuario.id_usuario)
-        
+
+        # 📦 OBTENER ASIGNACIÓN DEL USUARIO (CLIENTE/EMPLEADO)
+        usuario_asignacion = self.asignacion_dao.get_by_usuario_id(usuario.id_usuario)
+        cliente_id = usuario_asignacion.cliente_id if usuario_asignacion else None
+        empleado_id = usuario_asignacion.empleado_id if usuario_asignacion else None
+
         # Crear token de acceso
         access_token_expires = timedelta(minutes=AuthSettings.access_token_expire_minutes)
         access_token = self._create_access_token(
@@ -499,7 +504,9 @@ class UsuarioService:
         usuario_info = UsuarioInfo(
             id_usuario=usuario.id_usuario,
             login=usuario.login,
-            correo_electronico=usuario.correo_electronico
+            correo_electronico=usuario.correo_electronico,
+            cliente_id=cliente_id,
+            empleado_id=empleado_id
         )
         
         # Preparar respuesta del token (estructura limpia sin redundancia)

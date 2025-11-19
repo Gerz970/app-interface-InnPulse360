@@ -11,7 +11,7 @@ class IncidenciaBase(BaseModel):
     id_estatus: int
 
 class IncidenciaCreate(IncidenciaBase):
-    pass
+    id_estatus: Optional[int] = None
 
 class IncidenciaUpdate(BaseModel):
     habitacion_area_id: Optional[int] = None

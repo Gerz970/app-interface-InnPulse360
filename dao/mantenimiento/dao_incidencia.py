@@ -1,12 +1,12 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from models.mantenimiento.incidencia_model import Incidencia
 
 class IncidenciaDao:
     def obtener_todos(self, db: Session):
-        return db.query(Incidencia).all()
+        return db.query(Incidencia).options(joinedload(Incidencia.habitacion_area)).all()
 
     def obtener_por_id(self, db: Session, id_incidencia: int):
-        return db.query(Incidencia).filter(Incidencia.id_incidencia == id_incidencia).first()
+        return db.query(Incidencia).options(joinedload(Incidencia.habitacion_area)).filter(Incidencia.id_incidencia == id_incidencia).first()
 
     def crear(self, db: Session, data: Incidencia):
         db.add(data)

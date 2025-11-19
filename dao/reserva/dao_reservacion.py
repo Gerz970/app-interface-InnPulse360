@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from models.reserva.reservaciones_model import Reservacion
+from models.hotel.habitacionArea_model import HabitacionArea
 from datetime import datetime
 from typing import List
 from sqlalchemy import cast, Date
@@ -52,7 +53,21 @@ class ReservacionDao:
             return None
 
         # eliminación lógica → cambia el estatus
-        reservacion.id_estatus = 0  
+        reservacion.id_estatus = 0
         db.commit()
         db.refresh(reservacion)
         return reservacion
+
+    def get_habitaciones_reservadas_por_cliente(self, db: Session, id_cliente: int) -> List[tuple]:
+        """Obtiene las habitaciones que alguna vez fueron reservadas por un cliente (id_estatus <> 2)"""
+        resultado = db.query(
+            HabitacionArea.id_habitacion_area,
+            HabitacionArea.nombre_clave
+        ).join(
+            Reservacion, HabitacionArea.id_habitacion_area == Reservacion.habitacion_area_id
+        ).filter(
+            Reservacion.id_estatus != 2,
+            Reservacion.cliente_id == id_cliente
+        ).distinct().all()
+
+        return resultado

@@ -30,3 +30,10 @@ class ReservacionResponse(ReservacionBase):
     class Config:
         from_attributes = True
 
+class HabitacionReservadaResponse(BaseModel):
+    id_habitacion_area: int
+    nombre_clave: str
+
+    class Config:
+        from_attributes = True
+

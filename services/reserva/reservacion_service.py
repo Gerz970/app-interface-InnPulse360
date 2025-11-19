@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from dao.reserva.dao_reservacion import ReservacionDao
 from models.reserva.reservaciones_model import Reservacion
-from schemas.reserva.reservacion_schema import ReservacionCreate, ReservacionUpdate
+from schemas.reserva.reservacion_schema import ReservacionCreate, ReservacionUpdate, HabitacionReservadaResponse
 from datetime import datetime
 from typing import List
 
@@ -38,3 +38,13 @@ class ReservacionService:
 
     def eliminar_reservacion(self, db: Session, id_reservacion: int):
         return self.dao.delete(db, id_reservacion)
+
+    def obtener_habitaciones_reservadas_por_cliente(self, db: Session, id_cliente: int) -> List[HabitacionReservadaResponse]:
+        resultados = self.dao.get_habitaciones_reservadas_por_cliente(db, id_cliente)
+        return [
+            HabitacionReservadaResponse(
+                id_habitacion_area=row[0],
+                nombre_clave=row[1]
+            )
+            for row in resultados
+        ]

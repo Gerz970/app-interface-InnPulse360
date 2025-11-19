@@ -113,19 +113,31 @@ class UsuarioInfo(BaseModel):
         description="ID del usuario",
         example=1
     )
-    
+
     login: str = Field(
         ...,
         description="Login del usuario",
         example="juan.perez"
     )
-    
+
     correo_electronico: str = Field(
         ...,
         description="Correo electrónico del usuario",
         example="juan.perez@gmail.com"
     )
-    
+
+    cliente_id: Optional[int] = Field(
+        None,
+        description="ID del cliente asociado al usuario (opcional)",
+        example=123
+    )
+
+    empleado_id: Optional[int] = Field(
+        None,
+        description="ID del empleado asociado al usuario (opcional)",
+        example=456
+    )
+
     class Config:
         from_attributes = True
 

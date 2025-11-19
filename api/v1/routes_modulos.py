@@ -65,6 +65,7 @@ def crear_modulo(
     - **icono**: Icono del módulo (opcional, máximo 25 caracteres)
     - **ruta**: Ruta del módulo (opcional, máximo 250 caracteres)
     - **id_estatus**: Estatus del módulo (1=Activo, 0=Inactivo)
+    - **movil**: Indica si el modulo pertenece a movil (1=movil, 0=web)
     """
     return modulo_service.create_modulo(modulo_data)
 
@@ -74,6 +75,7 @@ def obtener_modulos(
     skip: int = Query(0, ge=0, description="Número de registros a omitir"),
     limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros"),
     activos_only: bool = Query(False, description="Solo obtener módulos activos"),
+    movil_only: Optional[bool] = Query(None, description="Si se pasa True, solo obtener módulos para móvil. Si se pasa False, solo web. Si no se pasa, por defecto trae los móviles"),
     modulo_service: ModulosService = Depends(get_modulos_service),
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
@@ -83,8 +85,11 @@ def obtener_modulos(
     - **skip**: Número de registros a omitir (paginación)
     - **limit**: Número máximo de registros a retornar
     - **activos_only**: Si solo obtener módulos activos
+    - **movil_only**: Si se pasa True, solo obtener módulos para móvil. Si se pasa False, solo web. Si no se pasa, por defecto trae los móviles
     """
-    return modulo_service.get_all_modulos(skip, limit, activos_only)
+    # Convertir bool a int para el servicio (True=1, False=0, None=1 por defecto móvil)
+    movil_only_int = 1 if movil_only is None else (1 if movil_only else 0)
+    return modulo_service.get_all_modulos(skip, limit, activos_only, movil_only_int)
 
 
 @router.get("/{id_modulo}", response_model=ModulosResponse)

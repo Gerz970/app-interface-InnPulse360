@@ -43,5 +43,11 @@ class ModulosBase(BaseModel):
         example=1
     )
     
+    movil: Optional[int] = Field(
+        0,
+        description="Indica si el módulo pertenece a móvil (1=móvil, 0=web). Por defecto es 0 (web)",
+        example=0
+    )
+    
     class Config:
         from_attributes = True

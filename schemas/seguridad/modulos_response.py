@@ -44,6 +44,12 @@ class ModulosResponse(BaseModel):
         example=1
     )
     
+    movil: Optional[int] = Field(
+        None,
+        description="Indica si el módulo pertenece a móvil (1=móvil, 0=web)",
+        example=0
+    )
+    
     roles: List[RolesBase] = Field(
         default_factory=list,
         description="Lista de roles que tienen acceso a este módulo"

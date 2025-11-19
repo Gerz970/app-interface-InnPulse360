@@ -26,6 +26,7 @@ class Modulos(Base):
     icono = Column(String(25), nullable=True)
     ruta = Column(String(250), nullable=True)
     id_estatus = Column(Integer, nullable=False)
+    movil = Column(Integer, nullable=True)
     
     # Relaciones
     roles = relationship(

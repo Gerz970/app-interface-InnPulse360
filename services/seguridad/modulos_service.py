@@ -101,7 +101,7 @@ class ModulosService:
                 detail=f"Error al obtener el módulo: {str(e)}"
             )
     
-    def get_all_modulos(self, skip: int = 0, limit: int = 100, activos_only: bool = False) -> List[ModulosResponse]:
+    def get_all_modulos(self, skip: int = 0, limit: int = 100, activos_only: bool = False, movil_only: Optional[int] = None) -> List[ModulosResponse]:
         """
         Obtiene todos los módulos
         
@@ -109,7 +109,7 @@ class ModulosService:
             skip (int): Número de registros a omitir
             limit (int): Número máximo de registros
             activos_only (bool): Si solo obtener módulos activos
-            
+            movil_only (Optional[int]): Si es 1, solo obtener módulos para movil. Si es 0, solo web. Si es None, por defecto trae los móviles
         Returns:
             List[ModulosResponse]: Lista de módulos
         """
@@ -118,6 +118,14 @@ class ModulosService:
                 db_modulos = self.modulos_dao.get_active(skip, limit)
             else:
                 db_modulos = self.modulos_dao.get_all(skip, limit)
+            
+            if movil_only == 1:
+                # Si se pasa el parámetro y es 1, traer solo los móviles
+                db_modulos = [modulo for modulo in db_modulos if modulo.movil == 1]
+            elif movil_only == 0:
+                # Si se pasa el parámetro y es 0, traer solo los web
+                db_modulos = [modulo for modulo in db_modulos if modulo.movil == 0]
+            # Si movil_only es None, no se filtra (pero en el endpoint se convierte a 1 por defecto)
             
             return [self._modulo_to_response(modulo) for modulo in db_modulos]
             
@@ -419,5 +427,6 @@ class ModulosService:
             icono=modulo.icono,
             ruta=modulo.ruta,
             id_estatus=modulo.id_estatus,
+            movil=modulo.movil,
             roles=roles
         )

@@ -65,6 +65,12 @@ class ModuloSimpleResponse(BaseModel):
         example="/dashboard"
     )
     
+    movil: Optional[int] = Field(
+        None,
+        description="Indica si el módulo pertenece a móvil (1=móvil, 0=web)",
+        example=0
+    )
+    
     class Config:
         from_attributes = True
 

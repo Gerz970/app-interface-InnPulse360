@@ -475,7 +475,8 @@ class UsuarioService:
                 nombre=modulo.nombre,
                 descripcion=modulo.descripcion,
                 icono=modulo.icono,
-                ruta=modulo.ruta
+                ruta=modulo.ruta,
+                movil=modulo.movil
             )
             for modulo in modulos_db
         ]

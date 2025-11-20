@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from datetime import date, time
 from typing import Optional
 from ..empleado.empleado_response import EmpleadoResponse
+from decimal import Decimal
 
 class ServicioTransporteBase(BaseModel):
     destino: str
@@ -13,6 +14,7 @@ class ServicioTransporteBase(BaseModel):
     observaciones_cliente: Optional[str] = None
     observaciones_empleado: Optional[str] = None
     calificacion_viaje: Optional[int] = None
+    costo_viaje : Decimal
 
 
 class ServicioTransporteCreate(ServicioTransporteBase):
@@ -28,6 +30,7 @@ class ServicioTransporteUpdate(BaseModel):
     observaciones_cliente: Optional[str] = None
     observaciones_empleado: Optional[str] = None
     calificacion_viaje: Optional[int] = None
+    costo_viaje: Optional[int] = None
 
 
 class ServicioTransporteResponse(ServicioTransporteBase):

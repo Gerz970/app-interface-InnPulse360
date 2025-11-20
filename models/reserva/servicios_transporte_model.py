@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Time, SmallInteger, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, Time, SmallInteger, ForeignKey, DECIMAL
 from sqlalchemy.orm import relationship
 from core.base import Base
 
@@ -15,6 +15,7 @@ class ServicioTransporte(Base):
     observaciones_cliente = Column(String(500))
     observaciones_empleado = Column(String(500))
     calificacion_viaje = Column(SmallInteger)
+    costo_viaje = Column(DECIMAL(18, 2), nullable=False)
 
     cargo = relationship(
         "Cargo",

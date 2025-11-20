@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Optional
 from .tipos_limpieza_schema import TipoLimpiezaResponse
 from ..hotel.habitacion_area_schema import HabitacionAreaBase
-from ..empleado.empleado_base import EmpleadoBase
+from ..empleado.empleado_response import EmpleadoResponse
 
 class LimpiezaBase(BaseModel):
     habitacion_area_id: int
@@ -32,10 +32,10 @@ class LimpiezaResponse(LimpiezaBase):
     tipo_limpieza: TipoLimpiezaResponse
     habitacion_area: HabitacionAreaBase
     empleado_id: Optional[int] = None  # Sobrescribe el campo de LimpiezaBase para permitir None
-    empleado: Optional[EmpleadoBase] = None
+    empleado: Optional[EmpleadoResponse] = None
 
     @field_serializer('empleado')
-    def serialize_empleado(self, empleado: Optional[EmpleadoBase], _info):
+    def serialize_empleado(self, empleado: Optional[EmpleadoResponse], _info):
         """Serializa el campo empleado: si es None, retorna un objeto vacío {}"""
         if empleado is None:
             return {}

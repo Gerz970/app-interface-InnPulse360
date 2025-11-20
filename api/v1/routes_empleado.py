@@ -7,6 +7,7 @@ from core.database_connection import get_database_session
 from schemas.empleado import EmpleadoCreate, EmpleadoUpdate, EmpleadoResponse
 from services.empleado.empleado_service import EmpleadoService
 from schemas.empleado.domicilio_base import DomicilioUpdate
+from schemas.hotel.hotel_response import HotelResponse
 
 # Seguridad con token tipo Bearer
 security = HTTPBearer()
@@ -54,6 +55,23 @@ def obtener_todos_los_empleados_por_hotel(
     try:
         empleados= service.obtener_todos_los_empleados_por_hotel(hotel_id, skip, limit)
         return empleados
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@api_router.get("/hoteles-por-empleado/{empleado_id}", response_model=List[HotelResponse])
+def obtener_hoteles_por_empleado(
+    empleado_id: int,
+    service: EmpleadoService = Depends(get_empleado_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Obtiene todos los hoteles asociados a un empleado específico.
+    Requiere autenticación Bearer.
+    """
+    try:
+        hoteles = service.obtener_hoteles_por_empleado(empleado_id)
+        return hoteles
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

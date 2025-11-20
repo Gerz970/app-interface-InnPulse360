@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional
-
+from decimal import Decimal
 
 class TipoCargoBase(BaseModel):
     """
@@ -20,6 +20,10 @@ class TipoCargoBase(BaseModel):
         ...,
         description="Identificador del estatus del cargo"
     )
+    costo: Decimal = Field(
+        ...,
+        description="Costo del cargo"
+    )
 
 
 class TipoCargoCreate(TipoCargoBase):
@@ -36,6 +40,7 @@ class TipoCargoUpdate(BaseModel):
     nombre_cargo: Optional[str] = Field(None, max_length=25)
     descripcion: Optional[str] = Field(None, max_length=100)
     id_estatus: Optional[int] = Field(None)
+    costo: Optional[Decimal] = Field(None)
 
 
 class TipoCargoResponse(TipoCargoBase):

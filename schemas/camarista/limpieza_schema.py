@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from datetime import datetime
 from typing import Optional
 from .tipos_limpieza_schema import TipoLimpiezaResponse
@@ -31,7 +31,15 @@ class LimpiezaResponse(LimpiezaBase):
     id_limpieza: int
     tipo_limpieza: TipoLimpiezaResponse
     habitacion_area: HabitacionAreaBase
-    empleado: EmpleadoBase
+    empleado_id: Optional[int] = None  # Sobrescribe el campo de LimpiezaBase para permitir None
+    empleado: Optional[EmpleadoBase] = None
+
+    @field_serializer('empleado')
+    def serialize_empleado(self, empleado: Optional[EmpleadoBase], _info):
+        """Serializa el campo empleado: si es None, retorna un objeto vacío {}"""
+        if empleado is None:
+            return {}
+        return empleado
 
     class Config:
         from_attributes = True

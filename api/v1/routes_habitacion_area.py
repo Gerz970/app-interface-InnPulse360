@@ -12,10 +12,32 @@ settings = Settings()
 security = HTTPBearer()
 router = APIRouter(prefix="/habitacion-area", tags=["Habitación Área"])
 
+def get_habitacion_area_service(db: Session = Depends(get_database_session)) -> HabitacionAreaService:
+    """
+    Dependency para obtener la instancia del servicio de HabitacionArea
+    """
+    return HabitacionAreaService(HabitacionAreaDAO(db))
+
 @router.get("/obtener-por-piso/{piso_id}", response_model=List[HabitacionAreaResponse])
 def listar_habitaciones(piso_id:int, db: Session = Depends(get_database_session)):
     service = HabitacionAreaService(HabitacionAreaDAO(db))
     return service.listar(piso_id)
+
+@router.get("/disponibles-por-piso/{piso_id}", response_model=List[HabitacionAreaResponse])
+def obtener_habitaciones_disponibles_por_piso(
+    piso_id: int,
+    service: HabitacionAreaService = Depends(get_habitacion_area_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Obtiene habitaciones disponibles (sin reserva activa) para un piso específico.
+    Una reserva activa tiene estatus = 1.
+    """
+    try:
+        habitaciones = service.obtener_habitaciones_disponibles_por_piso(piso_id)
+        return habitaciones
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.get("/{id_habitacion_area}", response_model=HabitacionAreaResponse)
 def obtener_habitacion(id_habitacion_area: int, db: Session = Depends(get_database_session)):

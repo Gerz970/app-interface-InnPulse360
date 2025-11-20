@@ -134,3 +134,22 @@ class EmpleadoDAO:
         except SQLAlchemyError as e:
             self.db.rollback()
             raise e
+
+    def get_hoteles_by_empleado(self, empleado_id: int) -> List[Hotel]:
+        """
+        Obtiene todos los hoteles asociados a un empleado específico.
+        """
+        try:
+            empleado = (
+                self.db.query(Empleado)
+                .options(joinedload(Empleado.hoteles))
+                .filter(Empleado.id_empleado == empleado_id)
+                .first()
+            )
+            
+            if not empleado:
+                return []
+            
+            return empleado.hoteles
+        except SQLAlchemyError as e:
+            raise e

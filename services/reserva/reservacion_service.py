@@ -4,6 +4,9 @@ from models.reserva.reservaciones_model import Reservacion
 from schemas.reserva.reservacion_schema import ReservacionCreate, ReservacionUpdate, HabitacionReservadaResponse
 from datetime import datetime
 from typing import List
+from datetime import date
+from core.database_connection import db_connection, get_database_engine
+from sqlalchemy import text
 
 class ReservacionService:
     def __init__(self):
@@ -48,3 +51,19 @@ class ReservacionService:
             )
             for row in resultados
         ]
+    
+    def obtener_habitaciones_disponibles(self, fecha_inicio_reservacion: date, fecha_salida: date):
+        query = text("""
+        EXEC Sp_DisponibilidadHabitaciones_Obt 
+            :fecha_inicio_reservacion, 
+            :fecha_salida
+        """)
+        engine = get_database_engine()
+        with engine.connect() as conn:
+            result = conn.execute(query, {
+                "fecha_inicio_reservacion": fecha_inicio_reservacion,
+                "fecha_salida": fecha_salida
+            })
+            rows = result.mappings().all() 
+
+        return rows

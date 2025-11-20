@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from sqlalchemy.orm import Session
 from core.database_connection import get_database_session
 from services.reserva.reservacion_service import ReservacionService
 from schemas.reserva.reservacion_schema import ReservacionCreate, ReservacionUpdate, ReservacionResponse, HabitacionReservadaResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import List
-from datetime import datetime
+from datetime import datetime, date
+from schemas.hotel.habitacion_area_schema import HabitacionAreaResponse
 
 router = APIRouter(prefix="/reservaciones", tags=["Reservaciones"])
 service = ReservacionService()
@@ -66,3 +67,8 @@ def eliminar_reservacion(id_reservacion: int, db: Session = Depends(get_database
     if not reservacion_eliminada:
         raise HTTPException(status_code=404, detail="Reservación no encontrada")
     return reservacion_eliminada
+
+@router.get("/{fecha_inicio_reservacion}/{fecha_salida}", response_model=List[HabitacionAreaResponse])
+def obtener_habitaciones_disponibles(fecha_inicio_reservacion: date =  Path(..., example="2025-01-10"), fecha_salida: date =  Path(..., example="2025-01-15"), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    habitaciones = service.obtener_habitaciones_disponibles(fecha_inicio_reservacion, fecha_salida)
+    return habitaciones

@@ -67,3 +67,7 @@ class ReservacionService:
             rows = result.mappings().all() 
 
         return rows
+    
+    def checkout(self, db: Session, id_reservacion: int):
+        return self.dao.checkout(db, id_reservacion)
+

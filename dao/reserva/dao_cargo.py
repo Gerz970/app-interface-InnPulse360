@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from models.reserva.cargos_model import Cargo
 from schemas.reserva.cargos_schema import CargoCreate
-
+from sqlalchemy import func
 
 class CargoDAO:
 
@@ -46,3 +46,22 @@ class CargoDAO:
         db.delete(cargo)
         db.commit()
         return cargo
+    
+    def obtener_total_por_reserva(self, db: Session, reservacion_id:int):
+        resultado = (
+        db.query(
+            Cargo.reservacion_id,
+            func.sum(Cargo.costo_unitario).label("total")
+        )
+        .filter(Cargo.reservacion_id == reservacion_id)
+        .group_by(Cargo.reservacion_id)
+        .first()
+        )
+
+        if resultado is None:
+            return None
+
+        return {
+            "reservacion_id": resultado[0],
+            "total": float(resultado[1])
+        }

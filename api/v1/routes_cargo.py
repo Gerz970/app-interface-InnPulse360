@@ -61,3 +61,8 @@ def eliminar_cargo(id_cargo: int, credentials: HTTPAuthorizationCredentials = De
             detail="Cargo no encontrado"
         )
     return None
+
+@router.get("/cargos/totales/{reservacion_id}")
+def get_totales(reservacion_id: int, credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_database_session)):
+    return service.obtener_totales_por_reservacion(db, reservacion_id)
+

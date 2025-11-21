@@ -4,6 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from dao.empleado.dao_empleado import EmpleadoDAO
 from dao.empleado.dao_direccion import DireccionDAO
 from schemas.empleado import EmpleadoCreate, EmpleadoUpdate, EmpleadoResponse
+from schemas.hotel.hotel_response import HotelResponse
 from models.empleados.empleado_model import Empleado
 from models.empleados.domicilio_empleado_model import DomicilioEmpleado
 from schemas.empleado.domicilio_base import DomicilioUpdate, DomicilioBase
@@ -94,4 +95,14 @@ class EmpleadoService:
         except Exception as e:
             raise Exception(f"Error inesperado al actualizar direccion: {str(e)}")
 
-   
+    def obtener_hoteles_por_empleado(self, empleado_id: int) -> List[HotelResponse]:
+        """Obtiene todos los hoteles asociados a un empleado"""
+        try:
+            hoteles = self.dao.get_hoteles_by_empleado(empleado_id)
+            return [HotelResponse.model_validate(hotel) for hotel in hoteles]
+        except SQLAlchemyError as e:
+            raise Exception(f"Error al obtener hoteles de la base de datos: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Error inesperado al obtener hoteles: {str(e)}")
+
+    

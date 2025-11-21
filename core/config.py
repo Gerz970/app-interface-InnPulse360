@@ -59,6 +59,67 @@ class SupabaseSettings:
     bucket_pdfs: str = os.getenv("SUPABASE_BUCKET_PDFS", "pdfs")
     public_base_url: str = os.getenv("SUPABASE_PUBLIC_BASE_URL", "")
 
+class FCMSettings:
+    """
+    Configuración para Firebase Cloud Messaging (FCM)
+    Usa variables de entorno separadas para mayor seguridad
+    """
+    # Variables de entorno para Service Account (desde .env)
+    project_id: str = os.getenv("FCM_PROJECT_ID", "")
+    private_key_id: str = os.getenv("FCM_PRIVATE_KEY_ID", "")
+    private_key: str = os.getenv("FCM_PRIVATE_KEY", "").replace("\\n", "\n")  # Reemplazar \\n por saltos de línea reales
+    client_email: str = os.getenv("FCM_CLIENT_EMAIL", "")
+    client_id: str = os.getenv("FCM_CLIENT_ID", "")
+    auth_uri: str = os.getenv("FCM_AUTH_URI", "https://accounts.google.com/o/oauth2/auth")
+    token_uri: str = os.getenv("FCM_TOKEN_URI", "https://oauth2.googleapis.com/token")
+    auth_provider_x509_cert_url: str = os.getenv("FCM_AUTH_PROVIDER_X509_CERT_URL", "https://www.googleapis.com/oauth2/v1/certs")
+    client_x509_cert_url: str = os.getenv("FCM_CLIENT_X509_CERT_URL", "")
+    
+    # Fallback: Ruta al archivo Service Account JSON (solo para desarrollo local)
+    service_account_path: str = os.getenv(
+        "FCM_SERVICE_ACCOUNT_PATH", 
+        str(Path(__file__).parent / "firebase_service_account.json")
+    )
+    
+    # URL de la API HTTP v1 de FCM
+    fcm_url: str = "https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
+    
+    @property
+    def has_env_variables(self) -> bool:
+        """Verifica si todas las variables de entorno necesarias están configuradas"""
+        return all([
+            self.project_id,
+            self.private_key_id,
+            self.private_key,
+            self.client_email,
+            self.client_id
+        ])
+    
+    @property
+    def service_account_file_exists(self) -> bool:
+        """Verifica si existe el archivo Service Account (fallback)"""
+        return Path(self.service_account_path).exists()
+    
+    def get_service_account_dict(self) -> dict:
+        """
+        Construye el diccionario de Service Account desde variables de entorno
+        
+        Returns:
+            dict: Diccionario con la estructura del Service Account JSON
+        """
+        return {
+            "type": "service_account",
+            "project_id": self.project_id,
+            "private_key_id": self.private_key_id,
+            "private_key": self.private_key,
+            "client_email": self.client_email,
+            "client_id": self.client_id,
+            "auth_uri": self.auth_uri,
+            "token_uri": self.token_uri,
+            "auth_provider_x509_cert_url": self.auth_provider_x509_cert_url,
+            "client_x509_cert_url": self.client_x509_cert_url
+        }
+
 
 # Configuración de módulos permitidos por rol (movido al frontend)
 # Esta configuración ya no se usa en el backend, el filtrado se hace en la app móvil

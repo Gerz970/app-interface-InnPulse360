@@ -16,6 +16,7 @@ class ModulosCreate(ModulosBase):
                 "descripcion": "Panel principal del sistema",
                 "icono": "fas fa-dashboard",
                 "ruta": "/dashboard",
-                "id_estatus": 1
+                "id_estatus": 1,
+                "movil": 0
             }
         }

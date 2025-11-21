@@ -15,8 +15,15 @@ class LimpiezaBase(BaseModel):
     comentarios_observaciones: Optional[str] = None
     empleado_id: int
 
-class LimpiezaCreate(LimpiezaBase):
-    pass
+class LimpiezaCreate(BaseModel):
+    habitacion_area_id: int
+    descripcion: Optional[str] = None
+    fecha_programada: datetime
+    fecha_termino: Optional[datetime] = None
+    tipo_limpieza_id: int
+    estatus_limpieza_id: int
+    comentarios_observaciones: Optional[str] = None
+    empleado_id: Optional[int] = None  # Opcional, se asignará después
 
 class LimpiezaUpdate(BaseModel):
     descripcion: Optional[str] = None

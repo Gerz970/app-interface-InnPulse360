@@ -15,7 +15,11 @@ class LimpiezaService:
         return self.dao.get_by_id(db, id_limpieza)
 
     def crear(self, db: Session, data: LimpiezaCreate):
-        nueva_limpieza = Limpieza(**data.dict())
+        data_dict = data.dict()
+        # Si empleado_id es None o 0, no incluirlo en el modelo
+        if data_dict.get('empleado_id') is None or data_dict.get('empleado_id') == 0:
+            data_dict.pop('empleado_id', None)
+        nueva_limpieza = Limpieza(**data_dict)
         return self.dao.create(db, nueva_limpieza)
 
     def actualizar(self, db: Session, id_limpieza: int, data: LimpiezaUpdate):
@@ -39,3 +43,14 @@ class LimpiezaService:
     
         limpiezas = self.dao.get_by_rango_fecha(db, inicio_dia, fin_dia)
         return limpiezas
+
+    def crear_masivo(self, db: Session, datos_limpiezas: list):
+        """Crea múltiples limpiezas en una sola transacción"""
+        limpiezas = []
+        for data in datos_limpiezas:
+            data_dict = data.dict()
+            # Si empleado_id es None o 0, no incluirlo en el modelo
+            if data_dict.get('empleado_id') is None or data_dict.get('empleado_id') == 0:
+                data_dict.pop('empleado_id', None)
+            limpiezas.append(Limpieza(**data_dict))
+        return self.dao.crear_masivo(db, limpiezas)

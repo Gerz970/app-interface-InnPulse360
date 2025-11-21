@@ -82,3 +82,16 @@ class LimpiezaDao:
         ).order_by(
             asc(Limpieza.estatus_limpieza_id)
         ).all()
+
+    def crear_masivo(self, db: Session, limpiezas: list):
+        """Crea múltiples limpiezas en una sola transacción"""
+        try:
+            db.add_all(limpiezas)
+            db.commit()
+            # Refrescar todas las limpiezas creadas
+            for limpieza in limpiezas:
+                db.refresh(limpieza)
+            return limpiezas
+        except Exception as e:
+            db.rollback()
+            raise e

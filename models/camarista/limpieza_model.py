@@ -14,7 +14,7 @@ class Limpieza(Base):
     tipo_limpieza_id = Column(Integer, ForeignKey("CAMARISTA.Tb_tipos_limpieza.id_tipo_limpieza"), nullable=False)
     estatus_limpieza_id = Column(Integer, ForeignKey("CAMARISTA.Tb_estatus_limpieza.id_estatus_limpieza"), nullable=False)
     comentarios_observaciones = Column(String(500))
-    empleado_id = Column(Integer, ForeignKey("EMPLEADOS.Tb_empleado.id_empleado"), nullable=False)
+    empleado_id = Column(Integer, ForeignKey("EMPLEADOS.Tb_empleado.id_empleado"), nullable=True)
 
     # Relaciones
     habitacion_area = relationship("HabitacionArea", back_populates="limpiezas")

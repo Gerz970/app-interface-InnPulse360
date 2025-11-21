@@ -29,3 +29,7 @@ class HabitacionAreaService:
         """Obtiene habitaciones disponibles para un piso (sin reservas activas)"""
         habitaciones = self.dao.get_habitaciones_disponibles_por_piso(piso_id)
         return [HabitacionAreaResponse.model_validate(hab) for hab in habitaciones]
+
+    def obtener_habitaciones_con_estado_por_piso(self, piso_id: int):
+        """Obtiene habitaciones con información de estado (reservaciones y limpiezas)"""
+        return self.dao.get_habitaciones_con_estado_por_piso(piso_id)

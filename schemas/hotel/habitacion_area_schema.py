@@ -58,3 +58,19 @@ class HabitacionAreaResponse(HabitacionAreaBase):
                 "estatus_id": 1
             }
         }
+
+class HabitacionAreaConEstadoResponse(BaseModel):
+    """Schema para habitación con información de estado"""
+    id_habitacion_area: int
+    piso_id: int
+    tipo_habitacion_id: int
+    nombre_clave: str
+    descripcion: str
+    estatus_id: int
+    tiene_reservacion_activa: bool
+    tiene_limpieza_pendiente: bool
+    tiene_limpieza_en_proceso: bool
+    puede_seleccionarse: bool
+
+    class Config:
+        from_attributes = True

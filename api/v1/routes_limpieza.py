@@ -6,6 +6,7 @@ from core.database_connection import get_database_session
 from typing import List
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/limpiezas", tags=["Limpiezas"])
 service = LimpiezaService()
@@ -55,3 +56,36 @@ def obtener_por_estatus(estatus_limpieza_id: int, db: Session = Depends(get_data
 @router.get("/fecha/", response_model=List[LimpiezaResponse])
 def obtener_por_fecha(fecha_programada: datetime = Query(...), db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
     return service.obtener_por_fecha(db, fecha_programada)
+
+@router.post("/masivo", response_model=List[LimpiezaResponse])
+def crear_limpiezas_masivo(
+    datos_limpiezas: List[LimpiezaCreate],
+    db: Session = Depends(get_database_session),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Crea múltiples limpiezas en una sola transacción.
+    Recibe un array de objetos LimpiezaCreate y retorna un array de LimpiezaResponse.
+    """
+    try:
+        if not datos_limpiezas:
+            raise HTTPException(status_code=400, detail="Debe proporcionar al menos una limpieza")
+        
+        if len(datos_limpiezas) > 50:
+            raise HTTPException(status_code=400, detail="No se pueden crear más de 50 limpiezas a la vez")
+        
+        limpiezas_creadas = service.crear_masivo(db, datos_limpiezas)
+        
+        # Convertir a LimpiezaResponse con relaciones cargadas
+        resultado = []
+        for limpieza in limpiezas_creadas:
+            # Recargar con relaciones
+            limpieza_completa = service.obtener_por_id(db, limpieza.id_limpieza)
+            if limpieza_completa:
+                resultado.append(limpieza_completa)
+        
+        return resultado
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al crear limpiezas masivamente: {str(e)}")

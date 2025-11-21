@@ -58,3 +58,56 @@ class HabitacionAreaDAO:
         ).all()
         
         return habitaciones
+
+    def get_habitaciones_con_estado_por_piso(self, piso_id: int):
+        """
+        Obtiene habitaciones de un piso con información de estado:
+        - Reservaciones activas
+        - Limpiezas pendientes (estatus = 1)
+        - Limpiezas en proceso (estatus = 2)
+        """
+        from models.reserva.reservaciones_model import Reservacion
+        from models.camarista.limpieza_model import Limpieza
+        
+        # Obtener todas las habitaciones del piso activas
+        habitaciones = self.db.query(HabitacionArea).filter(
+            HabitacionArea.piso_id == piso_id,
+            HabitacionArea.estatus_id == 1
+        ).all()
+        
+        # Obtener IDs de habitaciones con reservas activas
+        habitaciones_con_reservacion_ids = set([
+            r[0] for r in self.db.query(Reservacion.habitacion_area_id)
+            .filter(Reservacion.id_estatus == 1).all()
+        ])
+        
+        # Obtener IDs de habitaciones con limpiezas pendientes (estatus = 1)
+        habitaciones_con_limpieza_pendiente_ids = set([
+            l[0] for l in self.db.query(Limpieza.habitacion_area_id)
+            .filter(Limpieza.estatus_limpieza_id == 1).all()
+        ])
+        
+        # Obtener IDs de habitaciones con limpiezas en proceso (estatus = 2)
+        habitaciones_con_limpieza_en_proceso_ids = set([
+            l[0] for l in self.db.query(Limpieza.habitacion_area_id)
+            .filter(Limpieza.estatus_limpieza_id == 2).all()
+        ])
+        
+        # Construir resultado con información de estado
+        resultado = []
+        for hab in habitaciones:
+            hab_id = hab.id_habitacion_area
+            tiene_reservacion_activa = hab_id in habitaciones_con_reservacion_ids
+            tiene_limpieza_pendiente = hab_id in habitaciones_con_limpieza_pendiente_ids
+            tiene_limpieza_en_proceso = hab_id in habitaciones_con_limpieza_en_proceso_ids
+            puede_seleccionarse = not tiene_limpieza_pendiente and not tiene_limpieza_en_proceso
+            
+            resultado.append({
+                'habitacion': hab,
+                'tiene_reservacion_activa': tiene_reservacion_activa,
+                'tiene_limpieza_pendiente': tiene_limpieza_pendiente,
+                'tiene_limpieza_en_proceso': tiene_limpieza_en_proceso,
+                'puede_seleccionarse': puede_seleccionarse
+            })
+        
+        return resultado

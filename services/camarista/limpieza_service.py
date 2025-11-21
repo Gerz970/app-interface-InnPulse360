@@ -5,6 +5,7 @@ from schemas.camarista.limpieza_schema import LimpiezaCreate, LimpiezaUpdate
 from sqlalchemy.orm import Session
 from datetime import date, datetime, time
 import logging
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -21,59 +22,95 @@ class LimpiezaService:
     def _enviar_notificacion_asignacion(self, db: Session, limpieza: Limpieza):
         """
         Envía notificación push cuando se asigna una limpieza a un empleado
+        Se ejecuta en un hilo separado para no bloquear la respuesta principal
         
         Args:
             db (Session): Sesión de base de datos
             limpieza (Limpieza): Limpieza asignada
         """
-        try:
-            # Solo enviar si hay empleado asignado
-            if not limpieza.empleado_id:
-                return
-            
-            # Buscar usuario_id desde empleado_id en UsuarioAsignacion
-            usuario_asignacion = db.query(UsuarioAsignacion).filter(
-                UsuarioAsignacion.empleado_id == limpieza.empleado_id,
-                UsuarioAsignacion.tipo_asignacion == 1,  # 1=Empleado
-                UsuarioAsignacion.estatus == 1  # Activo
-            ).first()
-            
-            if not usuario_asignacion:
-                logger.info(f"No se encontró usuario asignado para empleado_id {limpieza.empleado_id}")
-                return
-            
-            usuario_id = usuario_asignacion.usuario_id
-            
-            # Importar aquí para evitar importación circular
-            from services.notifications.fcm_push_service import FCMPushService
-            
-            # Crear servicio de notificaciones
-            push_service = FCMPushService(db)
-            
-            # Obtener información de la habitación/área
-            habitacion_nombre = "habitación/área"
-            if limpieza.habitacion_area:
-                habitacion_nombre = limpieza.habitacion_area.nombre or f"Habitación {limpieza.habitacion_area.id_habitacion_area}"
-            
-            # Enviar notificación
-            push_service.send_to_user(
-                usuario_id=usuario_id,
-                title="Nueva limpieza asignada",
-                body=f"Se te ha asignado la limpieza de {habitacion_nombre}",
-                data={
-                    "tipo": "limpieza_asignada",
-                    "limpieza_id": str(limpieza.id_limpieza),
-                    "habitacion_area_id": str(limpieza.habitacion_area_id),
-                    "empleado_id": str(limpieza.empleado_id),
-                    "screen": "limpieza_detail"
-                }
-            )
-            
-            logger.info(f"Notificación enviada al usuario {usuario_id} por limpieza {limpieza.id_limpieza}")
-            
-        except Exception as e:
-            # No fallar la operación principal si falla la notificación
-            logger.error(f"Error enviando notificación de limpieza: {e}", exc_info=True)
+        # Guardar datos necesarios antes de pasar al hilo
+        limpieza_id = limpieza.id_limpieza
+        empleado_id = limpieza.empleado_id
+        habitacion_area_id = limpieza.habitacion_area_id
+        
+        # Ejecutar en hilo separado para no bloquear la respuesta
+        def enviar_en_background():
+            try:
+                # Crear nueva sesión de BD para el hilo (importante: no reutilizar la sesión del hilo principal)
+                from core.database_connection import get_database_session
+                db_background = next(get_database_session())
+                
+                try:
+                    # Solo enviar si hay empleado asignado
+                    if not empleado_id:
+                        return
+                    
+                    # Buscar usuario_id desde empleado_id en UsuarioAsignacion
+                    usuario_asignacion = db_background.query(UsuarioAsignacion).filter(
+                        UsuarioAsignacion.empleado_id == empleado_id,
+                        UsuarioAsignacion.tipo_asignacion == 1,  # 1=Empleado
+                        UsuarioAsignacion.estatus == 1  # Activo
+                    ).first()
+                    
+                    if not usuario_asignacion:
+                        logger.info(f"No se encontró usuario asignado para empleado_id {empleado_id}")
+                        return
+                    
+                    usuario_id = usuario_asignacion.usuario_id
+                    
+                    # Recargar limpieza con relaciones desde BD
+                    from sqlalchemy.orm import joinedload
+                    limpieza_completa = db_background.query(Limpieza).options(
+                        joinedload(Limpieza.habitacion_area)
+                    ).filter(Limpieza.id_limpieza == limpieza_id).first()
+                    
+                    if not limpieza_completa:
+                        logger.warning(f"No se encontró limpieza {limpieza_id} para notificación")
+                        return
+                    
+                    # Importar aquí para evitar importación circular
+                    from services.notifications.fcm_push_service import FCMPushService
+                    
+                    # Crear servicio de notificaciones con nueva sesión
+                    push_service = FCMPushService(db_background)
+                    
+                    # Obtener información de la habitación/área
+                    habitacion_nombre = "habitación/área"
+                    if limpieza_completa.habitacion_area:
+                        # Usar descripcion como principal, nombre_clave como respaldo
+                        habitacion_nombre = (
+                            limpieza_completa.habitacion_area.descripcion or 
+                            limpieza_completa.habitacion_area.nombre_clave or 
+                            f"Habitación {limpieza_completa.habitacion_area.id_habitacion_area}"
+                        )
+                    
+                    # Enviar notificación (sin esperar respuesta)
+                    push_service.send_to_user(
+                        usuario_id=usuario_id,
+                        title="Nueva limpieza asignada",
+                        body=f"Se te ha asignado la limpieza de {habitacion_nombre}",
+                        data={
+                            "tipo": "limpieza_asignada",
+                            "limpieza_id": str(limpieza_id),
+                            "habitacion_area_id": str(habitacion_area_id),
+                            "empleado_id": str(empleado_id),
+                            "screen": "limpieza_detail"
+                        }
+                    )
+                    
+                    logger.info(f"Notificación enviada al usuario {usuario_id} por limpieza {limpieza_id}")
+                    
+                finally:
+                    # Cerrar sesión de BD del hilo
+                    db_background.close()
+                    
+            except Exception as e:
+                # No fallar la operación principal si falla la notificación
+                logger.error(f"Error enviando notificación de limpieza: {e}", exc_info=True)
+        
+        # Iniciar hilo en background sin esperar (daemon=True permite que el programa termine sin esperar el hilo)
+        thread = threading.Thread(target=enviar_en_background, daemon=True)
+        thread.start()
 
     def crear(self, db: Session, data: LimpiezaCreate):
         data_dict = data.dict()

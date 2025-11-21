@@ -246,6 +246,14 @@ app.db
 app.sqlite
 data/
 backups/
+
+# Firebase Service Account (credenciales sensibles - NO SUBIR A GIT)
+core/firebase_service_account.json
+core/*firebase*.json
+**/firebase_service_account.json
+*.json
+!requirements.txt
+
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml

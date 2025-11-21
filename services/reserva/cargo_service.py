@@ -40,3 +40,6 @@ class CargoService:
 
     def eliminar(self, db: Session, id_cargo: int):
         return self.dao.delete(db, id_cargo)
+    
+    def obtener_totales_por_reservacion(self, db: Session, reservacion_id: int):
+        return self.dao.obtener_total_por_reserva(db, reservacion_id)

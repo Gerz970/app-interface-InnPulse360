@@ -4,6 +4,8 @@ from models.hotel.habitacionArea_model import HabitacionArea
 from datetime import datetime
 from typing import List
 from sqlalchemy import cast, Date
+from models.camarista.limpieza_model import Limpieza
+from dao.camarista.dao_limpieza import LimpiezaDao
 
 class ReservacionDao:
     def get_all(self, db: Session):
@@ -71,3 +73,37 @@ class ReservacionDao:
         ).distinct().all()
 
         return resultado
+    
+    def checkout(self, db: Session, id_reservacion):
+        reserva = db.query(Reservacion).filter(
+            Reservacion.id_reservacion == id_reservacion,
+            Reservacion.id_estatus == 1 # ACTIVA 
+        ).first()
+
+        if not reserva:
+            return False
+        
+        # Le cambia el estatus a 2: FINALIZADA
+        reserva.id_estatus = 2
+        reserva.fecha_salida = datetime.now()  
+
+        db.commit()
+        db.refresh(reserva)
+
+        # se crea en automático una limpieza
+        limpieza = Limpieza(
+            habitacion_area_id = reserva.habitacion_area_id,
+            descripcion = "La habitación ha sido desocupada. Favor de realizar limpieza.",
+            fecha_programada = datetime.now(),
+            tipo_limpieza_id = 1,
+            estatus_limpieza_id = 1
+        )
+        dao_limpieza = LimpiezaDao()
+        dao_limpieza.create(db, limpieza)
+        db.add(limpieza)
+        db.commit()
+        db.refresh(limpieza)
+
+        return True
+
+

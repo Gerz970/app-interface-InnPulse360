@@ -28,11 +28,13 @@ class LimpiezaCreate(BaseModel):
 class LimpiezaUpdate(BaseModel):
     descripcion: Optional[str] = None
     fecha_programada: Optional[datetime] = None
+    fecha_inicio_limpieza: Optional[datetime] = None
     fecha_termino: Optional[datetime] = None
     tipo_limpieza_id: Optional[int] = None
     estatus_limpieza_id: Optional[int] = None
     comentarios_observaciones: Optional[str] = None
     empleado_id: Optional[int] = None
+    empleado_asigna_id: Optional[int] = None
 
 class LimpiezaResponse(LimpiezaBase):
     id_limpieza: int
@@ -40,6 +42,8 @@ class LimpiezaResponse(LimpiezaBase):
     habitacion_area: HabitacionAreaBase
     empleado_id: Optional[int] = None  # Sobrescribe el campo de LimpiezaBase para permitir None
     empleado: Optional[EmpleadoResponse] = None
+    fecha_inicio_limpieza: Optional[datetime] = None
+    empleado_asigna_id: Optional[int] = None
 
     @field_serializer('empleado')
     def serialize_empleado(self, empleado: Optional[EmpleadoResponse], _info):

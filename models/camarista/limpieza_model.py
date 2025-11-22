@@ -10,17 +10,20 @@ class Limpieza(Base):
     habitacion_area_id = Column(Integer, ForeignKey("HOTEL.Tb_habitacionArea.id_habitacion_area"), nullable=False)
     descripcion = Column(String(500))
     fecha_programada = Column(DateTime, nullable=False)
+    fecha_inicio_limpieza = Column(DateTime, nullable=True)
     fecha_termino = Column(DateTime)
     tipo_limpieza_id = Column(Integer, ForeignKey("CAMARISTA.Tb_tipos_limpieza.id_tipo_limpieza"), nullable=False)
     estatus_limpieza_id = Column(Integer, ForeignKey("CAMARISTA.Tb_estatus_limpieza.id_estatus_limpieza"), nullable=False)
     comentarios_observaciones = Column(String(500))
     empleado_id = Column(Integer, ForeignKey("EMPLEADOS.Tb_empleado.id_empleado"), nullable=True)
+    empleado_asigna_id = Column(Integer, ForeignKey("EMPLEADOS.Tb_empleado.id_empleado"), nullable=True)
 
     # Relaciones
     habitacion_area = relationship("HabitacionArea", back_populates="limpiezas")
     tipo_limpieza = relationship("TiposLimpieza", back_populates="limpiezas")
     estatus_limpieza = relationship("EstatusLimpieza")
-    empleado = relationship("Empleado", back_populates="limpiezas")
+    empleado = relationship("Empleado", foreign_keys=[empleado_id], back_populates="limpiezas")
+    empleado_asigna = relationship("Empleado", foreign_keys=[empleado_asigna_id])
 
     def __repr__(self):
         return f"<Limpieza(id_limpieza={self.id_limpieza}, estatus_limpieza_id={self.estatus_limpieza_id})>"

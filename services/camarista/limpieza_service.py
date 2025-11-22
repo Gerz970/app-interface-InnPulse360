@@ -4,6 +4,7 @@ from models.seguridad.usuario_asignacion_model import UsuarioAsignacion
 from schemas.camarista.limpieza_schema import LimpiezaCreate, LimpiezaUpdate
 from sqlalchemy.orm import Session
 from datetime import date, datetime, time
+from typing import Optional
 import logging
 import threading
 
@@ -112,6 +113,99 @@ class LimpiezaService:
         thread = threading.Thread(target=enviar_en_background, daemon=True)
         thread.start()
 
+    def _enviar_notificacion_terminacion(self, db: Session, limpieza: Limpieza):
+        """
+        Envía notificación push al empleado que asignó la limpieza cuando se completa
+        Se ejecuta en un hilo separado para no bloquear la respuesta principal
+        
+        Args:
+            db (Session): Sesión de base de datos
+            limpieza (Limpieza): Limpieza completada
+        """
+        # Guardar datos necesarios antes de pasar al hilo
+        limpieza_id = limpieza.id_limpieza
+        empleado_asigna_id = limpieza.empleado_asigna_id
+        habitacion_area_id = limpieza.habitacion_area_id
+        
+        # Ejecutar en hilo separado para no bloquear la respuesta
+        def enviar_en_background():
+            try:
+                # Crear nueva sesión de BD para el hilo (importante: no reutilizar la sesión del hilo principal)
+                from core.database_connection import get_database_session
+                db_background = next(get_database_session())
+                
+                try:
+                    # Si no hay empleado_asigna_id, no enviar notificación
+                    if not empleado_asigna_id:
+                        logger.info(f"No hay empleado_asigna_id para limpieza {limpieza_id}")
+                        return
+                    
+                    # Buscar usuario_id desde empleado_asigna_id en UsuarioAsignacion
+                    usuario_asignacion = db_background.query(UsuarioAsignacion).filter(
+                        UsuarioAsignacion.empleado_id == empleado_asigna_id,
+                        UsuarioAsignacion.tipo_asignacion == 1,  # 1=Empleado
+                        UsuarioAsignacion.estatus == 1  # Activo
+                    ).first()
+                    
+                    if not usuario_asignacion:
+                        logger.info(f"No se encontró usuario para empleado_asigna_id {empleado_asigna_id}")
+                        return
+                    
+                    usuario_id = usuario_asignacion.usuario_id
+                    
+                    # Recargar limpieza con relaciones desde BD
+                    from sqlalchemy.orm import joinedload
+                    limpieza_completa = db_background.query(Limpieza).options(
+                        joinedload(Limpieza.habitacion_area)
+                    ).filter(Limpieza.id_limpieza == limpieza_id).first()
+                    
+                    if not limpieza_completa:
+                        logger.warning(f"No se encontró limpieza {limpieza_id} para notificación")
+                        return
+                    
+                    # Importar aquí para evitar importación circular
+                    from services.notifications.fcm_push_service import FCMPushService
+                    
+                    # Crear servicio de notificaciones con nueva sesión
+                    push_service = FCMPushService(db_background)
+                    
+                    # Obtener información de la habitación/área
+                    habitacion_nombre = "habitación/área"
+                    if limpieza_completa.habitacion_area:
+                        # Usar descripcion como principal, nombre_clave como respaldo
+                        habitacion_nombre = (
+                            limpieza_completa.habitacion_area.descripcion or 
+                            limpieza_completa.habitacion_area.nombre_clave or 
+                            f"Habitación {limpieza_completa.habitacion_area.id_habitacion_area}"
+                        )
+                    
+                    # Enviar notificación (sin esperar respuesta)
+                    push_service.send_to_user(
+                        usuario_id=usuario_id,
+                        title="Limpieza completada",
+                        body=f"La limpieza de {habitacion_nombre} que asignaste ha sido completada",
+                        data={
+                            "tipo": "limpieza_completada",
+                            "limpieza_id": str(limpieza_id),
+                            "habitacion_area_id": str(habitacion_area_id),
+                            "screen": "limpieza_detail"
+                        }
+                    )
+                    
+                    logger.info(f"Notificación enviada al usuario {usuario_id} (empleado_asigna_id: {empleado_asigna_id}) por limpieza {limpieza_id}")
+                    
+                finally:
+                    # Cerrar sesión de BD del hilo
+                    db_background.close()
+                    
+            except Exception as e:
+                # No fallar la operación principal si falla la notificación
+                logger.error(f"Error enviando notificación de limpieza completada: {e}", exc_info=True)
+        
+        # Iniciar hilo en background sin esperar (daemon=True permite que el programa termine sin esperar el hilo)
+        thread = threading.Thread(target=enviar_en_background, daemon=True)
+        thread.start()
+
     def crear(self, db: Session, data: LimpiezaCreate):
         data_dict = data.dict()
         empleado_id_anterior = None
@@ -134,13 +228,40 @@ class LimpiezaService:
         
         return limpieza_creada
 
-    def actualizar(self, db: Session, id_limpieza: int, data: LimpiezaUpdate):
-        # Obtener limpieza actual para comparar empleado_id
+    def actualizar(self, db: Session, id_limpieza: int, data: LimpiezaUpdate, usuario_asigna_id: Optional[int] = None):
+        # Obtener limpieza actual para comparar empleado_id y estatus
         limpieza_actual = self.dao.get_by_id(db, id_limpieza)
         empleado_id_anterior = limpieza_actual.empleado_id if limpieza_actual else None
+        estatus_anterior = limpieza_actual.estatus_limpieza_id if limpieza_actual else None
+        
+        # Preparar datos de actualización
+        data_dict = data.dict(exclude_unset=True)
+        
+        # Si se está asignando un empleado (empleado_id cambia), guardar quien asigna
+        nuevo_empleado_id = data_dict.get('empleado_id')
+        if nuevo_empleado_id and nuevo_empleado_id != empleado_id_anterior:
+            # Solo guardar empleado_asigna_id si no existe ya (no sobrescribir)
+            if not limpieza_actual.empleado_asigna_id and usuario_asigna_id:
+                # Obtener empleado_id del usuario que asigna
+                usuario_asignacion = db.query(UsuarioAsignacion).filter(
+                    UsuarioAsignacion.usuario_id == usuario_asigna_id,
+                    UsuarioAsignacion.tipo_asignacion == 1,  # 1=Empleado
+                    UsuarioAsignacion.estatus == 1  # Activo
+                ).first()
+                
+                if usuario_asignacion and usuario_asignacion.empleado_id:
+                    data_dict['empleado_asigna_id'] = usuario_asignacion.empleado_id
+        
+        # Si el estatus cambia a "En Progreso" (2) y no tiene fecha_inicio_limpieza, establecerla
+        nuevo_estatus = data_dict.get('estatus_limpieza_id')
+        if nuevo_estatus == 2 and estatus_anterior != 2:
+            # Solo establecer si no viene en los datos y no existe ya
+            if 'fecha_inicio_limpieza' not in data_dict:
+                if not limpieza_actual.fecha_inicio_limpieza:
+                    data_dict['fecha_inicio_limpieza'] = datetime.utcnow()
         
         # Actualizar limpieza
-        limpieza_actualizada = self.dao.update(db, id_limpieza, data.dict(exclude_unset=True))
+        limpieza_actualizada = self.dao.update(db, id_limpieza, data_dict)
         
         if limpieza_actualizada:
             empleado_id_nuevo = limpieza_actualizada.empleado_id
@@ -150,6 +271,10 @@ class LimpiezaService:
             # 2. Se cambió el empleado asignado (diferente valor)
             if empleado_id_nuevo and empleado_id_nuevo != empleado_id_anterior:
                 self._enviar_notificacion_asignacion(db, limpieza_actualizada)
+            
+            # Enviar notificación al que asignó cuando se completa
+            if nuevo_estatus == 3 and estatus_anterior != 3:  # Completada
+                self._enviar_notificacion_terminacion(db, limpieza_actualizada)
         
         return limpieza_actualizada
 

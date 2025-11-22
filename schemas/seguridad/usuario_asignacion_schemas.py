@@ -72,3 +72,12 @@ class UsuarioConAsignacionResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+class UsuarioEmpleadoAsociacionRequest(BaseModel):
+    """
+    Schema para solicitar asociación de usuario con empleado
+    """
+    usuario_id: int = Field(..., gt=0, description="ID del usuario existente")
+    empleado_id: int = Field(..., gt=0, description="ID del empleado existente")
+

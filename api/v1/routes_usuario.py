@@ -18,6 +18,26 @@ from schemas.seguridad.registro_cliente_schemas import (
     VerificarDisponibilidadRequest,
     VerificarDisponibilidadResponse,
     RegistroClienteRequest,
+"""
+Rutas API para gestión de usuarios
+Incluye CRUD completo y autenticación
+"""
+
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
+
+from core.database_connection import get_database_session
+from services.seguridad.usuario_service import UsuarioService
+from schemas.seguridad.usuario_create import UsuarioCreate
+from schemas.seguridad.usuario_update import UsuarioUpdate
+from schemas.seguridad.usuario_response import UsuarioResponse
+from schemas.seguridad.auth_schemas import UsuarioLogin, Token
+from schemas.seguridad.registro_cliente_schemas import (
+    VerificarDisponibilidadRequest,
+    VerificarDisponibilidadResponse,
+    RegistroClienteRequest,
     RegistroClienteResponse,
     CambiarPasswordTemporalRequest,
     CambiarPasswordTemporalResponse
@@ -26,6 +46,7 @@ from schemas.seguridad.recuperar_password_schemas import (
     RecuperarPasswordRequest,
     RecuperarPasswordResponse
 )
+from schemas.seguridad.usuario_asignacion_schemas import UsuarioEmpleadoAsociacionRequest, UsuarioAsignacionResponse
 
 # Configurar router
 router = APIRouter(
@@ -380,4 +401,27 @@ async def cambiar_password_temporal(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al cambiar contraseña temporal: {str(e)}"
+        )
+
+
+@router.post("/empleado_usuario_asociacion", response_model=UsuarioAsignacionResponse, status_code=status.HTTP_201_CREATED)
+async def asociar_usuario_empleado(
+    request_data: UsuarioEmpleadoAsociacionRequest,
+    db: Session = Depends(get_database_session)
+):
+    """
+    Asociar un usuario existente con un empleado existente
+    
+    - **usuario_id**: ID del usuario existente
+    - **empleado_id**: ID del empleado existente
+    """
+    try:
+        usuario_service = UsuarioService(db)
+        return usuario_service.asociar_usuario_empleado(request_data)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al asociar usuario-empleado: {str(e)}"
         )

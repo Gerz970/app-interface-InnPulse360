@@ -16,6 +16,7 @@ from dao.seguridad.dao_rol_usuario import RolUsuarioDAO
 from dao.seguridad.dao_usuario_asignacion import UsuarioAsignacionDAO
 from dao.seguridad.dao_modulo_rol import ModuloRolDAO
 from dao.cliente.dao_cliente import ClienteDAO
+from dao.empleado.dao_empleado import EmpleadoDAO
 from models.seguridad.usuario_model import Usuario
 from schemas.seguridad.usuario_create import UsuarioCreate
 from schemas.seguridad.usuario_update import UsuarioUpdate
@@ -29,8 +30,13 @@ from schemas.seguridad.registro_cliente_schemas import (
     RegistroClienteResponse,
     CambiarPasswordTemporalRequest,
     CambiarPasswordTemporalResponse,
-    ClienteEncontradoInfo
+    ClienteEncontradoInfo,
+    RegistroClienteRequest,
+    RegistroClienteResponse,
+    CambiarPasswordTemporalRequest,
+    CambiarPasswordTemporalResponse
 )
+from schemas.seguridad.usuario_asignacion_schemas import UsuarioEmpleadoAsociacionRequest, UsuarioAsignacionResponse
 from schemas.cliente.cliente_formulario import ClienteFormularioData
 from core.config import AuthSettings, SupabaseSettings
 from utils.password_generator import generar_password_temporal, validar_fortaleza_password
@@ -59,6 +65,7 @@ class UsuarioService:
         self.rol_usuario_dao = RolUsuarioDAO(db_session)
         self.asignacion_dao = UsuarioAsignacionDAO(db_session)
         self.cliente_dao = ClienteDAO(db_session)
+        self.empleado_dao = EmpleadoDAO(db_session)
         self.modulo_rol_dao = ModuloRolDAO(db_session)
         self.supabase_settings = SupabaseSettings()
     
@@ -798,6 +805,80 @@ class UsuarioService:
         else:
             mensaje = "Usuario creado y asociado al cliente exitosamente."
         
+        return RegistroClienteResponse(
+            success=True,
+            mensaje=mensaje,
+            usuario=UsuarioResponse(
+                id_usuario=usuario_creado.id_usuario,
+                login=usuario_creado.login,
+                correo_electronico=usuario_creado.correo_electronico,
+                estatus_id=usuario_creado.estatus_id,
+                roles=self._get_usuario_roles(usuario_creado.id_usuario),
+                url_foto_perfil=usuario_creado.url_foto_perfil
+            ),
+            cliente=cliente_info,
+            email_enviado=email_enviado
+        )
+
+    def asociar_usuario_empleado(self, request: UsuarioEmpleadoAsociacionRequest) -> UsuarioAsignacionResponse:
+        """
+        Asocia un usuario existente con un empleado existente
+        
+        Args:
+            request (UsuarioEmpleadoAsociacionRequest): Datos de la asociación
+            
+        Returns:
+            UsuarioAsignacionResponse: Datos de la asignación creada
+            
+        Raises:
+            HTTPException: Si hay errores de validación
+        """
+        # 1. Verificar que el usuario existe
+        usuario = self.dao.get_by_id(request.usuario_id)
+        if not usuario:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Usuario con ID {request.usuario_id} no encontrado"
+            )
+            
+        # 2. Verificar que el empleado existe
+        empleado = self.empleado_dao.get_by_id(request.empleado_id)
+        if not empleado:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Empleado con ID {request.empleado_id} no encontrado"
+            )
+            
+        # 3. Verificar que el usuario no tenga ya una asignación
+        if self.asignacion_dao.existe_asignacion_usuario(request.usuario_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"El usuario {usuario.login} ya tiene una asignación (empleado o cliente)"
+            )
+            
+        # 4. Crear la asignación
+        try:
+            asignacion = self.asignacion_dao.crear_asignacion_empleado(
+                usuario_id=request.usuario_id,
+                empleado_id=request.empleado_id
+            )
+            
+            return UsuarioAsignacionResponse(
+                id_asignacion=asignacion.id_asignacion,
+                usuario_id=asignacion.usuario_id,
+                empleado_id=asignacion.empleado_id,
+                cliente_id=asignacion.cliente_id,
+                tipo_asignacion=asignacion.tipo_asignacion,
+                tipo_asignacion_texto="Empleado",
+                fecha_asignacion=asignacion.fecha_asignacion,
+                estatus=asignacion.estatus
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Error al crear la asignación: {str(e)}"
+            )
+
         # IMPORTANTE: NO devolver password_temporal ni password_expira por seguridad
         # Las credenciales se envían ÚNICAMENTE por email
         return RegistroClienteResponse(

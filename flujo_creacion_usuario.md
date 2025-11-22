@@ -24,6 +24,44 @@ Ambos flujos terminan con el mismo proceso de autenticación para acceder a la p
 
 ---
 
+## Guía Práctica: Cómo Consumir las APIs para Crear Usuarios
+
+Esta sección explica paso a paso cómo consumir las APIs disponibles para crear usuarios y acceder a la plataforma. Incluye ejemplos prácticos de implementación.
+
+### Configuración Inicial
+
+**Base URL de Producción:**
+```
+https://app-interface-innpulse360-production.up.railway.app
+```
+
+**Base URL de Desarrollo:**
+```
+http://localhost:8000
+```
+
+**Prefijo de API:**
+```
+/api/v1
+```
+
+**Headers Comunes:**
+```json
+{
+  "Content-Type": "application/json"
+}
+```
+
+**Headers con Autenticación:**
+```json
+{
+  "Content-Type": "application/json",
+  "Authorization": "Bearer YOUR_TOKEN_HERE"
+}
+```
+
+---
+
 ## Flujo 1: Creación de Usuario por Administrador
 
 ### Descripción
@@ -125,6 +163,124 @@ curl -X POST "https://app-interface-innpulse360-production.up.railway.app/api/v1
 Una vez creado el usuario, puede iniciar sesión inmediatamente usando:
 - **Login**: El `login` proporcionado
 - **Password**: La contraseña proporcionada (antes de encriptarse)
+
+### Proceso Completo: Cómo Consumir la API
+
+#### Paso 1: Autenticarse como Administrador
+
+Primero, el administrador debe obtener un token de autenticación:
+
+**Request:**
+```http
+POST /api/v1/usuarios/login
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "password": "AdminPassword123"
+}
+```
+
+**Response:**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 1800,
+  "usuario": {
+    "id_usuario": 1,
+    "login": "admin",
+    "correo_electronico": "admin@innpulse360.com"
+  },
+  "modulos": [...]
+}
+```
+
+**Guardar el token:** Almacena el `access_token` para usarlo en las siguientes peticiones.
+
+#### Paso 2: Crear el Nuevo Usuario
+
+Con el token obtenido, crear el nuevo usuario:
+
+**Request:**
+```http
+POST /api/v1/usuarios/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+
+{
+  "login": "nuevo.usuario",
+  "correo_electronico": "usuario@email.com",
+  "password": "Password123",
+  "estatus_id": 1,
+  "roles_ids": [1, 2]
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id_usuario": 5,
+  "login": "nuevo.usuario",
+  "correo_electronico": "usuario@email.com",
+  "estatus_id": 1,
+  "roles": [
+    {
+      "id_rol": 1,
+      "rol": "Administrador"
+    }
+  ],
+  "url_foto_perfil": "https://innpulse360.supabase.co/storage/v1/object/public/images/usuarios/perfil/default.jpg"
+}
+```
+
+#### Paso 3: Verificar que el Usuario Puede Iniciar Sesión
+
+El usuario creado puede iniciar sesión inmediatamente:
+
+**Request:**
+```http
+POST /api/v1/usuarios/login
+Content-Type: application/json
+
+{
+  "login": "nuevo.usuario",
+  "password": "Password123"
+}
+```
+
+**Response:**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 1800,
+  "usuario": {
+    "id_usuario": 5,
+    "login": "nuevo.usuario",
+    "correo_electronico": "usuario@email.com"
+  },
+  "modulos": [...]
+}
+```
+
+#### Manejo de Errores
+
+**Error 400 - Login o Email ya existe:**
+```json
+{
+  "detail": "El login ya está en uso"
+}
+```
+
+**Error 401 - Token inválido o expirado:**
+```json
+{
+  "detail": "Token inválido o expirado"
+}
+```
+
+**Solución:** Renovar el token haciendo login nuevamente.
 
 ---
 
@@ -469,6 +625,274 @@ curl -X POST "https://app-interface-innpulse360-production.up.railway.app/api/v1
   }'
 ```
 
+### Proceso Completo: Cómo Consumir las APIs para Registro de Cliente
+
+Este flujo permite que un cliente existente se registre como usuario del sistema. **No requiere autenticación previa**, pero el cliente debe existir en la base de datos.
+
+#### Paso 1: Verificar Disponibilidad
+
+Antes de registrar, verificar que el login esté disponible y que el correo exista en la tabla de clientes:
+
+**Request:**
+```http
+POST /api/v1/usuarios/verificar-disponibilidad
+Content-Type: application/json
+
+{
+  "login": "cliente123",
+  "correo_electronico": "cliente@email.com"
+}
+```
+
+**Response Exitosa (200 OK):**
+```json
+{
+  "login_disponible": true,
+  "correo_en_clientes": true,
+  "cliente": {
+    "id_cliente": 123,
+    "tipo_persona": 1,
+    "documento_identificacion": 123456789,
+    "nombre_razon_social": "Juan Pérez González",
+    "apellido_paterno": "Pérez",
+    "apellido_materno": "González",
+    "rfc": "PEGJ800101XXX",
+    "curp": "PEGJ800101HDFRRN01",
+    "telefono": "5512345678",
+    "direccion": "Calle Principal 123, Col. Centro",
+    "pais_id": 1,
+    "estado_id": 15,
+    "correo_electronico": "cliente@email.com",
+    "representante": null,
+    "id_estatus": 1
+  },
+  "puede_registrar": true,
+  "mensaje": "Login disponible. Se encontró cliente 'Juan Pérez González'"
+}
+```
+
+**Importante:** 
+- Si `puede_registrar` es `true`, puedes proceder al registro
+- Guarda el `id_cliente` de la respuesta para usarlo en el siguiente paso
+- Si `puede_registrar` es `false`, revisa el `mensaje` para entender el problema
+
+**Casos de Error:**
+
+**Login no disponible:**
+```json
+{
+  "login_disponible": false,
+  "correo_en_clientes": true,
+  "cliente": null,
+  "puede_registrar": false,
+  "mensaje": "El login 'cliente123' ya está en uso"
+}
+```
+
+**Correo no encontrado en clientes:**
+```json
+{
+  "login_disponible": true,
+  "correo_en_clientes": false,
+  "cliente": null,
+  "puede_registrar": false,
+  "mensaje": "No se encontró cliente con el correo 'cliente@email.com'"
+}
+```
+
+#### Paso 2: Registrar Usuario-Cliente
+
+Una vez verificada la disponibilidad, proceder con el registro:
+
+**Request:**
+```http
+POST /api/v1/usuarios/registro-cliente
+Content-Type: application/json
+
+{
+  "login": "cliente123",
+  "correo_electronico": "cliente@email.com",
+  "password": null,
+  "cliente_id": 123
+}
+```
+
+**Notas importantes:**
+- `password`: Puede ser `null` (se genera automáticamente) o una contraseña personalizada
+- Si envías `password: null`, el sistema generará una contraseña temporal de 12 caracteres
+- La contraseña temporal expira en 7 días
+- Si proporcionas una contraseña, debe cumplir los requisitos de fortaleza
+
+**Response Exitosa (201 Created):**
+```json
+{
+  "usuario_creado": true,
+  "id_usuario": 45,
+  "login": "cliente123",
+  "correo_electronico": "cliente@email.com",
+  "cliente_asociado": {
+    "id_cliente": 123,
+    "nombre_razon_social": "Juan Pérez González",
+    "rfc": "PEGJ800101XXX",
+    "tipo_persona": 1,
+    "correo_electronico": "cliente@email.com"
+  },
+  "rol_asignado": "Cliente",
+  "password_temporal_generada": true,
+  "email_enviado": true,
+  "mensaje": "Usuario creado exitosamente. Se han enviado las credenciales al correo electrónico proporcionado."
+}
+```
+
+**⚠️ Seguridad:** La contraseña temporal **NO se devuelve** en la respuesta JSON. Se envía únicamente por email al cliente.
+
+**Errores Posibles:**
+
+**400 Bad Request - Login ya en uso:**
+```json
+{
+  "detail": "El login 'cliente123' ya está en uso"
+}
+```
+
+**400 Bad Request - Cliente no encontrado:**
+```json
+{
+  "detail": "No se encontró cliente con ID 123"
+}
+```
+
+**400 Bad Request - Correo no coincide:**
+```json
+{
+  "detail": "El correo no coincide con el del cliente"
+}
+```
+
+**400 Bad Request - Contraseña débil:**
+```json
+{
+  "detail": "La contraseña debe tener al menos 6 caracteres, una mayúscula, una minúscula y un número"
+}
+```
+
+#### Paso 3: Cliente Recibe Email con Credenciales
+
+Si se generó una contraseña temporal, el cliente recibirá un email con:
+- Login del usuario
+- Contraseña temporal generada
+- Fecha de expiración (7 días)
+- Instrucciones para cambiar la contraseña
+
+**Nota:** Si el envío de email falla, el registro **NO se interrumpe**. El usuario se crea exitosamente, pero el email no se envía (se registra en logs).
+
+#### Paso 4: (Opcional) Cambiar Contraseña Temporal
+
+El cliente puede cambiar su contraseña temporal por una definitiva:
+
+**Request:**
+```http
+POST /api/v1/usuarios/cambiar-password-temporal
+Content-Type: application/json
+
+{
+  "login": "cliente123",
+  "password_actual": "A1b2C3d4E5f6",
+  "password_nueva": "MiNuevaPassword123",
+  "password_confirmacion": "MiNuevaPassword123"
+}
+```
+
+**Response Exitosa (200 OK):**
+```json
+{
+  "success": true,
+  "mensaje": "Contraseña actualizada exitosamente. Por favor, inicie sesión con su nueva contraseña.",
+  "requiere_login": true
+}
+```
+
+**Errores Posibles:**
+
+**400 Bad Request - Contraseña actual incorrecta:**
+```json
+{
+  "detail": "Contraseña actual incorrecta"
+}
+```
+
+**400 Bad Request - Contraseña temporal expirada:**
+```json
+{
+  "detail": "La contraseña temporal ha expirado. Solicite una nueva."
+}
+```
+
+**400 Bad Request - Contraseñas no coinciden:**
+```json
+{
+  "detail": "Las contraseñas no coinciden"
+}
+```
+
+#### Paso 5: Iniciar Sesión
+
+Una vez que el cliente tiene sus credenciales (ya sea la temporal o la definitiva), puede iniciar sesión:
+
+**Request:**
+```http
+POST /api/v1/usuarios/login
+Content-Type: application/json
+
+{
+  "login": "cliente123",
+  "password": "MiNuevaPassword123"
+}
+```
+
+**Response Exitosa (200 OK):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 1800,
+  "usuario": {
+    "id_usuario": 45,
+    "login": "cliente123",
+    "correo_electronico": "cliente@email.com"
+  },
+  "modulos": [
+    {
+      "id_modulo": 1,
+      "nombre": "Dashboard",
+      "descripcion": "Panel principal del sistema",
+      "icono": "fas fa-dashboard",
+      "ruta": "/dashboard"
+    }
+  ],
+  "password_temporal_info": null
+}
+```
+
+**Si el usuario aún tiene contraseña temporal activa:**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "expires_in": 1800,
+  "usuario": {...},
+  "modulos": [...],
+  "password_temporal_info": {
+    "requiere_cambio": true,
+    "password_expira": "2024-12-08T10:00:00",
+    "dias_restantes": 5,
+    "mensaje": "Debe cambiar su contraseña temporal. Expira en 5 días."
+  }
+}
+```
+
+**Recomendación:** Si `password_temporal_info.requiere_cambio` es `true`, mostrar una alerta al usuario y redirigirlo a la pantalla de cambio de contraseña.
+
 ---
 
 ## Flujo 3: Iniciar Sesión (Acceso a la Plataforma)
@@ -630,6 +1054,139 @@ curl -X POST "https://app-interface-innpulse360-production.up.railway.app/api/v1
 # Obtener hoteles (requiere autenticación)
 curl -X GET "https://app-interface-innpulse360-production.up.railway.app/api/v1/hotel/" \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+```
+
+### Proceso Completo: Cómo Consumir la API de Login
+
+#### Paso 1: Realizar Login
+
+**Request:**
+```http
+POST /api/v1/usuarios/login
+Content-Type: application/json
+
+{
+  "login": "cliente123",
+  "password": "MiNuevaPassword123"
+}
+```
+
+**Response Exitosa (200 OK):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0NSIsImxvZ2luIjoiY2xpZW50ZTEyMyIsImNvcnJlb19lbGVjdHJvbmljbyI6ImNsaWVudGVAbWFpbC5jb20iLCJleHAiOjE3MDk4NzYwMDB9...",
+  "token_type": "bearer",
+  "expires_in": 1800,
+  "usuario": {
+    "id_usuario": 45,
+    "login": "cliente123",
+    "correo_electronico": "cliente@email.com"
+  },
+  "modulos": [
+    {
+      "id_modulo": 1,
+      "nombre": "Dashboard",
+      "descripcion": "Panel principal del sistema",
+      "icono": "fas fa-dashboard",
+      "ruta": "/dashboard"
+    },
+    {
+      "id_modulo": 2,
+      "nombre": "Reservaciones",
+      "descripcion": "Gestión de reservaciones",
+      "icono": "fas fa-calendar",
+      "ruta": "/reservaciones"
+    }
+  ],
+  "password_temporal_info": null
+}
+```
+
+#### Paso 2: Guardar el Token y la Información del Usuario
+
+**Almacenar en el cliente:**
+- `access_token`: Token JWT para autenticación (válido por 30 minutos)
+- `usuario`: Información del usuario autenticado
+- `modulos`: Lista de módulos a los que tiene acceso según sus roles
+
+**Ejemplo de almacenamiento:**
+```javascript
+// JavaScript/TypeScript
+localStorage.setItem('token', response.access_token);
+localStorage.setItem('usuario', JSON.stringify(response.usuario));
+localStorage.setItem('modulos', JSON.stringify(response.modulos));
+```
+
+#### Paso 3: Usar el Token en Peticiones Autenticadas
+
+Todas las peticiones a endpoints protegidos deben incluir el token en el header `Authorization`:
+
+**Ejemplo - Obtener Hoteles:**
+```http
+GET /api/v1/hotel/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+```
+
+**Ejemplo - Obtener Perfil del Usuario:**
+```http
+GET /api/v1/usuarios/me/profile
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+Content-Type: application/json
+```
+
+#### Paso 4: Manejar Expiración del Token
+
+El token expira después de 30 minutos (1800 segundos). Cuando recibas un error 401, debes:
+
+1. Limpiar el token almacenado
+2. Redirigir al usuario a la pantalla de login
+3. Solicitar nuevas credenciales
+
+**Ejemplo de manejo de error:**
+```javascript
+if (response.status === 401) {
+  localStorage.removeItem('token');
+  localStorage.removeItem('usuario');
+  localStorage.removeItem('modulos');
+  window.location.href = '/login';
+}
+```
+
+#### Manejo de Errores
+
+**401 Unauthorized - Credenciales incorrectas:**
+```json
+{
+  "detail": "Credenciales incorrectas"
+}
+```
+
+**401 Unauthorized - Usuario inactivo:**
+```json
+{
+  "detail": "Usuario inactivo"
+}
+```
+
+**401 Unauthorized - Contraseña temporal expirada:**
+```json
+{
+  "detail": "La contraseña temporal ha expirado. Por favor, contacte al administrador."
+}
+```
+
+**400 Bad Request - Datos inválidos:**
+```json
+{
+  "detail": [
+    {
+      "loc": ["body", "login"],
+      "msg": "field required",
+      "type": "value_error.missing"
+    }
+  ]
+}
 ```
 
 ---
@@ -847,7 +1404,540 @@ Cliente          App Móvil          API                    BD              Emai
 
 ---
 
-## Ejemplos de Código
+## Ejemplos de Código Prácticos
+
+Esta sección incluye ejemplos completos de implementación en diferentes lenguajes y frameworks para consumir las APIs de creación de usuario y autenticación.
+
+### JavaScript/TypeScript (Fetch API)
+
+#### Clase de Servicio para Autenticación y Registro
+
+```javascript
+class AuthService {
+  constructor(baseURL = 'https://app-interface-innpulse360-production.up.railway.app') {
+    this.baseURL = baseURL;
+    this.apiPrefix = '/api/v1';
+  }
+
+  /**
+   * Iniciar sesión
+   */
+  async login(login, password) {
+    const response = await fetch(`${this.baseURL}${this.apiPrefix}/usuarios/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ login, password })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Error al iniciar sesión');
+    }
+
+    const data = await response.json();
+    
+    // Guardar token y datos del usuario
+    localStorage.setItem('token', data.access_token);
+    localStorage.setItem('usuario', JSON.stringify(data.usuario));
+    localStorage.setItem('modulos', JSON.stringify(data.modulos));
+    
+    return data;
+  }
+
+  /**
+   * Verificar disponibilidad para registro de cliente
+   */
+  async verificarDisponibilidad(login, correoElectronico) {
+    const response = await fetch(`${this.baseURL}${this.apiPrefix}/usuarios/verificar-disponibilidad`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        login,
+        correo_electronico: correoElectronico
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Error al verificar disponibilidad');
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Registrar usuario-cliente
+   */
+  async registrarCliente(login, correoElectronico, clienteId, password = null) {
+    const response = await fetch(`${this.baseURL}${this.apiPrefix}/usuarios/registro-cliente`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        login,
+        correo_electronico: correoElectronico,
+        password,
+        cliente_id: clienteId
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Error al registrar cliente');
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Cambiar contraseña temporal
+   */
+  async cambiarPasswordTemporal(login, passwordActual, passwordNueva, passwordConfirmacion) {
+    const response = await fetch(`${this.baseURL}${this.apiPrefix}/usuarios/cambiar-password-temporal`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        login,
+        password_actual: passwordActual,
+        password_nueva: passwordNueva,
+        password_confirmacion: passwordConfirmacion
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Error al cambiar contraseña');
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Crear usuario (requiere autenticación de administrador)
+   */
+  async crearUsuario(usuarioData) {
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      throw new Error('No hay token de autenticación');
+    }
+
+    const response = await fetch(`${this.baseURL}${this.apiPrefix}/usuarios/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(usuarioData)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || 'Error al crear usuario');
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Obtener token almacenado
+   */
+  getToken() {
+    return localStorage.getItem('token');
+  }
+
+  /**
+   * Verificar si hay sesión activa
+   */
+  isAuthenticated() {
+    return !!this.getToken();
+  }
+
+  /**
+   * Cerrar sesión
+   */
+  logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('usuario');
+    localStorage.removeItem('modulos');
+  }
+}
+
+// Uso del servicio
+const authService = new AuthService();
+
+// Ejemplo: Flujo completo de registro de cliente
+async function flujoRegistroCliente() {
+  try {
+    // 1. Verificar disponibilidad
+    const verificacion = await authService.verificarDisponibilidad(
+      'cliente123',
+      'cliente@email.com'
+    );
+
+    if (!verificacion.puede_registrar) {
+      console.error('No se puede registrar:', verificacion.mensaje);
+      return;
+    }
+
+    console.log('Cliente encontrado:', verificacion.cliente);
+
+    // 2. Registrar usuario-cliente
+    const registro = await authService.registrarCliente(
+      'cliente123',
+      'cliente@email.com',
+      verificacion.cliente.id_cliente,
+      null // Se genera contraseña temporal automáticamente
+    );
+
+    console.log('Usuario creado:', registro.mensaje);
+    console.log('Email enviado:', registro.email_enviado);
+
+    // 3. El cliente recibirá las credenciales por email
+    // 4. Cuando tenga las credenciales, puede iniciar sesión
+    const login = await authService.login('cliente123', 'PasswordTemporal123');
+    console.log('Login exitoso:', login.usuario);
+
+  } catch (error) {
+    console.error('Error en el flujo:', error.message);
+  }
+}
+```
+
+### Python (Requests)
+
+```python
+import requests
+from typing import Optional, Dict, Any
+
+class AuthService:
+    def __init__(self, base_url: str = "https://app-interface-innpulse360-production.up.railway.app"):
+        self.base_url = base_url
+        self.api_prefix = "/api/v1"
+        self.token: Optional[str] = None
+
+    def login(self, login: str, password: str) -> Dict[str, Any]:
+        """Iniciar sesión"""
+        url = f"{self.base_url}{self.api_prefix}/usuarios/login"
+        response = requests.post(
+            url,
+            json={"login": login, "password": password},
+            headers={"Content-Type": "application/json"}
+        )
+        response.raise_for_status()
+        
+        data = response.json()
+        self.token = data["access_token"]
+        return data
+
+    def verificar_disponibilidad(self, login: str, correo_electronico: str) -> Dict[str, Any]:
+        """Verificar disponibilidad para registro de cliente"""
+        url = f"{self.base_url}{self.api_prefix}/usuarios/verificar-disponibilidad"
+        response = requests.post(
+            url,
+            json={
+                "login": login,
+                "correo_electronico": correo_electronico
+            },
+            headers={"Content-Type": "application/json"}
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def registrar_cliente(
+        self,
+        login: str,
+        correo_electronico: str,
+        cliente_id: int,
+        password: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Registrar usuario-cliente"""
+        url = f"{self.base_url}{self.api_prefix}/usuarios/registro-cliente"
+        response = requests.post(
+            url,
+            json={
+                "login": login,
+                "correo_electronico": correo_electronico,
+                "password": password,
+                "cliente_id": cliente_id
+            },
+            headers={"Content-Type": "application/json"}
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def cambiar_password_temporal(
+        self,
+        login: str,
+        password_actual: str,
+        password_nueva: str,
+        password_confirmacion: str
+    ) -> Dict[str, Any]:
+        """Cambiar contraseña temporal"""
+        url = f"{self.base_url}{self.api_prefix}/usuarios/cambiar-password-temporal"
+        response = requests.post(
+            url,
+            json={
+                "login": login,
+                "password_actual": password_actual,
+                "password_nueva": password_nueva,
+                "password_confirmacion": password_confirmacion
+            },
+            headers={"Content-Type": "application/json"}
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def crear_usuario(self, usuario_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Crear usuario (requiere autenticación de administrador)"""
+        if not self.token:
+            raise ValueError("No hay token de autenticación")
+
+        url = f"{self.base_url}{self.api_prefix}/usuarios/"
+        response = requests.post(
+            url,
+            json=usuario_data,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.token}"
+            }
+        )
+        response.raise_for_status()
+        return response.json()
+
+# Uso del servicio
+auth_service = AuthService()
+
+# Ejemplo: Flujo completo de registro de cliente
+def flujo_registro_cliente():
+    try:
+        # 1. Verificar disponibilidad
+        verificacion = auth_service.verificar_disponibilidad(
+            "cliente123",
+            "cliente@email.com"
+        )
+
+        if not verificacion["puede_registrar"]:
+            print(f"No se puede registrar: {verificacion['mensaje']}")
+            return
+
+        print(f"Cliente encontrado: {verificacion['cliente']['nombre_razon_social']}")
+
+        # 2. Registrar usuario-cliente
+        registro = auth_service.registrar_cliente(
+            "cliente123",
+            "cliente@email.com",
+            verificacion["cliente"]["id_cliente"],
+            None  # Se genera contraseña temporal automáticamente
+        )
+
+        print(f"Usuario creado: {registro['mensaje']}")
+        print(f"Email enviado: {registro['email_enviado']}")
+
+        # 3. El cliente recibirá las credenciales por email
+        # 4. Cuando tenga las credenciales, puede iniciar sesión
+        login = auth_service.login("cliente123", "PasswordTemporal123")
+        print(f"Login exitoso: {login['usuario']['login']}")
+
+    except requests.exceptions.HTTPError as e:
+        print(f"Error HTTP: {e}")
+    except Exception as e:
+        print(f"Error en el flujo: {e}")
+```
+
+### Dart/Flutter
+
+```dart
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class AuthService {
+  final String baseURL;
+  String? token;
+
+  AuthService({
+    this.baseURL = 'https://app-interface-innpulse360-production.up.railway.app',
+  });
+
+  final String apiPrefix = '/api/v1';
+
+  /// Iniciar sesión
+  Future<Map<String, dynamic>> login(String login, String password) async {
+    final url = Uri.parse('$baseURL$apiPrefix/usuarios/login');
+    
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'login': login,
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['detail'] ?? 'Error al iniciar sesión');
+    }
+
+    final data = jsonDecode(response.body);
+    token = data['access_token'];
+    return data;
+  }
+
+  /// Verificar disponibilidad para registro de cliente
+  Future<Map<String, dynamic>> verificarDisponibilidad(
+    String login,
+    String correoElectronico,
+  ) async {
+    final url = Uri.parse('$baseURL$apiPrefix/usuarios/verificar-disponibilidad');
+    
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'login': login,
+        'correo_electronico': correoElectronico,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['detail'] ?? 'Error al verificar disponibilidad');
+    }
+
+    return jsonDecode(response.body);
+  }
+
+  /// Registrar usuario-cliente
+  Future<Map<String, dynamic>> registrarCliente({
+    required String login,
+    required String correoElectronico,
+    required int clienteId,
+    String? password,
+  }) async {
+    final url = Uri.parse('$baseURL$apiPrefix/usuarios/registro-cliente');
+    
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'login': login,
+        'correo_electronico': correoElectronico,
+        'password': password,
+        'cliente_id': clienteId,
+      }),
+    );
+
+    if (response.statusCode != 201) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['detail'] ?? 'Error al registrar cliente');
+    }
+
+    return jsonDecode(response.body);
+  }
+
+  /// Cambiar contraseña temporal
+  Future<Map<String, dynamic>> cambiarPasswordTemporal({
+    required String login,
+    required String passwordActual,
+    required String passwordNueva,
+    required String passwordConfirmacion,
+  }) async {
+    final url = Uri.parse('$baseURL$apiPrefix/usuarios/cambiar-password-temporal');
+    
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'login': login,
+        'password_actual': passwordActual,
+        'password_nueva': passwordNueva,
+        'password_confirmacion': passwordConfirmacion,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['detail'] ?? 'Error al cambiar contraseña');
+    }
+
+    return jsonDecode(response.body);
+  }
+
+  /// Crear usuario (requiere autenticación de administrador)
+  Future<Map<String, dynamic>> crearUsuario(Map<String, dynamic> usuarioData) async {
+    if (token == null) {
+      throw Exception('No hay token de autenticación');
+    }
+
+    final url = Uri.parse('$baseURL$apiPrefix/usuarios/');
+    
+    final response = await http.post(
+      url,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(usuarioData),
+    );
+
+    if (response.statusCode != 201) {
+      final error = jsonDecode(response.body);
+      throw Exception(error['detail'] ?? 'Error al crear usuario');
+    }
+
+    return jsonDecode(response.body);
+  }
+}
+
+// Uso del servicio
+void ejemploFlujoRegistroCliente() async {
+  final authService = AuthService();
+
+  try {
+    // 1. Verificar disponibilidad
+    final verificacion = await authService.verificarDisponibilidad(
+      'cliente123',
+      'cliente@email.com',
+    );
+
+    if (!verificacion['puede_registrar']) {
+      print('No se puede registrar: ${verificacion['mensaje']}');
+      return;
+    }
+
+    print('Cliente encontrado: ${verificacion['cliente']['nombre_razon_social']}');
+
+    // 2. Registrar usuario-cliente
+    final registro = await authService.registrarCliente(
+      login: 'cliente123',
+      correoElectronico: 'cliente@email.com',
+      clienteId: verificacion['cliente']['id_cliente'],
+      password: null, // Se genera contraseña temporal automáticamente
+    );
+
+    print('Usuario creado: ${registro['mensaje']}');
+    print('Email enviado: ${registro['email_enviado']}');
+
+    // 3. El cliente recibirá las credenciales por email
+    // 4. Cuando tenga las credenciales, puede iniciar sesión
+    final login = await authService.login('cliente123', 'PasswordTemporal123');
+    print('Login exitoso: ${login['usuario']['login']}');
+
+  } catch (e) {
+    print('Error en el flujo: $e');
+  }
+}
+```
+
+### Ejemplos de Código Originales
 
 ### Ejemplo: Verificar Disponibilidad (JavaScript)
 
@@ -1085,6 +2175,101 @@ http://localhost:8000
 
 ---
 
+---
+
+## Resumen Ejecutivo: Pasos para Consumir las APIs
+
+### Flujo 1: Crear Usuario como Administrador
+
+1. **Autenticarse como administrador**
+   - `POST /api/v1/usuarios/login`
+   - Guardar el `access_token` recibido
+
+2. **Crear nuevo usuario**
+   - `POST /api/v1/usuarios/`
+   - Incluir header: `Authorization: Bearer {token}`
+   - Enviar: `login`, `correo_electronico`, `password`, `estatus_id`, `roles_ids`
+
+3. **Usuario puede iniciar sesión inmediatamente**
+   - `POST /api/v1/usuarios/login`
+   - Usar las credenciales proporcionadas
+
+### Flujo 2: Registro de Cliente (Autoregistro)
+
+1. **Verificar disponibilidad**
+   - `POST /api/v1/usuarios/verificar-disponibilidad`
+   - Enviar: `login`, `correo_electronico`
+   - Verificar que `puede_registrar` sea `true`
+   - Guardar `cliente.id_cliente`
+
+2. **Registrar usuario-cliente**
+   - `POST /api/v1/usuarios/registro-cliente`
+   - Enviar: `login`, `correo_electronico`, `cliente_id`, `password` (opcional)
+   - Si `password` es `null`, se genera automáticamente y se envía por email
+
+3. **Cliente recibe credenciales por email**
+   - Login y contraseña temporal (si se generó automáticamente)
+   - Fecha de expiración (7 días)
+
+4. **Cambiar contraseña temporal (opcional pero recomendado)**
+   - `POST /api/v1/usuarios/cambiar-password-temporal`
+   - Enviar: `login`, `password_actual`, `password_nueva`, `password_confirmacion`
+
+5. **Iniciar sesión**
+   - `POST /api/v1/usuarios/login`
+   - Usar credenciales (temporal o definitiva)
+
+### Flujo 3: Iniciar Sesión
+
+1. **Autenticarse**
+   - `POST /api/v1/usuarios/login`
+   - Enviar: `login`, `password`
+
+2. **Guardar token y datos**
+   - Almacenar `access_token` (válido 30 minutos)
+   - Guardar `usuario` y `modulos` para uso en la aplicación
+
+3. **Usar token en peticiones autenticadas**
+   - Incluir header: `Authorization: Bearer {token}`
+   - Renovar token cuando expire (hacer login nuevamente)
+
+### Checklist de Implementación
+
+- [ ] Configurar base URL (producción o desarrollo)
+- [ ] Implementar servicio de autenticación
+- [ ] Manejar almacenamiento de token (localStorage, SharedPreferences, etc.)
+- [ ] Implementar interceptor para agregar token a peticiones autenticadas
+- [ ] Manejar expiración de token (error 401)
+- [ ] Implementar pantalla de login
+- [ ] Implementar pantalla de registro de cliente
+- [ ] Implementar pantalla de cambio de contraseña temporal
+- [ ] Manejar errores de API (400, 401, 404, 500)
+- [ ] Mostrar mensajes de éxito/error al usuario
+- [ ] Validar datos antes de enviar (formato de email, fortaleza de contraseña, etc.)
+
+### Consideraciones de Seguridad
+
+1. **Nunca almacenes contraseñas en texto plano**
+   - Las contraseñas se encriptan automáticamente en el servidor
+   - Las contraseñas temporales solo se envían por email
+
+2. **Maneja los tokens de forma segura**
+   - Almacena el token en un lugar seguro (no en cookies públicas)
+   - No expongas el token en URLs o logs
+   - Renueva el token antes de que expire
+
+3. **Valida datos en el cliente**
+   - Verifica formato de email
+   - Valida fortaleza de contraseña antes de enviar
+   - Verifica que los campos requeridos estén presentes
+
+4. **Maneja errores apropiadamente**
+   - No muestres mensajes de error técnicos al usuario final
+   - Proporciona mensajes claros y accionables
+   - Registra errores para debugging
+
+---
+
 **Última actualización:** Diciembre 2024  
-**Versión del documento:** 1.0.0
+**Versión del documento:** 2.0.0
 

@@ -507,13 +507,19 @@ class UsuarioService:
             expires_delta=access_token_expires
         )
         
+        # Construir URL completa de la foto de perfil desde la ruta almacenada
+        url_foto_completa = None
+        if usuario.url_foto_perfil:
+            url_foto_completa = self._build_foto_perfil_url(usuario.url_foto_perfil)
+        
         # Preparar información básica del usuario
         usuario_info = UsuarioInfo(
             id_usuario=usuario.id_usuario,
             login=usuario.login,
             correo_electronico=usuario.correo_electronico,
             cliente_id=cliente_id,
-            empleado_id=empleado_id
+            empleado_id=empleado_id,
+            url_foto_perfil=url_foto_completa
         )
         
         # Preparar respuesta del token (estructura limpia sin redundancia)

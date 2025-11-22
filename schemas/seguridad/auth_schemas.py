@@ -138,6 +138,12 @@ class UsuarioInfo(BaseModel):
         example=456
     )
 
+    url_foto_perfil: Optional[str] = Field(
+        None,
+        description="URL pública completa de la foto de perfil del usuario",
+        example="https://innpulse360.supabase.co/storage/v1/object/public/images/usuarios/perfil/123.jpg"
+    )
+
     class Config:
         from_attributes = True
 

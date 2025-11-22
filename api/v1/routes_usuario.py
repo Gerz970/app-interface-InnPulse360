@@ -18,26 +18,6 @@ from schemas.seguridad.registro_cliente_schemas import (
     VerificarDisponibilidadRequest,
     VerificarDisponibilidadResponse,
     RegistroClienteRequest,
-"""
-Rutas API para gestión de usuarios
-Incluye CRUD completo y autenticación
-"""
-
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
-
-from core.database_connection import get_database_session
-from services.seguridad.usuario_service import UsuarioService
-from schemas.seguridad.usuario_create import UsuarioCreate
-from schemas.seguridad.usuario_update import UsuarioUpdate
-from schemas.seguridad.usuario_response import UsuarioResponse
-from schemas.seguridad.auth_schemas import UsuarioLogin, Token
-from schemas.seguridad.registro_cliente_schemas import (
-    VerificarDisponibilidadRequest,
-    VerificarDisponibilidadResponse,
-    RegistroClienteRequest,
     RegistroClienteResponse,
     CambiarPasswordTemporalRequest,
     CambiarPasswordTemporalResponse

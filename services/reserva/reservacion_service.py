@@ -3,7 +3,7 @@ from dao.reserva.dao_reservacion import ReservacionDao
 from models.reserva.reservaciones_model import Reservacion
 from schemas.reserva.reservacion_schema import ReservacionCreate, ReservacionUpdate, HabitacionReservadaResponse
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from datetime import date
 from core.database_connection import db_connection, get_database_engine
 from sqlalchemy import text
@@ -70,6 +70,20 @@ class ReservacionService:
             rows = result.mappings().all() 
         rows = rows[:limit] if limit else rows
         return rows
+    
+    def listar_reservaciones_filtradas(self, db: Session, incluir_todos_estatus: bool = False, id_hotel: Optional[int] = None) -> List[Reservacion]:
+        """
+        Lista reservaciones con filtros opcionales.
+        
+        Args:
+            db: Sesión de base de datos
+            incluir_todos_estatus: Si True, incluye todas las reservaciones sin importar estatus
+            id_hotel: ID del hotel para filtrar. Si es None, trae de todos los hoteles
+        
+        Returns:
+            Lista de reservaciones filtradas
+        """
+        return self.dao.get_all_with_filters(db, incluir_todos_estatus, id_hotel)
     
     def checkout(self, db: Session, id_reservacion: int):
         return self.dao.checkout(db, id_reservacion)

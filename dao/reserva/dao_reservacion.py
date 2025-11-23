@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
 from models.reserva.reservaciones_model import Reservacion
 from models.hotel.habitacionArea_model import HabitacionArea
+from models.hotel.piso_model import Piso
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 from sqlalchemy import cast, Date
 from models.camarista.limpieza_model import Limpieza
 from dao.camarista.dao_limpieza import LimpiezaDao
@@ -78,6 +79,32 @@ class ReservacionDao:
         ).distinct().all()
 
         return resultado
+    
+    def get_all_with_filters(self, db: Session, include_all_statuses: bool = False, id_hotel: Optional[int] = None) -> List[Reservacion]:
+        """
+        Obtiene todas las reservaciones con filtros opcionales.
+        
+        Args:
+            db: Sesión de base de datos
+            include_all_statuses: Si True, incluye todas las reservaciones sin importar estatus
+            id_hotel: ID del hotel para filtrar. Si es None, trae de todos los hoteles
+        
+        Returns:
+            Lista de reservaciones filtradas
+        """
+        query = db.query(Reservacion)
+        
+        # Si se especifica un hotel, hacer JOIN con HabitacionArea y Piso
+        if id_hotel is not None:
+            query = query.join(HabitacionArea, Reservacion.habitacion_area_id == HabitacionArea.id_habitacion_area)
+            query = query.join(Piso, HabitacionArea.piso_id == Piso.id_piso)
+            query = query.filter(Piso.id_hotel == id_hotel)
+        
+        # Aplicar filtro de estatus si no se incluyen todos
+        if not include_all_statuses:
+            query = query.filter(Reservacion.id_estatus == 1)
+        
+        return query.all()
     
     def checkout(self, db: Session, id_reservacion):
         reserva = db.query(Reservacion).filter(

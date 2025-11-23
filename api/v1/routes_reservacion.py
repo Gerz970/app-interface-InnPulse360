@@ -4,7 +4,7 @@ from core.database_connection import get_database_session
 from services.reserva.reservacion_service import ReservacionService
 from schemas.reserva.reservacion_schema import ReservacionCreate, ReservacionUpdate, ReservacionResponse, HabitacionReservadaResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import List
+from typing import List, Optional
 from datetime import datetime, date
 from schemas.hotel.habitacion_area_schema import HabitacionAreaResponse
 
@@ -15,6 +15,26 @@ security = HTTPBearer()
 @router.get("/", response_model=list[ReservacionResponse])
 def listar_reservaciones(db: Session = Depends(get_database_session),credentials: HTTPAuthorizationCredentials = Depends(security)):
     return service.listar_reservaciones(db)
+
+@router.get("/todas/", response_model=List[ReservacionResponse])
+def listar_todas_reservaciones(
+    incluir_todos_estatus: bool = Query(False, description="Incluir todas las reservaciones sin importar su estatus"),
+    id_hotel: Optional[int] = Query(None, description="ID del hotel para filtrar. Si no se proporciona, trae reservaciones de todos los hoteles"),
+    db: Session = Depends(get_database_session),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Obtiene todas las reservaciones con filtros opcionales.
+    
+    - **incluir_todos_estatus**: Si es True, incluye todas las reservaciones sin importar su estatus
+    - **id_hotel**: ID del hotel para filtrar. Si no se proporciona, trae reservaciones de todos los hoteles
+    
+    Ejemplos:
+    - Todas las reservaciones de todos los estatus y hoteles: `/reservaciones/todas/?incluir_todos_estatus=true`
+    - Todas las reservaciones activas de un hotel específico: `/reservaciones/todas/?id_hotel=1`
+    - Todas las reservaciones de un hotel sin importar estatus: `/reservaciones/todas/?id_hotel=1&incluir_todos_estatus=true`
+    """
+    return service.listar_reservaciones_filtradas(db, incluir_todos_estatus, id_hotel)
 
 @router.get("/{id_reservacion}", response_model=ReservacionResponse)
 def obtener_reservacion(id_reservacion: int, db: Session = Depends(get_database_session),credentials: HTTPAuthorizationCredentials = Depends(security)):

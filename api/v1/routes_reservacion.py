@@ -73,6 +73,8 @@ def checkout(id_reservacion: int, db: Session = Depends(get_database_session),cr
     return service.checkout(db, id_reservacion)
 
 @router.get("/{fecha_inicio_reservacion}/{fecha_salida}", response_model=List[HabitacionAreaResponse])
-def obtener_habitaciones_disponibles(fecha_inicio_reservacion: date =  Path(..., example="2025-01-10"), fecha_salida: date =  Path(..., example="2025-01-15"), credentials: HTTPAuthorizationCredentials = Depends(security)):
-    habitaciones = service.obtener_habitaciones_disponibles(fecha_inicio_reservacion, fecha_salida)
+def obtener_habitaciones_disponibles(
+        limit: int = Query(100, ge=1, le=1000, description="Número máximo de registros"),
+        fecha_inicio_reservacion: date =  Path(..., example="2025-01-10"), fecha_salida: date =  Path(..., example="2025-01-15"), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    habitaciones = service.obtener_habitaciones_disponibles(fecha_inicio_reservacion, fecha_salida, limit)
     return habitaciones

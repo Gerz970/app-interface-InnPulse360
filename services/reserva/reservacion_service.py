@@ -52,7 +52,7 @@ class ReservacionService:
             for row in resultados
         ]
     
-    def obtener_habitaciones_disponibles(self, fecha_inicio_reservacion: date, fecha_salida: date):
+    def obtener_habitaciones_disponibles(self, fecha_inicio_reservacion: date, fecha_salida: date, limit: int):
         query = text("""
         EXEC Sp_DisponibilidadHabitaciones_Obt 
             :fecha_inicio_reservacion, 
@@ -65,7 +65,7 @@ class ReservacionService:
                 "fecha_salida": fecha_salida
             })
             rows = result.mappings().all() 
-
+        rows = rows[:limit] if limit else rows
         return rows
     
     def checkout(self, db: Session, id_reservacion: int):

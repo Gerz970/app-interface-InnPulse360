@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from models.reserva.cargos_model import Cargo
 from schemas.reserva.cargos_schema import CargoCreate
 from sqlalchemy import func
+from datetime import datetime
 
 class CargoDAO:
 
@@ -17,8 +18,10 @@ class CargoDAO:
         return db.query(Cargo).filter(Cargo.reservacion_id == id_reserva).all()
     
     def create(self, db: Session, cargo_data: CargoCreate):
-        """Crea un nuevo cargo"""
-        nuevo_cargo = Cargo(**cargo_data.dict(exclude_unset=True))
+        data_dict = cargo_data.dict(exclude_unset=True)
+        data_dict["created_at"] = datetime.now()  # ← Añadir aquí
+
+        nuevo_cargo = Cargo(**data_dict)
         db.add(nuevo_cargo)
         db.commit()
         db.refresh(nuevo_cargo)

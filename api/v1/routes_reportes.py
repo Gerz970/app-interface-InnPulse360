@@ -1,0 +1,28 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from core.config import Settings
+from core.database_connection import get_database_session
+from typing import List
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from datetime import date
+from services.reportes.reportes_service import ResportesService
+from fastapi import Path
+
+settings = Settings()
+security = HTTPBearer()
+
+router = APIRouter(prefix="/reportes", tags=["Reportes"])
+
+@router.get("/get-entradas-tipo-dia/{dia}")
+def obtener_entradas_tipo_dia(
+    dia: date = Path(
+        ..., 
+        example="2025-11-23", 
+        description="Fecha en formato YYYY-MM-DD"
+    ),
+    db: Session = Depends(get_database_session)):
+    service = ResportesService(db)
+    try:
+        return service.obtener_entradas_tipo_dia(dia)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))

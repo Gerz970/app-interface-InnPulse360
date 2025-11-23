@@ -11,6 +11,7 @@ class Cargo(Base):
     concepto = Column(String(250), nullable=False)
     costo_unitario = Column(DECIMAL(18, 2), nullable=False)
     cantidad = Column(Integer, nullable=False)
+    created_at = Column(DateTime, nullable=False)
     tipo_id = Column(Integer, ForeignKey("RESERVA.Tb_tipo_cargos.id_tipo"))
 
     tipo_cargo = relationship("TipoCargo", back_populates="cargos",uselist=False)

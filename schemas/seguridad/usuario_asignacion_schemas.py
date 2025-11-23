@@ -81,3 +81,10 @@ class UsuarioEmpleadoAsociacionRequest(BaseModel):
     usuario_id: int = Field(..., gt=0, description="ID del usuario existente")
     empleado_id: int = Field(..., gt=0, description="ID del empleado existente")
 
+
+class UsuarioClienteAsociacionRequest(BaseModel):
+    """
+    Schema para solicitar asociación de usuario con cliente
+    """
+    usuario_id: int = Field(..., gt=0, description="ID del usuario existente")
+    cliente_id: int = Field(..., gt=0, description="ID del cliente existente")

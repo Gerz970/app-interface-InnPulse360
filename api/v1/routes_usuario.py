@@ -26,7 +26,7 @@ from schemas.seguridad.recuperar_password_schemas import (
     RecuperarPasswordRequest,
     RecuperarPasswordResponse
 )
-from schemas.seguridad.usuario_asignacion_schemas import UsuarioEmpleadoAsociacionRequest, UsuarioAsignacionResponse
+from schemas.seguridad.usuario_asignacion_schemas import UsuarioEmpleadoAsociacionRequest, UsuarioClienteAsociacionRequest, UsuarioAsignacionResponse
 
 # Configurar router
 router = APIRouter(
@@ -387,6 +387,7 @@ async def cambiar_password_temporal(
 @router.post("/empleado_usuario_asociacion", response_model=UsuarioAsignacionResponse, status_code=status.HTTP_201_CREATED)
 async def asociar_usuario_empleado(
     request_data: UsuarioEmpleadoAsociacionRequest,
+    current_user: UsuarioResponse = Depends(get_current_user),
     db: Session = Depends(get_database_session)
 ):
     """
@@ -394,6 +395,8 @@ async def asociar_usuario_empleado(
     
     - **usuario_id**: ID del usuario existente
     - **empleado_id**: ID del empleado existente
+    
+    Requiere autenticación.
     """
     try:
         usuario_service = UsuarioService(db)
@@ -404,4 +407,30 @@ async def asociar_usuario_empleado(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al asociar usuario-empleado: {str(e)}"
+        )
+
+
+@router.post("/cliente_usuario_asociacion", response_model=UsuarioAsignacionResponse, status_code=status.HTTP_201_CREATED)
+async def asociar_usuario_cliente(
+    request_data: UsuarioClienteAsociacionRequest,
+    current_user: UsuarioResponse = Depends(get_current_user),
+    db: Session = Depends(get_database_session)
+):
+    """
+    Asociar un usuario existente con un cliente existente
+    
+    - **usuario_id**: ID del usuario existente
+    - **cliente_id**: ID del cliente existente
+    
+    Requiere autenticación.
+    """
+    try:
+        usuario_service = UsuarioService(db)
+        return usuario_service.asociar_usuario_cliente(request_data)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al asociar usuario-cliente: {str(e)}"
         )

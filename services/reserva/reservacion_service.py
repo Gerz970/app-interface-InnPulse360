@@ -23,6 +23,9 @@ class ReservacionService:
 
     def obtener_por_habitacion(self, db: Session, habitacion_area_id: int) -> List[Reservacion]:
         return self.dao.get_by_habitacion(db, habitacion_area_id)
+    
+    def obtener_por_estatus(self, db: Session, estatus: int) -> List[Reservacion]:
+        return self.dao.get_by_estatus(db, estatus)
 
     def obtener_por_fechas(self, db: Session, fecha_inicio: datetime, fecha_fin: datetime) -> List[Reservacion]:
         return self.dao.get_by_fechas(db, fecha_inicio, fecha_fin)

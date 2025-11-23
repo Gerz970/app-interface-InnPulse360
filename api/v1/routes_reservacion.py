@@ -41,6 +41,10 @@ def obtener_habitaciones_reservadas_por_cliente(
 def obtener_por_habitacion(habitacion_area_id: int, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
     return service.obtener_por_habitacion(db, habitacion_area_id)
 
+@router.get("/estatus/{estatus}", response_model=List[ReservacionResponse])
+def obtener_por_estatus(estatus: int, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
+    return service.obtener_por_estatus(db, estatus)
+
 # Obtener por fechas
 @router.get("/fechas/", response_model=List[ReservacionResponse])
 def obtener_por_fechas(

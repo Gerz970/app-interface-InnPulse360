@@ -27,6 +27,11 @@ class ReservacionDao:
             Reservacion.habitacion_area_id == habitacion_area_id,
             Reservacion.id_estatus == 1
         ).all()
+    
+    def get_by_estatus(self, db: Session, estatus: int) -> List[Reservacion]:
+        return db.query(Reservacion).filter(
+            Reservacion.id_estatus == estatus
+        ).all()
 
     def get_by_fechas(self, db: Session, fecha_inicio: datetime, fecha_fin: datetime):
         return db.query(Reservacion).filter(

@@ -9,3 +9,6 @@ class ResportesService:
 
     def obtener_entradas_tipo_dia(self, dia: date):
         return self.dao.obtener_entradas_tipo_dia(self.db, dia)
+    
+    def obtener_limpiezas_por_empleado(self, fecha_inicio: date, fecha_fin: date):
+        return self.dao.obtener_limpiezas_por_empleado(self.db, fecha_inicio, fecha_fin)

@@ -26,3 +26,23 @@ def obtener_entradas_tipo_dia(
         return service.obtener_entradas_tipo_dia(dia)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    
+
+@router.get("/get-limpiezas-por-empleado/{fecha_inicio}/{fecha_fin}")
+def obtener_limpiezas_por_empleado(
+    fecha_inicio: date = Path(
+        ..., 
+        example="2025-11-23", 
+        description="Fecha en formato YYYY-MM-DD"
+    ),
+    fecha_fin: date = Path(
+        ..., 
+        example="2025-11-24", 
+        description="Fecha en formato YYYY-MM-DD"
+    ),
+    db: Session = Depends(get_database_session)):
+    service = ResportesService(db)
+    try:
+        return service.obtener_limpiezas_por_empleado(fecha_inicio, fecha_fin)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))

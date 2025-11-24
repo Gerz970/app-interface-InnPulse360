@@ -46,12 +46,13 @@ class TipoHabitacionService:
         
         return f"{base_url}/storage/v1/object/public/{bucket}/{ruta_storage}"
     
-    def _build_tipo_habitacion_response(self, tipo_habitacion: TipoHabitacion) -> TipoHabitacionResponse:
+    def _build_tipo_habitacion_response(self, tipo_habitacion: TipoHabitacion, incluir_galeria: bool = False) -> TipoHabitacionResponse:
         """
-        Construye un TipoHabitacionResponse desde un modelo TipoHabitacion, incluyendo URL de foto de perfil
+        Construye un TipoHabitacionResponse desde un modelo TipoHabitacion, incluyendo URL de foto de perfil y galería
         
         Args:
             tipo_habitacion (TipoHabitacion): Modelo de tipo de habitación
+            incluir_galeria (bool): Si True, incluye la galería de imágenes
             
         Returns:
             TipoHabitacionResponse: Schema de respuesta con URL de foto construida
@@ -61,6 +62,21 @@ class TipoHabitacionService:
         if tipo_habitacion.url_foto_perfil:
             url_foto_completa = self._build_foto_perfil_url(tipo_habitacion.url_foto_perfil)
         
+        # Obtener galería si se solicita
+        galeria_urls = None
+        if incluir_galeria:
+            try:
+                from services.storage.tipo_habitacion_storage_service import TipoHabitacionStorageService
+                storage_service = TipoHabitacionStorageService()
+                galeria_result = storage_service.list_galeria(tipo_habitacion.id_tipoHabitacion)
+                if galeria_result.get("success") and galeria_result.get("imagenes"):
+                    galeria_urls = [img.get("url_publica") for img in galeria_result["imagenes"] if img.get("url_publica")]
+                else:
+                    galeria_urls = []
+            except Exception as e:
+                print(f"Error al obtener galería para tipo {tipo_habitacion.id_tipoHabitacion}: {e}")
+                galeria_urls = []
+        
         # Construir diccionario con todos los campos
         tipo_dict = {
             "id_tipoHabitacion": tipo_habitacion.id_tipoHabitacion,
@@ -69,7 +85,8 @@ class TipoHabitacionService:
             "periodicidad_id": tipo_habitacion.periodicidad_id,
             "tipo_habitacion": tipo_habitacion.tipo_habitacion,
             "estatus_id": tipo_habitacion.estatus_id,
-            "url_foto_perfil": url_foto_completa
+            "url_foto_perfil": url_foto_completa,
+            "galeria_tipo_habitacion": galeria_urls
         }
         
         # Agregar periodicidad si está cargada
@@ -121,10 +138,16 @@ class TipoHabitacionService:
         return self._build_tipo_habitacion_response(db_tipo)
 
     def get_tipo_habitacion_by_id(self, id_tipoHabitacion: int) -> Optional[TipoHabitacionResponse]:
-        db_tipo = self.dao.get_by_id(id_tipoHabitacion)
+        # Cargar con la relación de periodicidad usando joinedload
+        db_tipo = (
+            self.db.query(TipoHabitacion)
+            .options(joinedload(TipoHabitacion.periodicidad))
+            .filter(TipoHabitacion.id_tipoHabitacion == id_tipoHabitacion)
+            .first()
+        )
         if not db_tipo:
             return None
-        return self._build_tipo_habitacion_response(db_tipo)
+        return self._build_tipo_habitacion_response(db_tipo, incluir_galeria=True)
 
     def get_tipo_habitacion_by_clave(self, clave: str) -> Optional[TipoHabitacionResponse]:
         db_tipo = self.dao.get_by_clave(clave)

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, DECIMAL, SmallInteger, Boolean, Time
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, DECIMAL, SmallInteger, Boolean, Time, Text
 from sqlalchemy.orm import relationship
 from core.base import Base
 
@@ -13,6 +13,9 @@ class Reservacion(Base):
     fecha_salida = Column(DateTime, nullable=False)
     duracion = Column(Integer)
     id_estatus = Column(Integer, nullable=False)
+    fecha_registro = Column(DateTime, nullable=True)
+    codigo_reservacion = Column(String(50), nullable=True)
+    comentarios = Column(Text, nullable=True)
 
     cargos = relationship("Cargo", back_populates="reservacion", cascade="all, delete-orphan")
     habitacion = relationship("HabitacionArea", back_populates="reservas")

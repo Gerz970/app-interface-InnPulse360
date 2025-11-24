@@ -30,8 +30,9 @@ class TipoHabitacionUpdate(BaseModel):
 class TipoHabitacionResponse(TipoHabitacionBase):
     """Schema para respuestas (incluye el ID)"""
     id_tipoHabitacion: int = Field(..., description="ID único del tipo de habitación")
-    periodicidad: Optional[PeriodicidadResponse]
+    periodicidad: Optional[PeriodicidadResponse] = Field(None, description="Objeto de periodicidad relacionado")
     url_foto_perfil: Optional[str] = Field(None, description="URL pública de la foto de perfil")
+    galeria_tipo_habitacion: Optional[List[str]] = Field(None, description="Lista de URLs de la galería del tipo de habitación")
     class Config:
         from_attributes = True
         json_schema_extra = {
@@ -41,12 +42,16 @@ class TipoHabitacionResponse(TipoHabitacionBase):
                 "tipo_habitacion": "Individual",
                 "precio_unitario": 1000,
                 "periodicidad": {
-                "id_periodicidad": 1,
-                "periodicidad": "Temporal",
-                "descripcion": "Tiempo indefinido",
-                "id_estatus": 1
+                    "id_periodicidad": 1,
+                    "periodicidad": "Temporal",
+                    "descripcion": "Tiempo indefinido",
+                    "id_estatus": 1
                 },
                 "estatus_id": 1,
-                "url_foto_perfil": "https://tu-proyecto.supabase.co/storage/v1/object/public/images/tipo_habitacion/1/default.jpg"
+                "url_foto_perfil": "https://tu-proyecto.supabase.co/storage/v1/object/public/images/tipo_habitacion/1/default.jpg",
+                "galeria_tipo_habitacion": [
+                    "https://tu-proyecto.supabase.co/storage/v1/object/public/images/tipo_habitacion/1/galeria/img_1_item1.jpg",
+                    "https://tu-proyecto.supabase.co/storage/v1/object/public/images/tipo_habitacion/1/galeria/img_1_item2.jpg"
+                ]
             }
         }

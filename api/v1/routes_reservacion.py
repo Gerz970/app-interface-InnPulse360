@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from core.database_connection import get_database_session
 from services.reserva.reservacion_service import ReservacionService
 from schemas.reserva.reservacion_schema import ReservacionCreate, ReservacionUpdate, ReservacionResponse, HabitacionReservadaResponse
+from schemas.reserva.tipo_habitacion_disponible_schema import TipoHabitacionDisponibleResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import List, Optional
 from datetime import datetime, date
@@ -95,6 +96,30 @@ def eliminar_reservacion(id_reservacion: int, db: Session = Depends(get_database
 @router.get("/checkout/{id_reservacion}")
 def checkout(id_reservacion: int, db: Session = Depends(get_database_session),credentials: HTTPAuthorizationCredentials = Depends(security)):
     return service.checkout(db, id_reservacion)
+
+@router.get("/tipos-disponibles/{fecha_inicio_reservacion}/{fecha_salida}", 
+            response_model=List[TipoHabitacionDisponibleResponse])
+def obtener_tipos_habitacion_disponibles(
+    fecha_inicio_reservacion: date = Path(..., example="2025-01-10"), 
+    fecha_salida: date = Path(..., example="2025-01-15"),
+    id_hotel: Optional[int] = Query(None, description="ID del hotel para filtrar"),
+    db: Session = Depends(get_database_session),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Obtiene tipos de habitación disponibles agrupados por tipo con cantidad disponible
+    
+    - **fecha_inicio_reservacion**: Fecha de inicio de la reservación
+    - **fecha_salida**: Fecha de salida
+    - **id_hotel**: ID del hotel para filtrar (opcional)
+    """
+    tipos = service.obtener_tipos_habitacion_disponibles(
+        db,
+        fecha_inicio_reservacion, 
+        fecha_salida, 
+        id_hotel
+    )
+    return tipos
 
 @router.get("/{fecha_inicio_reservacion}/{fecha_salida}", response_model=List[HabitacionAreaResponse])
 def obtener_habitaciones_disponibles(

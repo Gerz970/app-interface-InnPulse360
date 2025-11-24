@@ -11,6 +11,7 @@ class ReservacionBase(BaseModel):
     fecha_salida: datetime
     duracion: Optional[int]
     id_estatus: int
+    codigo_reservacion: Optional[str] = None
 
 class ReservacionCreate(ReservacionBase):
     pass
@@ -21,9 +22,11 @@ class ReservacionUpdate(BaseModel):
     fecha_salida: Optional[datetime]
     duracion: Optional[int]
     id_estatus: Optional[int]
+    codigo_reservacion: Optional[str] = None
 
 class ReservacionResponse(ReservacionBase):
     id_reservacion: int
+    fecha_registro: Optional[datetime]
     habitacion: HabitacionAreaResponse
     cliente: ClienteResponse
 

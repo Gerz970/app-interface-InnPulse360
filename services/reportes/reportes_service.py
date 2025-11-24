@@ -12,3 +12,6 @@ class ResportesService:
     
     def obtener_limpiezas_por_empleado(self, fecha_inicio: date, fecha_fin: date):
         return self.dao.obtener_limpiezas_por_empleado(self.db, fecha_inicio, fecha_fin)
+
+    def obtener_limpiezas_por_tipo_por_estatus(self, fecha_inicio: date, fecha_fin: date, estatus:int):
+        return self.dao.obtener_limpiezas_por_tipo_por_estatus(self.db, fecha_inicio, fecha_fin, estatus)

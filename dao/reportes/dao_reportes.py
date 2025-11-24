@@ -4,6 +4,7 @@ from models.reserva.tipo_cargos_model import TipoCargo
 from sqlalchemy import func, Date, cast
 from datetime import date
 from models.camarista.limpieza_model import Limpieza
+from models.camarista.tipos_limpieza import TiposLimpieza
 from models.empleados.empleado_model import Empleado
 
 class ReportesDAO:
@@ -48,7 +49,9 @@ class ReportesDAO:
                 Empleado.nombre,
                 Empleado.apellido_paterno,
                 Empleado.apellido_materno
-            ).all()
+            )
+            .order_by(func.count().desc())   
+            .all()
         )
 
         return [
@@ -58,4 +61,32 @@ class ReportesDAO:
                 "total": total
             }
             for empleado_id, nombre_empleado, total in resultados
+        ]
+    
+    def obtener_limpiezas_por_tipo_por_estatus(self, db: Session, fecha_inicio: date, fecha_fin: date, estatus: int):
+        resultados = (
+        db.query(
+            Limpieza.tipo_limpieza_id,
+            TiposLimpieza.nombre_tipo,
+            func.count().label("total")
+        )
+        .join(TiposLimpieza, TiposLimpieza.id_tipo_limpieza == Limpieza.tipo_limpieza_id)
+        .filter(Limpieza.estatus_limpieza_id == estatus)
+        .filter(cast(Limpieza.fecha_termino, Date) >= fecha_inicio)
+        .filter(cast(Limpieza.fecha_termino, Date) <= fecha_fin)
+        .group_by(
+            Limpieza.tipo_limpieza_id,
+            TiposLimpieza.nombre_tipo
+        )
+        .order_by(func.count().desc())  
+        .all()
+        )
+
+        return [
+            {
+                "tipo_limpieza_id": tipo_limpieza_id,
+                "nombre_tipo": nombre_tipo,
+                "total": total
+            }
+            for tipo_limpieza_id, nombre_tipo, total in resultados
         ]

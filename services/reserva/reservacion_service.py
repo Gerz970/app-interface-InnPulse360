@@ -8,6 +8,7 @@ from datetime import date
 from core.database_connection import db_connection, get_database_engine
 from sqlalchemy import text
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,42 @@ class ReservacionService:
     def obtener_por_fechas(self, db: Session, fecha_inicio: datetime, fecha_fin: datetime) -> List[Reservacion]:
         return self.dao.get_by_fechas(db, fecha_inicio, fecha_fin)
 
+    def _generar_codigo_reservacion_unico(self, db: Session) -> str:
+        """
+        Genera un código de reservación único usando GUID reducido
+        
+        Args:
+            db: Sesión de base de datos
+        
+        Returns:
+            str: Código de reservación único en formato RES-XXXXXXXX
+        """
+        max_intentos = 10
+        
+        for intento in range(max_intentos):
+            # Generar GUID y tomar primeros 8 caracteres (sin guiones)
+            guid = uuid.uuid4()
+            guid_str = str(guid).replace('-', '')  # Remover guiones
+            codigo_sufijo = guid_str[:8].upper()  # Primeros 8 caracteres en mayúsculas
+            codigo = f"RES-{codigo_sufijo}"
+            
+            # Verificar que no exista en la base de datos
+            reserva_existente = db.query(Reservacion).filter(
+                Reservacion.codigo_reservacion == codigo
+            ).first()
+            
+            if not reserva_existente:
+                logger.info(f"Código de reservación único generado: {codigo}")
+                return codigo
+        
+        # Si después de varios intentos no se encuentra uno único (muy improbable),
+        # usar timestamp + GUID como fallback
+        timestamp_suffix = str(int(datetime.now().timestamp() * 1000))[-6:]  # Últimos 6 dígitos
+        guid_fallback = str(uuid.uuid4()).replace('-', '')[:2].upper()  # Primeros 2 caracteres
+        codigo_fallback = f"RES-{timestamp_suffix}{guid_fallback}"
+        logger.warning(f"Usando código fallback después de {max_intentos} intentos: {codigo_fallback}")
+        return codigo_fallback
+
     def crear_reservacion(self, db: Session, reservacion_data: ReservacionCreate):
         """
         Crea una nueva reservación y envía email de cotización con PDF adjunto y notificación push
@@ -44,8 +81,26 @@ class ReservacionService:
         Returns:
             Reservacion: Reservación creada
         """
+        # Generar código de reservación único si no se proporciona o está vacío
+        codigo_reservacion = reservacion_data.codigo_reservacion
+        if not codigo_reservacion or codigo_reservacion.strip() == "":
+            codigo_reservacion = self._generar_codigo_reservacion_unico(db)
+            logger.info(f"Código de reservación generado automáticamente: {codigo_reservacion}")
+        else:
+            # Si se proporciona un código, verificar que sea único
+            reserva_existente = db.query(Reservacion).filter(
+                Reservacion.codigo_reservacion == codigo_reservacion
+            ).first()
+            if reserva_existente:
+                logger.warning(f"El código {codigo_reservacion} ya existe, generando uno nuevo")
+                codigo_reservacion = self._generar_codigo_reservacion_unico(db)
+        
+        # Asignar el código generado/validado
+        reservacion_dict = reservacion_data.dict()
+        reservacion_dict['codigo_reservacion'] = codigo_reservacion
+        
         # Crear la reservación
-        nueva_reservacion = Reservacion(**reservacion_data.dict())
+        nueva_reservacion = Reservacion(**reservacion_dict)
         nueva_reservacion.fecha_registro = datetime.now()
         reservacion_creada = self.dao.create(db, nueva_reservacion)
         

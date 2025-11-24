@@ -6,6 +6,8 @@ Implementa funcionalidad de envío vía SMTP con guardado de logs
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 from datetime import datetime
 from typing import Optional
 import logging
@@ -16,6 +18,7 @@ from schemas.email.email_basic_schemas import EmailSendBasic, EmailResponseBasic
 from schemas.email.email_schemas import EmailSend, EmailStatus, EmailType
 from dao.email.dao_email_log import EmailLogDAO
 from services.email.template_service import EmailTemplateService
+from utils.pdf_generator import generate_quotation_pdf
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -713,6 +716,166 @@ class EmailService:
                 db.close()
         except Exception as e:
             logger.error(f"Error al actualizar log {log_id}: {str(e)}")
+    
+    def send_quotation_email(
+        self,
+        destinatario_email: str,
+        destinatario_nombre: str,
+        codigo_reservacion: str,
+        fecha_entrada: str,
+        fecha_salida: str,
+        duracion_dias: int,
+        hotel_nombre: str,
+        hotel_direccion: Optional[str],
+        hotel_telefono: Optional[str],
+        hotel_email: Optional[str],
+        habitacion_nombre: str,
+        habitacion_descripcion: Optional[str],
+        tipo_habitacion: str,
+        cliente_rfc: Optional[str],
+        cliente_identificacion: Optional[str],
+        precio_unitario: float,
+        periodicidad_nombre: str,
+        precio_total: float
+    ) -> EmailResponseBasic:
+        """
+        Envía email de cotización con PDF adjunto
+        
+        Args:
+            destinatario_email: Email del destinatario
+            destinatario_nombre: Nombre del cliente
+            codigo_reservacion: Código de la reservación
+            fecha_entrada: Fecha de entrada formateada
+            fecha_salida: Fecha de salida formateada
+            duracion_dias: Duración en días
+            hotel_nombre: Nombre del hotel
+            hotel_direccion: Dirección del hotel
+            hotel_telefono: Teléfono del hotel
+            hotel_email: Email del hotel
+            habitacion_nombre: Nombre/clave de la habitación
+            habitacion_descripcion: Descripción de la habitación
+            tipo_habitacion: Tipo de habitación
+            cliente_rfc: RFC del cliente
+            cliente_identificacion: Documento de identificación
+            precio_unitario: Precio unitario
+            periodicidad_nombre: Nombre de la periodicidad
+            precio_total: Precio total calculado
+        
+        Returns:
+            EmailResponseBasic: Resultado del envío
+        """
+        try:
+            # Validar email del destinatario
+            if not destinatario_email or not destinatario_email.strip():
+                error_msg = "Email del destinatario está vacío o es inválido"
+                logger.error(f"❌ {error_msg}")
+                return EmailResponseBasic(
+                    success=False,
+                    message=error_msg,
+                    fecha_envio=None,
+                    error=error_msg
+                )
+            
+            # Limpiar y validar email
+            destinatario_email = destinatario_email.strip()
+            logger.info(f"📧 [EmailService] Preparando envío de cotización a: {destinatario_email}")
+            logger.info(f"📧 [EmailService] Cliente: {destinatario_nombre}")
+            logger.info(f"📧 [EmailService] Código de reservación: {codigo_reservacion}")
+            
+            # Generar HTML del email usando la plantilla
+            logger.info(f"📧 [EmailService] Generando HTML del email...")
+            # Formatear precios como strings para evitar problemas de sintaxis en Jinja2
+            precio_unitario_str = f"{precio_unitario:.2f}"
+            precio_total_str = f"{precio_total:.2f}"
+            
+            html_content = self.template_service.render_template(
+                'quotation_template.html',
+                {
+                    'cliente_nombre': destinatario_nombre,
+                    'codigo_reservacion': codigo_reservacion,
+                    'fecha_entrada': fecha_entrada,
+                    'fecha_salida': fecha_salida,
+                    'duracion_dias': duracion_dias,
+                    'hotel_nombre': hotel_nombre,
+                    'hotel_direccion': hotel_direccion,
+                    'hotel_telefono': hotel_telefono,
+                    'hotel_email': hotel_email,
+                    'habitacion_nombre': habitacion_nombre,
+                    'habitacion_descripcion': habitacion_descripcion,
+                    'tipo_habitacion': tipo_habitacion,
+                    'precio_unitario': precio_unitario_str,
+                    'periodicidad_nombre': periodicidad_nombre,
+                    'precio_total': precio_total_str,
+                }
+            )
+            
+            # Generar PDF usando reportlab
+            logger.info(f"📧 [EmailService] Generando PDF de cotización...")
+            pdf_bytes = generate_quotation_pdf(
+                codigo_reservacion=codigo_reservacion,
+                fecha_entrada=fecha_entrada,
+                fecha_salida=fecha_salida,
+                duracion_dias=duracion_dias,
+                hotel_nombre=hotel_nombre,
+                hotel_direccion=hotel_direccion,
+                hotel_telefono=hotel_telefono,
+                hotel_email=hotel_email,
+                habitacion_nombre=habitacion_nombre,
+                habitacion_descripcion=habitacion_descripcion,
+                tipo_habitacion=tipo_habitacion,
+                cliente_nombre=destinatario_nombre,
+                cliente_rfc=cliente_rfc,
+                cliente_identificacion=cliente_identificacion,
+                cliente_email=destinatario_email,
+                precio_unitario=precio_unitario,
+                periodicidad_nombre=periodicidad_nombre,
+                precio_total=precio_total
+            )
+            
+            # Crear mensaje multipart
+            logger.info(f"📧 [EmailService] Creando mensaje MIME para: {destinatario_email}")
+            message = MIMEMultipart("related")
+            message["Subject"] = f"Cotización de Reservación - {codigo_reservacion}"
+            message["From"] = f"{self.from_name} <{self.from_email}>"
+            message["To"] = destinatario_email
+            
+            logger.info(f"📧 [EmailService] Remitente: {self.from_name} <{self.from_email}>")
+            logger.info(f"📧 [EmailService] Destinatario: {destinatario_email}")
+            
+            # Agregar parte HTML
+            html_part = MIMEText(html_content, "html", "utf-8")
+            message.attach(html_part)
+            
+            # Adjuntar PDF
+            pdf_part = MIMEBase('application', 'pdf')
+            pdf_part.set_payload(pdf_bytes.read())
+            encoders.encode_base64(pdf_part)
+            pdf_part.add_header(
+                'Content-Disposition',
+                f'attachment; filename="Cotizacion_{codigo_reservacion}.pdf"'
+            )
+            message.attach(pdf_part)
+            
+            # Enviar email
+            self._send_smtp(message, destinatario_email)
+            
+            logger.info(f"Email de cotización enviado exitosamente a {destinatario_email}")
+            return EmailResponseBasic(
+                success=True,
+                message="Email de cotización enviado exitosamente",
+                fecha_envio=datetime.utcnow(),
+                error=None
+            )
+            
+        except Exception as e:
+            error_msg = f"Error al enviar email de cotización: {str(e)}"
+            logger.error(error_msg)
+            return EmailResponseBasic(
+                success=False,
+                message="Error al enviar email de cotización",
+                fecha_envio=None,
+                error=error_msg
+            )
     
     def test_connection(self) -> dict:
         """

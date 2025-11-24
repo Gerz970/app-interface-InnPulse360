@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotización de Reservación</title>
+    <style>
+        /* Reset básico */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #374151;
+            background-color: #f8fafc;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #6B46C1 0%, #7C3AED 100%);
+            padding: 32px 24px;
+            text-align: center;
+        }
+        
+        .logo {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .tagline {
+            color: #E0E7FF;
+            font-size: 14px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Contenido principal */
+        .content {
+            padding: 40px 32px;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #6B46C1;
+            margin-bottom: 24px;
+        }
+        
+        .main-content {
+            font-size: 16px;
+            line-height: 1.7;
+            color: #374151;
+            margin-bottom: 32px;
+        }
+        
+        .main-content p {
+            margin-bottom: 16px;
+        }
+        
+        /* Secciones de información */
+        .info-section {
+            background-color: #F8FAFC;
+            border-left: 4px solid #6B46C1;
+            padding: 20px;
+            margin: 24px 0;
+            border-radius: 0 6px 6px 0;
+        }
+        
+        .info-section h3 {
+            color: #6B46C1;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            color: #6B7280;
+            font-weight: 500;
+            flex: 1;
+        }
+        
+        .info-value {
+            color: #1F2937;
+            font-weight: 600;
+            flex: 1;
+            text-align: right;
+        }
+        
+        /* Código de reservación destacado */
+        .code-box {
+            background-color: #F3F4F6;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 24px 0;
+            border: 2px solid #6B46C1;
+        }
+        
+        .code-label {
+            font-size: 12px;
+            color: #6B7280;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .code-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #6B46C1;
+            letter-spacing: 2px;
+        }
+        
+        /* Total destacado */
+        .total-section {
+            background: linear-gradient(135deg, #6B46C1 0%, #7C3AED 100%);
+            padding: 24px;
+            border-radius: 8px;
+            margin: 32px 0;
+            text-align: center;
+        }
+        
+        .total-label {
+            color: #E0E7FF;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .total-amount {
+            color: #ffffff;
+            font-size: 32px;
+            font-weight: 700;
+        }
+        
+        /* Footer */
+        .footer {
+            background-color: #F8FAFC;
+            padding: 32px;
+            text-align: center;
+            border-top: 1px solid #E5E7EB;
+        }
+        
+        .footer-content {
+            color: #6B7280;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .footer-links {
+            margin: 16px 0;
+        }
+        
+        .footer-links a {
+            color: #6B46C1;
+            text-decoration: none;
+            margin: 0 12px;
+            font-weight: 500;
+        }
+        
+        .footer-links a:hover {
+            color: #5B21B6;
+        }
+        
+        .company-info {
+            margin-top: 16px;
+            font-size: 12px;
+            color: #9CA3AF;
+        }
+        
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header {
+                padding: 24px 16px;
+            }
+            
+            .logo {
+                font-size: 24px;
+            }
+            
+            .content {
+                padding: 24px 20px;
+            }
+            
+            .info-row {
+                flex-direction: column;
+            }
+            
+            .info-value {
+                text-align: left;
+                margin-top: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">InnPulse 360</div>
+            <div class="tagline">Cotización de Reservación</div>
+        </div>
+        
+        <!-- Contenido principal -->
+        <div class="content">
+            {% if cliente_nombre %}
+            <div class="greeting">Hola {{cliente_nombre}},</div>
+            {% endif %}
+            
+            <div class="main-content">
+                <p>Te enviamos la cotización de tu reservación. A continuación encontrarás todos los detalles:</p>
+            </div>
+            
+            <!-- Código de Reservación -->
+            <div class="code-box">
+                <div class="code-label">Código de Reservación</div>
+                <div class="code-value">{{codigo_reservacion}}</div>
+            </div>
+            
+            <!-- Información de la Reservación -->
+            <div class="info-section">
+                <h3>Información de la Reservación</h3>
+                <div class="info-row">
+                    <span class="info-label">Fecha de Entrada:</span>
+                    <span class="info-value">{{fecha_entrada}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Fecha de Salida:</span>
+                    <span class="info-value">{{fecha_salida}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Duración:</span>
+                    <span class="info-value">{{duracion_dias}} {% if duracion_dias == 1 %}día{% else %}días{% endif %}</span>
+                </div>
+            </div>
+            
+            <!-- Información del Hotel -->
+            <div class="info-section">
+                <h3>Información del Hotel</h3>
+                <div class="info-row">
+                    <span class="info-label">Nombre:</span>
+                    <span class="info-value">{{hotel_nombre}}</span>
+                </div>
+                {% if hotel_direccion %}
+                <div class="info-row">
+                    <span class="info-label">Dirección:</span>
+                    <span class="info-value">{{hotel_direccion}}</span>
+                </div>
+                {% endif %}
+                {% if hotel_telefono %}
+                <div class="info-row">
+                    <span class="info-label">Teléfono:</span>
+                    <span class="info-value">{{hotel_telefono}}</span>
+                </div>
+                {% endif %}
+                {% if hotel_email %}
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{hotel_email}}</span>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Información de la Habitación -->
+            <div class="info-section">
+                <h3>Información de la Habitación</h3>
+                <div class="info-row">
+                    <span class="info-label">Habitación:</span>
+                    <span class="info-value">{{habitacion_nombre}}</span>
+                </div>
+                {% if habitacion_descripcion %}
+                <div class="info-row">
+                    <span class="info-label">Descripción:</span>
+                    <span class="info-value">{{habitacion_descripcion}}</span>
+                </div>
+                {% endif %}
+                <div class="info-row">
+                    <span class="info-label">Tipo de Habitación:</span>
+                    <span class="info-value">{{tipo_habitacion}}</span>
+                </div>
+            </div>
+            
+            <!-- Detalles de Precio -->
+            <div class="info-section">
+                <h3>Detalles de Precio</h3>
+                <div class="info-row">
+                    <span class="info-label">Precio Unitario:</span>
+                    <span class="info-value">${{precio_unitario}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Periodicidad:</span>
+                    <span class="info-value">{{periodicidad_nombre}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Duración:</span>
+                    <span class="info-value">{{duracion_dias}} {% if duracion_dias == 1 %}día{% else %}días{% endif %}</span>
+                </div>
+            </div>
+            
+            <!-- Total -->
+            <div class="total-section">
+                <div class="total-label">Total a Pagar</div>
+                <div class="total-amount">${{precio_total}}</div>
+            </div>
+            
+            <div class="main-content">
+                <p>Se adjunta un archivo PDF con esta misma información para tus registros.</p>
+                <p>Si tienes alguna pregunta o necesitas modificar tu reservación, no dudes en contactarnos.</p>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <div class="footer-content">
+                <div class="footer-links">
+                    <a href="https://innpulse360.com">Sitio Web</a>
+                    <a href="mailto:support@innpulse360.com">Soporte</a>
+                    <a href="https://innpulse360.com/privacidad">Privacidad</a>
+                </div>
+                <div class="company-info">
+                    InnPulse 360 - Hotel Management ERP<br>
+                    Soporte: support@innpulse360.com<br>
+                    <span style="color: #9CA3AF;">Este es un correo automático, por favor no responder.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

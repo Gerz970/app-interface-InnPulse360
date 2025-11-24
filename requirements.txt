@@ -34,3 +34,6 @@ argon2-cffi==23.1.0
 
 # instalar supabase
 supabase
+
+# Generación de PDFs
+reportlab==4.0.7

@@ -11,7 +11,7 @@ class ServicioTransporte(Base):
     fecha_servicio = Column(Date, nullable=False)
     hora_servicio = Column(Time, nullable=False)
     id_estatus = Column(SmallInteger, nullable=False, default=1)  # 1 = activo, 0 = eliminado
-    empleado_id = Column(Integer, ForeignKey("EMPLEADOS.Tb_empleado.id_empleado"), primary_key=True) 
+    empleado_id = Column(Integer, ForeignKey("EMPLEADOS.Tb_empleado.id_empleado"), nullable=True) 
     observaciones_cliente = Column(String(500))
     observaciones_empleado = Column(String(500))
     calificacion_viaje = Column(SmallInteger)

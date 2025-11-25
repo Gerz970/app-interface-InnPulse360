@@ -10,7 +10,7 @@ class ServicioTransporteBase(BaseModel):
     fecha_servicio: date
     hora_servicio: time
     id_estatus: Optional[int] = 1
-    empleado_id: int
+    empleado_id: Optional[int] = None
     observaciones_cliente: Optional[str] = None
     observaciones_empleado: Optional[str] = None
     calificacion_viaje: Optional[int] = None
@@ -27,7 +27,7 @@ class ServicioTransporteBase(BaseModel):
 
 
 class ServicioTransporteCreate(ServicioTransporteBase):
-    pass
+    empleado_id: Optional[int] = None  # Opcional en create también
 
 
 class ServicioTransporteUpdate(BaseModel):
@@ -54,7 +54,7 @@ class ServicioTransporteUpdate(BaseModel):
 
 class ServicioTransporteResponse(ServicioTransporteBase):
     id_servicio_transporte: int
-    empleado: EmpleadoResponse
+    empleado: Optional[EmpleadoResponse] = None
 
     class Config:
         from_attributes = True

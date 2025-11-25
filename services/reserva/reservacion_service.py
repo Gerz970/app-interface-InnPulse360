@@ -1,6 +1,10 @@
 from sqlalchemy.orm import Session, joinedload
 from dao.reserva.dao_reservacion import ReservacionDao
+from dao.reserva.dao_cargo import CargoDAO
+from dao.camarista.dao_limpieza import LimpiezaDao
+from schemas.reserva.cargos_schema import CargoCreate
 from models.reserva.reservaciones_model import Reservacion
+from models.camarista.limpieza_model import Limpieza
 from schemas.reserva.reservacion_schema import ReservacionCreate, ReservacionUpdate, HabitacionReservadaResponse
 from datetime import datetime
 from typing import List, Optional
@@ -9,12 +13,15 @@ from core.database_connection import db_connection, get_database_engine
 from sqlalchemy import text
 import logging
 import uuid
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
 class ReservacionService:
     def __init__(self):
         self.dao = ReservacionDao()
+        self.dao_cargo = CargoDAO()
+        self.dao_limpieza = LimpiezaDao()
 
     def listar_reservaciones(self, db: Session):
         return self.dao.get_all(db)
@@ -96,7 +103,7 @@ class ReservacionService:
                 codigo_reservacion = self._generar_codigo_reservacion_unico(db)
         
         # Asignar el código generado/validado
-        reservacion_dict = reservacion_data.dict()
+        reservacion_dict = reservacion_data.model_dump(exclude={"monto_reserva"})
         reservacion_dict['codigo_reservacion'] = codigo_reservacion
         
         # Crear la reservación
@@ -104,6 +111,17 @@ class ReservacionService:
         nueva_reservacion.fecha_registro = datetime.now()
         reservacion_creada = self.dao.create(db, nueva_reservacion)
         
+        # Crear el cargo de la reserva
+        cargo = CargoCreate(
+            reservacion_id=reservacion_creada.id_reservacion,
+            concepto='Cargo por reservación',
+            costo_unitario=reservacion_data.monto_reserva,
+            cantidad=1,
+            tipo_id=1
+        )
+
+        cargo_creado = self.dao_cargo.create(db, cargo)
+
         # Enviar email y notificación push de forma asíncrona (no bloquear creación)
         try:
             self._enviar_cotizacion_y_notificacion(db, reservacion_creada)
@@ -327,8 +345,54 @@ class ReservacionService:
         """
         return self.dao.get_all_with_filters(db, incluir_todos_estatus, id_hotel)
     
-    def checkout(self, db: Session, id_reservacion: int):
-        return self.dao.checkout(db, id_reservacion)
+    def checkout(self, db: Session, id_reservacion: int, monto_pagado: float):
+        reserva = self.dao.get_en_curso(db, id_reservacion)
+        if not reserva:
+            return {"ok": False, "message": "Reservación no encontrada o no está en curso."}
+
+        # 1. Verificar adeudo
+        adeudo = self.dao_cargo.obtener_adeudo(db, id_reservacion)
+        cambio = 0
+        # Si la reservación no tiene adeudo, el cambio es todo lo pagado
+        if adeudo > 0:
+            # Validar pago vs adeudo
+            if monto_pagado < adeudo:
+                faltante = adeudo - Decimal(str(monto_pagado))
+                return {"ok": False, "message": f"El pago es insuficiente. Faltan {faltante:.2f}"}
+
+            # Si el pago cubre el cargo, registrarlo
+            if monto_pagado >= adeudo:
+                cargo = CargoCreate(
+                reservacion_id=id_reservacion,
+                concepto='Pago por reservación',
+                costo_unitario=-(adeudo),
+                cantidad=1,
+                tipo_id=1
+                )
+                self.dao_cargo.create(db, cargo)
+                cambio = Decimal(str(monto_pagado))-adeudo
+
+        # 4. Finalizar reservación
+        reserva.id_estatus = 3
+        reserva.fecha_salida = datetime.now()
+        db.commit()
+        db.refresh(reserva)
+
+        # 5. Crear limpieza
+        limpieza = Limpieza(
+            habitacion_area_id=reserva.habitacion_area_id,
+            descripcion="La habitación ha sido desocupada. Favor de realizar limpieza.",
+            fecha_programada=datetime.now(),
+            tipo_limpieza_id=1,
+            estatus_limpieza_id=1
+        )
+        self.dao_limpieza.create(db, limpieza)
+
+        return {
+            "ok": True,
+            "message": "Checkout realizado con éxito.",
+            "cambio": cambio
+        }
     
     def obtener_tipos_habitacion_disponibles(self, db: Session, fecha_inicio_reservacion: date, fecha_salida: date, id_hotel: Optional[int] = None):
         """
@@ -412,4 +476,23 @@ class ReservacionService:
                 continue
         
         return tipos_disponibles
+    
+    def checkin(self, db: Session, id_reservacion: int, monto_pagado: float):
+        # 1. cambiarle el estatus a la reservacion
+        self.dao.checkin(db, id_reservacion)
+
+        # 2. Si pagó, se le registra el monto pagado
+        # Crear el cargo de la reserva
+        if(monto_pagado > 0):
+            cargo = CargoCreate(
+                reservacion_id=id_reservacion,
+                concepto='Pago por reservación',
+                costo_unitario= -(monto_pagado),
+                cantidad=1,
+                tipo_id=1
+            )
+
+            self.dao_cargo.create(db, cargo)
+
+        return True
 

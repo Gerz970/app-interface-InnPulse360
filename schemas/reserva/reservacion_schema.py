@@ -14,7 +14,7 @@ class ReservacionBase(BaseModel):
     codigo_reservacion: Optional[str] = None
 
 class ReservacionCreate(ReservacionBase):
-    pass
+    monto_reserva: float
 
 class ReservacionUpdate(BaseModel):
     habitacion_area_id: Optional[int]

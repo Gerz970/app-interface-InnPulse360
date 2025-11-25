@@ -22,7 +22,6 @@ class CargoBase(BaseModel):
 
     costo_unitario: Decimal = Field(
         ..., 
-        ge=0, 
         decimal_places=2, 
         description="Costo del servicio"
     )

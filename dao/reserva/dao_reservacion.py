@@ -11,7 +11,7 @@ from dao.camarista.dao_limpieza import LimpiezaDao
 class ReservacionDao:
     def get_all(self, db: Session):
         """Obtiene todas las reservaciones"""
-        return db.query(Reservacion).filter(Reservacion.id_estatus == 1).all()
+        return db.query(Reservacion).filter(Reservacion.id_estatus.in_([1, 2])).all()
 
     def get_by_id(self, db: Session, id_reservacion: int):
         """Obtiene una reservación por ID"""
@@ -20,13 +20,13 @@ class ReservacionDao:
     def get_by_cliente(self, db: Session, id_cliente: int)-> List[Reservacion]:
         return db.query(Reservacion).filter(
             Reservacion.cliente_id == id_cliente,
-            Reservacion.id_estatus == 1
+            Reservacion.id_estatus.in_([1, 2])
         ).all()
 
     def get_by_habitacion(self, db: Session, habitacion_area_id: int) -> List[Reservacion]:
         return db.query(Reservacion).filter(
             Reservacion.habitacion_area_id == habitacion_area_id,
-            Reservacion.id_estatus == 1
+            Reservacion.id_estatus.in_([1, 2])
         ).all()
     
     def get_by_estatus(self, db: Session, estatus: int) -> List[Reservacion]:
@@ -38,7 +38,7 @@ class ReservacionDao:
         return db.query(Reservacion).filter(
             cast(Reservacion.fecha_reserva, Date) >= fecha_inicio.date(),
             cast(Reservacion.fecha_salida, Date) <= fecha_fin.date(),
-            Reservacion.id_estatus == 1
+            Reservacion.id_estatus.in_([1, 2])
         ).all()
     
     def create(self, db: Session, reservacion: Reservacion):
@@ -74,7 +74,7 @@ class ReservacionDao:
         ).join(
             Reservacion, HabitacionArea.id_habitacion_area == Reservacion.habitacion_area_id
         ).filter(
-            Reservacion.id_estatus != 2,
+            Reservacion.id_estatus.in_([1, 2]),
             Reservacion.cliente_id == id_cliente
         ).distinct().all()
 
@@ -102,11 +102,11 @@ class ReservacionDao:
         
         # Aplicar filtro de estatus si no se incluyen todos
         if not include_all_statuses:
-            query = query.filter(Reservacion.id_estatus == 1)
+            query = query.filter(Reservacion.id_estatus.in_([1, 2]))
         
         return query.all()
     
-    def checkout(self, db: Session, id_reservacion):
+    def checkin(self, db: Session, id_reservacion):
         reserva = db.query(Reservacion).filter(
             Reservacion.id_reservacion == id_reservacion,
             Reservacion.id_estatus == 1 # ACTIVA 
@@ -115,27 +115,18 @@ class ReservacionDao:
         if not reserva:
             return False
         
-        # Le cambia el estatus a 2: FINALIZADA
+        # Le cambia el estatus a 2: EN CURSO
         reserva.id_estatus = 2
         reserva.fecha_salida = datetime.now()  
 
         db.commit()
         db.refresh(reserva)
 
-        # se crea en automático una limpieza
-        limpieza = Limpieza(
-            habitacion_area_id = reserva.habitacion_area_id,
-            descripcion = "La habitación ha sido desocupada. Favor de realizar limpieza.",
-            fecha_programada = datetime.now(),
-            tipo_limpieza_id = 1,
-            estatus_limpieza_id = 1
-        )
-        dao_limpieza = LimpiezaDao()
-        dao_limpieza.create(db, limpieza)
-        db.add(limpieza)
-        db.commit()
-        db.refresh(limpieza)
-
         return True
 
+    def get_en_curso(self, db: Session, id_reservacion: int):
+        return db.query(Reservacion).filter(
+            Reservacion.id_reservacion == id_reservacion,
+            Reservacion.id_estatus == 2 # En curso
+        ).first()
 

@@ -93,9 +93,13 @@ def eliminar_reservacion(id_reservacion: int, db: Session = Depends(get_database
         raise HTTPException(status_code=404, detail="Reservación no encontrada")
     return reservacion_eliminada
 
-@router.get("/checkout/{id_reservacion}")
-def checkout(id_reservacion: int, db: Session = Depends(get_database_session),credentials: HTTPAuthorizationCredentials = Depends(security)):
-    return service.checkout(db, id_reservacion)
+@router.get("/checkout/{id_reservacion}/{monto_pagado}")
+def checkout(id_reservacion: int, monto_pagado: float, db: Session = Depends(get_database_session),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    return service.checkout(db, id_reservacion, monto_pagado)
+
+@router.get("/check-in/{id_reservacion}/{monto_pagado}")
+def checkin(id_reservacion: int, monto_pagado: float, db: Session = Depends(get_database_session),credentials: HTTPAuthorizationCredentials = Depends(security)):
+    return service.checkin(db, id_reservacion, monto_pagado)
 
 @router.get("/tipos-disponibles/{fecha_inicio_reservacion}/{fecha_salida}", 
             response_model=List[TipoHabitacionDisponibleResponse])

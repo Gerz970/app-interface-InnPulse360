@@ -44,10 +44,10 @@ class HabitacionAreaDAO:
         """
         from models.reserva.reservaciones_model import Reservacion
         
-        # Obtener IDs de habitaciones con reservas activas (estatus = 1)
+        # Obtener IDs de habitaciones con reservas activas (estatus = 1 Y 2)
         habitaciones_ocupadas_ids = [
             r[0] for r in self.db.query(Reservacion.habitacion_area_id)
-            .filter(Reservacion.id_estatus == 1).all()
+            .filter(Reservacion.id_estatus.in_([1, 2])).all()
         ]
         
         # Habitaciones del piso que NO están en habitaciones_ocupadas y están activas
@@ -62,7 +62,7 @@ class HabitacionAreaDAO:
     def get_habitaciones_con_estado_por_piso(self, piso_id: int):
         """
         Obtiene habitaciones de un piso con información de estado:
-        - Reservaciones activas
+        - Reservaciones activas y en curso
         - Limpiezas pendientes (estatus = 1)
         - Limpiezas en proceso (estatus = 2)
         """
@@ -78,7 +78,7 @@ class HabitacionAreaDAO:
         # Obtener IDs de habitaciones con reservas activas
         habitaciones_con_reservacion_ids = set([
             r[0] for r in self.db.query(Reservacion.habitacion_area_id)
-            .filter(Reservacion.id_estatus == 1).all()
+            .filter(Reservacion.id_estatus.in_([1, 2])).all()
         ])
         
         # Obtener IDs de habitaciones con limpiezas pendientes (estatus = 1)

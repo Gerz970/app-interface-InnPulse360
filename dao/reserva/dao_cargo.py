@@ -68,3 +68,8 @@ class CargoDAO:
             "reservacion_id": resultado[0],
             "total": float(resultado[1])
         }
+
+    def obtener_adeudo(self, db: Session, reservacion_id: int):
+        return db.query(func.sum(Cargo.costo_unitario)) \
+                 .filter(Cargo.reservacion_id == reservacion_id) \
+                 .scalar() or 0

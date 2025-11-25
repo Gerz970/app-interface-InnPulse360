@@ -24,51 +24,17 @@ from utils.pdf_generator import generate_quotation_pdf
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Importar Resend solo si está disponible
-try:
-    from services.email.resend_service import ResendEmailService
-    RESEND_AVAILABLE = True
-except ImportError:
-    RESEND_AVAILABLE = False
-    logger.warning("Resend no está disponible. Solo se usará SMTP.")
-
 
 class EmailService:
     """
-    Servicio básico para envío de emails usando SMTP o Resend según configuración
+    Servicio básico para envío de emails usando SMTP
     """
     
     def __init__(self):
         """
-        Inicializa el servicio con la configuración de email
-        Detecta automáticamente qué proveedor usar (Resend o SMTP)
+        Inicializa el servicio con la configuración de email SMTP
         """
-        # Crear instancia de EmailSettings para acceder a la propiedad email_provider
-        email_settings = EmailSettings()
-        self.email_provider = email_settings.email_provider
-        
-        # Inicializar Resend si está configurado
-        self.resend_service = None
-        if self.email_provider == "resend" and RESEND_AVAILABLE:
-            try:
-                self.resend_service = ResendEmailService()
-                logger.info("✅ Usando Resend como proveedor de email (REST API)")
-            except Exception as e:
-                # Si Resend está configurado pero falla, NO usar SMTP automáticamente
-                logger.error(f"❌ Error crítico: Resend está configurado (USE_RESEND=true) pero falló al inicializar: {str(e)}")
-                logger.error("❌ Verifica que RESEND_API_KEY esté correctamente configurada")
-                # NO cambiar a SMTP automáticamente - esto es un error de configuración
-                self.resend_service = None
-                # Mantener email_provider como "resend" para que falle claramente
-        elif self.email_provider == "resend" and not RESEND_AVAILABLE:
-            logger.error("❌ Resend está configurado pero la librería no está disponible. Instala: pip install resend")
-            self.resend_service = None
-            # Mantener email_provider como "resend" para que falle claramente
-        else:
-            logger.info("📧 Usando SMTP como proveedor de email")
-            self.resend_service = None
-        
-        # Configuración SMTP (para fallback o desarrollo local)
+        # Configuración SMTP
         self.smtp_server = EmailSettings.smtp_server
         self.smtp_port = EmailSettings.smtp_port
         self.username = EmailSettings.smtp_username
@@ -81,22 +47,13 @@ class EmailService:
         logger.info(f"📧 [EmailService] Configuración de remitente:")
         logger.info(f"   From Email: {self.from_email}")
         logger.info(f"   From Name: {self.from_name}")
-        logger.info(f"   Email Provider: {self.email_provider}")
-        
-        # Logging detallado para diagnóstico
-        logger.info(f"📧 [EmailService] EmailService inicializado")
-        logger.info(f"   Provider detectado: {self.email_provider}")
-        logger.info(f"   Resend disponible: {RESEND_AVAILABLE}")
-        logger.info(f"   Resend service inicializado: {'Sí' if self.resend_service else 'No'}")
         logger.info(f"   SMTP Server: {self.smtp_server}:{self.smtp_port}")
-        logger.info(f"   From Email: {self.from_email}")
         
-        # Validar configuración SMTP solo si se va a usar
-        if self.email_provider == "smtp":
-            if not self.smtp_server or self.smtp_server == "smtp.gmail.com":
-                logger.warning("⚠️ Usando servidor SMTP por defecto. Verifica las variables de entorno.")
-            if not self.username or not self.password:
-                logger.error("❌ Credenciales SMTP no configuradas correctamente. Verifica FromEmail y FromPassword.")
+        # Validar configuración SMTP
+        if not self.smtp_server or self.smtp_server == "smtp.gmail.com":
+            logger.warning("⚠️ Usando servidor SMTP por defecto. Verifica las variables de entorno.")
+        if not self.username or not self.password:
+            logger.error("❌ Credenciales SMTP no configuradas correctamente. Verifica FromEmail y FromPassword.")
         
         # Inicializar servicio de plantillas
         self.template_service = EmailTemplateService()
@@ -144,150 +101,36 @@ class EmailService:
             # Continuar sin log si falla la creación
         
         try:
-            # Usar Resend si está configurado
-            if self.email_provider == "resend" and self.resend_service:
-                try:
-                    logger.info(f"📧 [EmailService] Usando Resend para enviar email a {email_data.destinatario_email}")
-                    logger.info(f"📧 [EmailService] Debug - from_email: '{self.from_email}' (type: {type(self.from_email)})")
-                    logger.info(f"📧 [EmailService] Debug - from_name: '{self.from_name}' (type: {type(self.from_name)})")
-                    
-                    # Obtener valores de EmailSettings directamente como fallback
-                    from_email_value = self.from_email or EmailSettings.from_email
-                    from_name_value = self.from_name or EmailSettings.from_name
-                    
-                    logger.info(f"📧 [EmailService] Valores después de fallback - from_email: '{from_email_value}', from_name: '{from_name_value}'")
-                    
-                    # Validar que from_email esté configurado
-                    if not from_email_value or not str(from_email_value).strip():
-                        error_msg = f"FromEmail no está configurado para Resend. Valor actual: '{from_email_value}'"
-                        logger.error(f"❌ {error_msg}")
-                        if log_id:
-                            self._update_log_status(log_id, EmailStatus.FAILED, error_msg)
-                        return EmailResponseBasic(
-                            success=False,
-                            message=error_msg,
-                            fecha_envio=None,
-                            error=error_msg
-                        )
-                    
-                    import resend
-                    
-                    # Asegurar que resend.api_key esté configurado (usar el servicio inicializado si está disponible)
-                    if self.resend_service and hasattr(self.resend_service, 'api_key'):
-                        resend.api_key = self.resend_service.api_key
-                        logger.info(f"📧 [EmailService] Usando api_key del resend_service")
-                    elif not hasattr(resend, 'api_key') or not resend.api_key:
-                        resend.api_key = EmailSettings.resend_api_key
-                        logger.info(f"📧 [EmailService] Configurando resend.api_key desde EmailSettings")
-                    
-                    logger.info(f"📧 [EmailService] resend.api_key configurado: {'Sí' if hasattr(resend, 'api_key') and resend.api_key else 'No'}")
-                    
-                    # Formatear el remitente
-                    from_email_str = str(from_email_value).strip()
-                    if from_name_value and str(from_name_value).strip():
-                        from_value = f"{from_name_value} <{from_email_str}>"
-                    else:
-                        from_value = from_email_str
-                    
-                    logger.info(f"📧 [EmailService] From value final: '{from_value}'")
-                    
-                    # Crear parámetros usando el mismo formato que resend_service.py
-                    params = resend.Emails.SendParams(
-                        from_=from_value,
-                        to=[email_data.destinatario_email],
-                        subject=email_data.asunto,
-                        html=email_data.contenido_html,
-                    )
-                    
-                    # Logging adicional para depuración
-                    logger.info(f"📧 [EmailService] Params tipo: {type(params)}")
-                    if isinstance(params, dict):
-                        logger.info(f"📧 [EmailService] Params keys antes: {list(params.keys())}")
-                        # Verificar si tiene 'from' o 'from_'
-                        if 'from' not in params:
-                            if 'from_' in params:
-                                # Convertir 'from_' a 'from'
-                                params['from'] = params.pop('from_')
-                                logger.info(f"📧 [EmailService] Convertido 'from_' a 'from' manualmente")
-                            else:
-                                # Si no tiene ninguno, agregarlo directamente
-                                params['from'] = from_value
-                                logger.info(f"📧 [EmailService] Agregado 'from' directamente: '{from_value}'")
-                        logger.info(f"📧 [EmailService] Params keys después: {list(params.keys())}")
-                        logger.info(f"📧 [EmailService] Params 'from' value: {params.get('from', 'NO_ENCONTRADO')}")
-                    else:
-                        logger.info(f"📧 [EmailService] Params dict: {params.__dict__ if hasattr(params, '__dict__') else 'No __dict__'}")
-                    
-                    email = resend.Emails.send(params)
-                    logger.info(f"✅ [Resend] Email enviado exitosamente. ID: {email.id}")
-                    
-                    # Actualizar log como exitoso
-                    if log_id:
-                        self._update_log_status(log_id, EmailStatus.SENT)
-                    
-                    return EmailResponseBasic(
-                        success=True,
-                        message="Email enviado exitosamente",
-                        fecha_envio=datetime.utcnow(),
-                        error=None
-                    )
-                except Exception as e:
-                    error_msg = f"Error al enviar email con Resend: {str(e)}"
-                    logger.error(f"❌ {error_msg}")
-                    import traceback
-                    logger.error(f"❌ Traceback: {traceback.format_exc()}")
-                    if log_id:
-                        self._update_log_status(log_id, EmailStatus.FAILED, error_msg)
-                    return EmailResponseBasic(
-                        success=False,
-                        message="Error al enviar email",
-                        fecha_envio=None,
-                        error=error_msg
-                    )
-            
-            # Usar SMTP si Resend no está configurado
-            if self.email_provider == "smtp":
-                # Validar configuración
-                if not self._validate_config():
-                    error_msg = "Configuración de email incompleta"
-                    if log_id:
-                        self._update_log_status(log_id, EmailStatus.FAILED, error_msg)
-                    return EmailResponseBasic(
-                        success=False,
-                        message=error_msg,
-                        fecha_envio=None,
-                        error="Faltan credenciales de SMTP"
-                    )
-                
-                # Crear mensaje
-                message = self._create_message(email_data)
-                
-                # Enviar email
-                self._send_smtp(message, email_data.destinatario_email)
-                
-                # Actualizar log como exitoso
-                if log_id:
-                    self._update_log_status(log_id, EmailStatus.SENT)
-                
-                logger.info(f"Email enviado exitosamente a {email_data.destinatario_email}")
-                
-                return EmailResponseBasic(
-                    success=True,
-                    message="Email enviado exitosamente",
-                    fecha_envio=datetime.utcnow(),
-                    error=None
-                )
-            else:
-                # Error de configuración
-                error_msg = f"Proveedor de email no disponible: {self.email_provider}"
+            # Validar configuración
+            if not self._validate_config():
+                error_msg = "Configuración de email incompleta"
                 if log_id:
                     self._update_log_status(log_id, EmailStatus.FAILED, error_msg)
                 return EmailResponseBasic(
                     success=False,
                     message=error_msg,
                     fecha_envio=None,
-                    error=error_msg
+                    error="Faltan credenciales de SMTP"
                 )
+            
+            # Crear mensaje
+            message = self._create_message(email_data)
+            
+            # Enviar email
+            self._send_smtp(message, email_data.destinatario_email)
+            
+            # Actualizar log como exitoso
+            if log_id:
+                self._update_log_status(log_id, EmailStatus.SENT)
+            
+            logger.info(f"Email enviado exitosamente a {email_data.destinatario_email}")
+            
+            return EmailResponseBasic(
+                success=True,
+                message="Email enviado exitosamente",
+                fecha_envio=datetime.utcnow(),
+                error=None
+            )
             
         except smtplib.SMTPAuthenticationError as e:
             error_msg = "Error de autenticación SMTP. Verifica las credenciales."
@@ -524,8 +367,7 @@ class EmailService:
     def _enviar_email_smtp(self, destinatario_email: str, asunto: str, 
                           contenido_html: str) -> EmailResponseBasic:
         """
-        Envía un email usando Resend o SMTP según configuración
-        Método genérico que detecta automáticamente el proveedor configurado
+        Envía un email usando SMTP
         
         Args:
             destinatario_email: Email del destinatario
@@ -535,162 +377,57 @@ class EmailService:
         Returns:
             EmailResponseBasic con el resultado
         """
-        # Usar Resend si está configurado
-        if self.email_provider == "resend" and self.resend_service:
-            try:
-                logger.info(f"📧 [EmailService] Usando Resend para enviar email a {destinatario_email}")
-                logger.info(f"📧 [EmailService] Debug - from_email: '{self.from_email}' (type: {type(self.from_email)})")
-                logger.info(f"📧 [EmailService] Debug - from_name: '{self.from_name}' (type: {type(self.from_name)})")
-                
-                # Obtener valores de EmailSettings directamente como fallback
-                from_email_value = self.from_email or EmailSettings.from_email
-                from_name_value = self.from_name or EmailSettings.from_name
-                
-                logger.info(f"📧 [EmailService] Valores después de fallback - from_email: '{from_email_value}', from_name: '{from_name_value}'")
-                
-                # Validar que from_email esté configurado
-                if not from_email_value or not str(from_email_value).strip():
-                    error_msg = f"FromEmail no está configurado para Resend. Valor actual: '{from_email_value}'"
-                    logger.error(f"❌ {error_msg}")
-                    return EmailResponseBasic(
-                        success=False,
-                        message=error_msg,
-                        fecha_envio=None,
-                        error=error_msg
-                    )
-                
-                import resend
-                
-                # Asegurar que resend.api_key esté configurado (usar el servicio inicializado si está disponible)
-                if self.resend_service and hasattr(self.resend_service, 'api_key'):
-                    resend.api_key = self.resend_service.api_key
-                    logger.info(f"📧 [EmailService] Usando api_key del resend_service")
-                elif not hasattr(resend, 'api_key') or not resend.api_key:
-                    resend.api_key = EmailSettings.resend_api_key
-                    logger.info(f"📧 [EmailService] Configurando resend.api_key desde EmailSettings")
-                
-                logger.info(f"📧 [EmailService] resend.api_key configurado: {'Sí' if hasattr(resend, 'api_key') and resend.api_key else 'No'}")
-                
-                # Formatear el remitente
-                from_email_str = str(from_email_value).strip()
-                if from_name_value and str(from_name_value).strip():
-                    from_value = f"{from_name_value} <{from_email_str}>"
-                else:
-                    from_value = from_email_str
-                
-                logger.info(f"📧 [EmailService] From value final: '{from_value}'")
-                
-                # Crear parámetros usando el mismo formato que resend_service.py
-                params = resend.Emails.SendParams(
-                    from_=from_value,
-                    to=[destinatario_email],
-                    subject=asunto,
-                    html=contenido_html,
-                )
-                
-                # Logging adicional para depuración
-                logger.info(f"📧 [EmailService] Params tipo: {type(params)}")
-                if isinstance(params, dict):
-                    logger.info(f"📧 [EmailService] Params keys antes: {list(params.keys())}")
-                    # Verificar si tiene 'from' o 'from_'
-                    if 'from' not in params:
-                        if 'from_' in params:
-                            # Convertir 'from_' a 'from'
-                            params['from'] = params.pop('from_')
-                            logger.info(f"📧 [EmailService] Convertido 'from_' a 'from' manualmente")
-                        else:
-                            # Si no tiene ninguno, agregarlo directamente
-                            params['from'] = from_value
-                            logger.info(f"📧 [EmailService] Agregado 'from' directamente: '{from_value}'")
-                    logger.info(f"📧 [EmailService] Params keys después: {list(params.keys())}")
-                    logger.info(f"📧 [EmailService] Params 'from' value: {params.get('from', 'NO_ENCONTRADO')}")
-                else:
-                    logger.info(f"📧 [EmailService] Params dict: {params.__dict__ if hasattr(params, '__dict__') else 'No __dict__'}")
-                
-                email = resend.Emails.send(params)
-                logger.info(f"✅ [Resend] Email enviado exitosamente. ID: {email.id}")
-                
-                return EmailResponseBasic(
-                    success=True,
-                    message="Email enviado exitosamente",
-                    fecha_envio=datetime.utcnow(),
-                    error=None
-                )
-            except Exception as e:
-                error_msg = f"Error al enviar email con Resend: {str(e)}"
-                logger.error(f"❌ {error_msg}")
-                import traceback
-                logger.error(f"❌ Traceback: {traceback.format_exc()}")
+        try:
+            # 1. Validar configuración SMTP
+            if not self._validate_config():
                 return EmailResponseBasic(
                     success=False,
-                    message="Error al enviar email",
+                    message="Configuración de email incompleta",
                     fecha_envio=None,
-                    error=error_msg
+                    error="Faltan credenciales SMTP"
                 )
-        
-        # Usar SMTP si Resend no está configurado
-        if self.email_provider == "smtp":
-            try:
-                # 1. Validar configuración SMTP
-                if not self._validate_config():
-                    return EmailResponseBasic(
-                        success=False,
-                        message="Configuración de email incompleta",
-                        fecha_envio=None,
-                        error="Faltan credenciales SMTP"
-                    )
-                
-                # 2. Crear mensaje MIME
-                message = self._crear_mensaje_mime(destinatario_email, asunto, contenido_html)
-                
-                # 3. Enviar por SMTP
-                self._send_smtp(message, destinatario_email)
-                
-                # 4. Retornar éxito
-                logger.info(f"Email enviado exitosamente a {destinatario_email}")
-                return EmailResponseBasic(
-                    success=True,
-                    message="Email enviado exitosamente",
-                    fecha_envio=datetime.utcnow(),
-                    error=None
-                )
-                
-            except smtplib.SMTPAuthenticationError as e:
-                error_msg = "Error de autenticación SMTP"
-                logger.error(f"{error_msg}: {str(e)}")
-                return EmailResponseBasic(
-                    success=False,
-                    message=error_msg,
-                    fecha_envio=None,
-                    error=str(e)
-                )
-                
-            except smtplib.SMTPException as e:
-                error_msg = f"Error SMTP: {str(e)}"
-                logger.error(error_msg)
-                return EmailResponseBasic(
-                    success=False,
-                    message="Error al enviar email",
-                    fecha_envio=None,
-                    error=error_msg
-                )
-                
-            except Exception as e:
-                error_msg = f"Error inesperado: {str(e)}"
-                logger.error(error_msg)
-                return EmailResponseBasic(
-                    success=False,
-                    message="Error al procesar email",
-                    fecha_envio=None,
-                    error=error_msg
-                )
-        else:
-            # Si Resend está configurado pero no se pudo inicializar
-            error_msg = f"Resend está configurado pero no está disponible. Proveedor: {self.email_provider}"
-            logger.error(f"❌ {error_msg}")
+            
+            # 2. Crear mensaje MIME
+            message = self._crear_mensaje_mime(destinatario_email, asunto, contenido_html)
+            
+            # 3. Enviar por SMTP
+            self._send_smtp(message, destinatario_email)
+            
+            # 4. Retornar éxito
+            logger.info(f"Email enviado exitosamente a {destinatario_email}")
+            return EmailResponseBasic(
+                success=True,
+                message="Email enviado exitosamente",
+                fecha_envio=datetime.utcnow(),
+                error=None
+            )
+            
+        except smtplib.SMTPAuthenticationError as e:
+            error_msg = "Error de autenticación SMTP"
+            logger.error(f"{error_msg}: {str(e)}")
             return EmailResponseBasic(
                 success=False,
-                message="Error de configuración de email",
+                message=error_msg,
+                fecha_envio=None,
+                error=str(e)
+            )
+            
+        except smtplib.SMTPException as e:
+            error_msg = f"Error SMTP: {str(e)}"
+            logger.error(error_msg)
+            return EmailResponseBasic(
+                success=False,
+                message="Error al enviar email",
+                fecha_envio=None,
+                error=error_msg
+            )
+            
+        except Exception as e:
+            error_msg = f"Error inesperado: {str(e)}"
+            logger.error(error_msg)
+            return EmailResponseBasic(
+                success=False,
+                message="Error al procesar email",
                 fecha_envio=None,
                 error=error_msg
             )
@@ -941,14 +678,7 @@ class EmailService:
     def _send_smtp(self, message: MIMEMultipart, destinatario: str):
         """
         Envía el mensaje vía SMTP
-        SOLO debe llamarse si email_provider == "smtp"
         """
-        # Validación de seguridad: NO usar SMTP si Resend está configurado
-        if self.email_provider == "resend":
-            error_msg = "ERROR: Se intentó usar SMTP pero Resend está configurado (USE_RESEND=true). Esto no debería pasar."
-            logger.error(f"❌ {error_msg}")
-            raise ValueError(error_msg)
-        
         try:
             logger.info(f"Intentando conectar a SMTP: {self.smtp_server}:{self.smtp_port}")
             logger.info(f"Timeout configurado: 10 segundos")
@@ -1023,7 +753,7 @@ class EmailService:
         precio_total: float
     ) -> EmailResponseBasic:
         """
-        Envía email de cotización con PDF adjunto
+        Envía email de cotización con PDF adjunto usando SMTP
         
         Args:
             destinatario_email: Email del destinatario
@@ -1065,9 +795,8 @@ class EmailService:
             logger.info(f"📧 [EmailService] Preparando envío de cotización a: {destinatario_email}")
             logger.info(f"📧 [EmailService] Cliente: {destinatario_nombre}")
             logger.info(f"📧 [EmailService] Código de reservación: {codigo_reservacion}")
-            logger.info(f"📧 [EmailService] Proveedor: {self.email_provider}")
             
-            # Generar HTML del email usando la plantilla (común para ambos proveedores)
+            # Generar HTML del email usando la plantilla
             logger.info(f"📧 [EmailService] Generando HTML del email...")
             # Formatear precios como strings para evitar problemas de sintaxis en Jinja2
             precio_unitario_str = f"{precio_unitario:.2f}"
@@ -1094,117 +823,79 @@ class EmailService:
                 }
             )
             
-            # Usar Resend si está configurado - VALIDACIÓN ESTRICTA
-            if self.email_provider == "resend":
-                if self.resend_service:
-                    logger.info("📧 [EmailService] Usando Resend API para enviar email")
-                    logger.info(f"📧 [EmailService] Llamando a resend_service.send_quotation_email()...")
-                    resultado = self.resend_service.send_quotation_email(
-                        destinatario_email=destinatario_email,
-                        destinatario_nombre=destinatario_nombre,
-                        codigo_reservacion=codigo_reservacion,
-                        fecha_entrada=fecha_entrada,
-                        fecha_salida=fecha_salida,
-                        duracion_dias=duracion_dias,
-                        hotel_nombre=hotel_nombre,
-                        hotel_direccion=hotel_direccion,
-                        hotel_telefono=hotel_telefono,
-                        hotel_email=hotel_email,
-                        habitacion_nombre=habitacion_nombre,
-                        habitacion_descripcion=habitacion_descripcion,
-                        tipo_habitacion=tipo_habitacion,
-                        cliente_rfc=cliente_rfc,
-                        cliente_identificacion=cliente_identificacion,
-                        precio_unitario=precio_unitario,
-                        periodicidad_nombre=periodicidad_nombre,
-                        precio_total=precio_total,
-                        html_content=html_content
-                    )
-                    logger.info(f"📧 [EmailService] Resultado de Resend: success={resultado.success}, error={resultado.error}")
-                    return resultado
-                else:
-                    # Si Resend está configurado pero el servicio no se inicializó, es un error crítico
-                    error_msg = "Resend está configurado (USE_RESEND=true) pero el servicio no se pudo inicializar. Verifica RESEND_API_KEY."
-                    logger.error(f"❌ {error_msg}")
-                    return EmailResponseBasic(
-                        success=False,
-                        message=error_msg,
-                        fecha_envio=None,
-                        error=error_msg
-                    )
-            
-            # SOLO usar SMTP si Resend NO está configurado
-            if self.email_provider == "smtp":
-                logger.info("📧 [EmailService] Usando SMTP para enviar email")
-                
-                # Generar PDF usando reportlab
-                logger.info(f"📧 [EmailService] Generando PDF de cotización...")
-                pdf_bytes = generate_quotation_pdf(
-                    codigo_reservacion=codigo_reservacion,
-                    fecha_entrada=fecha_entrada,
-                    fecha_salida=fecha_salida,
-                    duracion_dias=duracion_dias,
-                    hotel_nombre=hotel_nombre,
-                    hotel_direccion=hotel_direccion,
-                    hotel_telefono=hotel_telefono,
-                    hotel_email=hotel_email,
-                    habitacion_nombre=habitacion_nombre,
-                    habitacion_descripcion=habitacion_descripcion,
-                    tipo_habitacion=tipo_habitacion,
-                    cliente_nombre=destinatario_nombre,
-                    cliente_rfc=cliente_rfc,
-                    cliente_identificacion=cliente_identificacion,
-                    cliente_email=destinatario_email,
-                    precio_unitario=precio_unitario,
-                    periodicidad_nombre=periodicidad_nombre,
-                    precio_total=precio_total
-                )
-                
-                # Crear mensaje multipart
-                logger.info(f"📧 [EmailService] Creando mensaje MIME para: {destinatario_email}")
-                message = MIMEMultipart("related")
-                message["Subject"] = f"Cotización de Reservación - {codigo_reservacion}"
-                message["From"] = f"{self.from_name} <{self.from_email}>"
-                message["To"] = destinatario_email
-                
-                logger.info(f"📧 [EmailService] Remitente: {self.from_name} <{self.from_email}>")
-                logger.info(f"📧 [EmailService] Destinatario: {destinatario_email}")
-                
-                # Agregar parte HTML
-                html_part = MIMEText(html_content, "html", "utf-8")
-                message.attach(html_part)
-                
-                # Adjuntar PDF
-                pdf_part = MIMEBase('application', 'pdf')
-                pdf_bytes.seek(0)  # Asegurar que esté en posición 0
-                pdf_part.set_payload(pdf_bytes.getvalue())
-                encoders.encode_base64(pdf_part)
-                pdf_part.add_header(
-                    'Content-Disposition',
-                    f'attachment; filename="Cotizacion_{codigo_reservacion}.pdf"'
-                )
-                message.attach(pdf_part)
-                
-                # Enviar email
-                self._send_smtp(message, destinatario_email)
-                
-                logger.info(f"Email de cotización enviado exitosamente a {destinatario_email}")
-                return EmailResponseBasic(
-                    success=True,
-                    message="Email de cotización enviado exitosamente",
-                    fecha_envio=datetime.utcnow(),
-                    error=None
-                )
-            else:
-                # Esto no debería pasar, pero por seguridad
-                error_msg = f"Proveedor de email desconocido: {self.email_provider}"
+            # Validar configuración SMTP
+            if not self._validate_config():
+                error_msg = "Configuración de email incompleta"
                 logger.error(f"❌ {error_msg}")
                 return EmailResponseBasic(
                     success=False,
                     message=error_msg,
                     fecha_envio=None,
-                    error=error_msg
+                    error="Faltan credenciales SMTP"
                 )
+            
+            logger.info("📧 [EmailService] Usando SMTP para enviar email")
+            
+            # Generar PDF usando reportlab
+            logger.info(f"📧 [EmailService] Generando PDF de cotización...")
+            pdf_bytes = generate_quotation_pdf(
+                codigo_reservacion=codigo_reservacion,
+                fecha_entrada=fecha_entrada,
+                fecha_salida=fecha_salida,
+                duracion_dias=duracion_dias,
+                hotel_nombre=hotel_nombre,
+                hotel_direccion=hotel_direccion,
+                hotel_telefono=hotel_telefono,
+                hotel_email=hotel_email,
+                habitacion_nombre=habitacion_nombre,
+                habitacion_descripcion=habitacion_descripcion,
+                tipo_habitacion=tipo_habitacion,
+                cliente_nombre=destinatario_nombre,
+                cliente_rfc=cliente_rfc,
+                cliente_identificacion=cliente_identificacion,
+                cliente_email=destinatario_email,
+                precio_unitario=precio_unitario,
+                periodicidad_nombre=periodicidad_nombre,
+                precio_total=precio_total
+            )
+            
+            # Crear mensaje multipart
+            logger.info(f"📧 [EmailService] Creando mensaje MIME para: {destinatario_email}")
+            message = MIMEMultipart("related")
+            message["Subject"] = f"Cotización de Reservación - {codigo_reservacion}"
+            message["From"] = f"{self.from_name} <{self.from_email}>"
+            message["To"] = destinatario_email
+            
+            logger.info(f"📧 [EmailService] Remitente: {self.from_name} <{self.from_email}>")
+            logger.info(f"📧 [EmailService] Destinatario: {destinatario_email}")
+            
+            # Agregar parte HTML
+            html_part = MIMEText(html_content, "html", "utf-8")
+            message.attach(html_part)
+            
+            # Adjuntar PDF - Implementación correcta para SMTP usando MIMEBase y base64
+            pdf_part = MIMEBase('application', 'pdf')
+            pdf_bytes.seek(0)  # Asegurar que esté en posición 0
+            pdf_part.set_payload(pdf_bytes.getvalue())
+            encoders.encode_base64(pdf_part)
+            pdf_part.add_header(
+                'Content-Disposition',
+                f'attachment; filename="Cotizacion_{codigo_reservacion}.pdf"'
+            )
+            message.attach(pdf_part)
+            
+            logger.info(f"📧 [EmailService] PDF adjunto correctamente. Tamaño: {len(pdf_bytes.getvalue())} bytes")
+            
+            # Enviar email
+            self._send_smtp(message, destinatario_email)
+            
+            logger.info(f"✅ Email de cotización enviado exitosamente a {destinatario_email}")
+            return EmailResponseBasic(
+                success=True,
+                message="Email de cotización enviado exitosamente",
+                fecha_envio=datetime.utcnow(),
+                error=None
+            )
             
         except Exception as e:
             error_msg = f"Error al enviar email de cotización: {str(e)}"

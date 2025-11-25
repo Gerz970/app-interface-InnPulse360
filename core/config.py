@@ -29,9 +29,9 @@ class AuthSettings:
 class EmailSettings:
     """
     Configuración para el servicio de email
-    Usa las variables de configuración existentes
+    Soporta tanto SMTP como servicios REST (Resend)
     """
-    # Configuración SMTP
+    # Configuración SMTP (para desarrollo local)
     smtp_server: str = os.getenv("SmtpServer", "smtp.gmail.com")
     smtp_port: int = int(os.getenv("SmtpPort", "587"))
     smtp_username: str = os.getenv("FromEmail", "")
@@ -41,6 +41,38 @@ class EmailSettings:
     # Configuración del remitente
     from_email: str = os.getenv("FromEmail", "noreply@innpulse360.com")
     from_name: str = os.getenv("FROM_NAME", "InnPulse360")
+    
+    # Configuración Resend (para producción en Railway)
+    resend_api_key: str = os.getenv("RESEND_API_KEY", "")
+    use_resend: bool = os.getenv("USE_RESEND", "false").lower() == "true"
+    
+    @property
+    def email_provider(self) -> str:
+        """
+        Determina qué proveedor de email usar
+        Retorna 'resend' si USE_RESEND=true y RESEND_API_KEY está configurada
+        Retorna 'smtp' en caso contrario
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Logging detallado para diagnóstico
+        logger.info(f"🔍 [EmailSettings] Verificando proveedor de email:")
+        logger.info(f"   USE_RESEND (raw): {os.getenv('USE_RESEND', 'NO_CONFIGURADO')}")
+        logger.info(f"   USE_RESEND (bool): {self.use_resend}")
+        logger.info(f"   RESEND_API_KEY configurada: {'Sí' if self.resend_api_key else 'No'}")
+        logger.info(f"   RESEND_API_KEY (primeros 10 chars): {self.resend_api_key[:10] if self.resend_api_key else 'N/A'}...")
+        
+        if self.use_resend and self.resend_api_key:
+            logger.info("✅ [EmailSettings] Proveedor seleccionado: RESEND")
+            return "resend"
+        else:
+            if not self.use_resend:
+                logger.warning("⚠️ [EmailSettings] USE_RESEND no está en 'true'. Usando SMTP.")
+            if not self.resend_api_key:
+                logger.warning("⚠️ [EmailSettings] RESEND_API_KEY no está configurada. Usando SMTP.")
+            logger.info("📧 [EmailSettings] Proveedor seleccionado: SMTP")
+            return "smtp"
 
 class SupabaseSettings:
     """

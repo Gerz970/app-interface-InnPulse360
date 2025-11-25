@@ -17,6 +17,15 @@ class ServicioTransporte(Base):
     calificacion_viaje = Column(SmallInteger)
     costo_viaje = Column(DECIMAL(18, 2), nullable=False)
 
+    # Campos de geolocalización
+    latitud_origen = Column(DECIMAL(10, 8), nullable=True)
+    longitud_origen = Column(DECIMAL(10, 8), nullable=True)
+    latitud_destino = Column(DECIMAL(10, 8), nullable=True)
+    longitud_destino = Column(DECIMAL(10, 8), nullable=True)
+    direccion_origen = Column(String(500), nullable=True)
+    direccion_destino = Column(String(500), nullable=True)
+    distancia_km = Column(DECIMAL(10, 2), nullable=True)
+
     cargo = relationship(
         "Cargo",
         secondary="RESERVA.Tb_cargo_servicio_transporte",

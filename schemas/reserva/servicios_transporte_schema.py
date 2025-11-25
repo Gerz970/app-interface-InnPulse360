@@ -15,6 +15,15 @@ class ServicioTransporteBase(BaseModel):
     observaciones_empleado: Optional[str] = None
     calificacion_viaje: Optional[int] = None
     costo_viaje : Decimal
+    
+    # Campos de geolocalización
+    latitud_origen: Optional[Decimal] = None
+    longitud_origen: Optional[Decimal] = None
+    latitud_destino: Optional[Decimal] = None
+    longitud_destino: Optional[Decimal] = None
+    direccion_origen: Optional[str] = None
+    direccion_destino: Optional[str] = None
+    distancia_km: Optional[Decimal] = None
 
 
 class ServicioTransporteCreate(ServicioTransporteBase):
@@ -30,7 +39,17 @@ class ServicioTransporteUpdate(BaseModel):
     observaciones_cliente: Optional[str] = None
     observaciones_empleado: Optional[str] = None
     calificacion_viaje: Optional[int] = None
-    costo_viaje: Optional[int] = None
+    costo_viaje: Optional[Decimal] = None
+    
+    # Campos de geolocalización
+    latitud_origen: Optional[Decimal] = None
+    longitud_origen: Optional[Decimal] = None
+    latitud_destino: Optional[Decimal] = None
+    longitud_destino: Optional[Decimal] = None
+    direccion_origen: Optional[str] = None
+    direccion_destino: Optional[str] = None
+    distancia_km: Optional[Decimal] = None
+
 
 
 class ServicioTransporteResponse(ServicioTransporteBase):

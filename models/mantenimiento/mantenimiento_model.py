@@ -11,6 +11,7 @@ class Mantenimiento(Base):
     fecha = Column(DateTime, nullable=True)
     fecha_termino = Column(Date, nullable=True)
     empleado_id = Column(Integer, ForeignKey("EMPLEADOS.Tb_empleado.id_empleado"))
+    estatus = Column(Integer, nullable= False)
 
     empleado = relationship("Empleado", back_populates="mantenimientos")
 

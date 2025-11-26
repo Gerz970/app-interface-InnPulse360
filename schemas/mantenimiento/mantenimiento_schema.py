@@ -8,6 +8,7 @@ class MantenimientoBase(BaseModel):
     fecha: datetime
     fecha_termino: Optional[date] = None
     empleado_id: int
+    estatus: int
 
 class MantenimientoCreate(MantenimientoBase):
     pass
@@ -21,5 +22,10 @@ class MantenimientoUpdate(BaseModel):
 class MantenimientoResponse(MantenimientoBase):
     id_mantenimiento: int
     empleado : EmpleadoResponse
+    class Config:
+        from_attributes = True
+
+class MantenimientoResponseShort(MantenimientoBase):
+    id_mantenimiento: int
     class Config:
         from_attributes = True

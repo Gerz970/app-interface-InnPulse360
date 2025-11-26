@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from services.mantenimiento.mantenimiento_service import MantenimientoService
-from schemas.mantenimiento.mantenimiento_schema import MantenimientoCreate, MantenimientoUpdate, MantenimientoResponse
+from schemas.mantenimiento.mantenimiento_schema import MantenimientoCreate, MantenimientoUpdate, MantenimientoResponse, MantenimientoResponseShort
 from typing import List
 from core.database_connection import get_database_session
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -67,6 +67,17 @@ def obtener_por_empleado(
     db: Session = Depends(get_database_session),
     credentials: HTTPAuthorizationCredentials = Depends(security)):
     mantenimientos = service.obtener_por_empleado_fecha(db, empleado_id, fecha_inicio)
+    if not mantenimientos:
+        raise HTTPException(status_code=404, detail="No se encontraron mantenimientos para este empleado")
+    return mantenimientos
+
+@router.get("/empleado-estatus/{empleado_id}/{estatus}", response_model=List[MantenimientoResponseShort])
+def obtener_por_empleado_por_estatus(
+    empleado_id: int,
+    estatus: int,
+    db: Session = Depends(get_database_session),
+    credentials: HTTPAuthorizationCredentials = Depends(security)):
+    mantenimientos = service.obtener_por_empleado_por_estatus(db, empleado_id, estatus)
     if not mantenimientos:
         raise HTTPException(status_code=404, detail="No se encontraron mantenimientos para este empleado")
     return mantenimientos

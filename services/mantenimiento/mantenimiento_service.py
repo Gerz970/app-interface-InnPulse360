@@ -37,3 +37,6 @@ class MantenimientoService:
             Mantenimiento.fecha >= fecha
             ).all()
         )
+    
+    def obtener_por_empleado_por_estatus(self, db: Session, empleado_id: int, estatus: int):
+        return db.query(Mantenimiento).filter(Mantenimiento.empleado_id == empleado_id, Mantenimiento.estatus == estatus).all()

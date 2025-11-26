@@ -38,3 +38,6 @@ supabase
 
 # Generación de PDFs
 reportlab==4.0.7
+
+# IA y Chat
+openai>=1.0.0

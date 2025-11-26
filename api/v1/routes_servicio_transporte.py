@@ -8,7 +8,9 @@ from schemas.reserva.servicios_transporte_schema import (
     ServicioTransporteUpdate,
     ServicioTransporteResponse,
 )
+from schemas.seguridad.usuario_response import UsuarioResponse
 from services.reserva.servicio_transporte_service import ServicioTransporteService
+from api.v1.routes_usuario import get_current_user
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 security = HTTPBearer()
@@ -17,14 +19,27 @@ router = APIRouter(prefix="/servicios-transporte", tags=["Servicios de Transport
 service = ServicioTransporteService()
 
 @router.get("/", response_model=list[ServicioTransporteResponse])
-def listar_servicios(db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
-    return service.listar(db)
+def listar_servicios(
+    db: Session = Depends(get_database_session),
+    current_user: UsuarioResponse = Depends(get_current_user)
+):
+    """
+    Lista servicios de transporte del cliente autenticado.
+    Solo retorna servicios asociados a reservaciones del cliente en sesión.
+    """
+    return service.listar(db, usuario_id=current_user.id_usuario)
 
 @router.get("/{id_servicio}", response_model=ServicioTransporteResponse)
-def obtener_servicio(id_servicio: int, db: Session = Depends(get_database_session), credentials: HTTPAuthorizationCredentials = Depends(security)):
-    servicio = service.obtener(db, id_servicio)
-    if not servicio:
-        raise HTTPException(status_code=404, detail="Servicio no encontrado")
+def obtener_servicio(
+    id_servicio: int,
+    db: Session = Depends(get_database_session),
+    current_user: UsuarioResponse = Depends(get_current_user)
+):
+    """
+    Obtiene un servicio de transporte por ID.
+    Valida que el servicio pertenece al cliente autenticado.
+    """
+    servicio = service.obtener(db, id_servicio, usuario_id=current_user.id_usuario)
     return servicio
 
 @router.post("/", response_model=ServicioTransporteResponse)

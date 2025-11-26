@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.config import Settings
 from api.v1 import api_router
+from api.v1.routes_websocket import register_websocket_endpoint
 from core.database_connection import db_connection
 
 # Crear instancia de settings
@@ -25,6 +26,9 @@ app.add_middleware(
 
 # Incluir el router de la API v1
 app.include_router(api_router, prefix=settings.api_version)
+
+# Registrar endpoint WebSocket
+register_websocket_endpoint(app)
 
 # Endpoint de bienvenida
 @app.get("/")

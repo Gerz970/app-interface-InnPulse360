@@ -35,6 +35,8 @@ from .routes_tipo_habitacion_imagenes import router as router_tipo_habitacion_im
 from .routes_incidencia_imagenes import router as router_incidencia_imagenes
 from .routes_notifications import router as router_notifications
 from .routes_reportes import router as router_reportes
+from .routes_chat import router as chat_router
+from .routes_mensajeria import router as mensajeria_router
 
 api_router = APIRouter()
 
@@ -74,3 +76,5 @@ api_router.include_router(router_tipo_habitacion_imagenes)
 api_router.include_router(router_incidencia_imagenes)
 api_router.include_router(router_notifications)
 api_router.include_router(router_reportes)
+api_router.include_router(chat_router)
+api_router.include_router(mensajeria_router)

@@ -1,6 +1,9 @@
 # dao/servicio_transporte_dao.py
 from sqlalchemy.orm import Session, joinedload
 from models.reserva.servicios_transporte_model import ServicioTransporte
+from models.reserva.cargo_servicio_transporte_model import CargoServicioTransporte
+from models.reserva.cargos_model import Cargo
+from models.reserva.reservaciones_model import Reservacion
 from schemas.reserva.servicios_transporte_schema import ServicioTransporteCreate, ServicioTransporteUpdate
 
 class ServicioTransporteDAO:
@@ -14,6 +17,61 @@ class ServicioTransporteDAO:
         return db.query(ServicioTransporte).options(
             joinedload(ServicioTransporte.empleado)
         ).filter(ServicioTransporte.id_servicio_transporte == id_servicio).first()
+
+    def get_all_by_cliente_id(self, db: Session, cliente_id: int):
+        """
+        Obtiene todos los servicios de transporte asociados a un cliente específico
+        a través de la relación: ServicioTransporte → Cargo → Reservacion → Cliente
+        
+        Args:
+            db (Session): Sesión de base de datos
+            cliente_id (int): ID del cliente
+            
+        Returns:
+            List[ServicioTransporte]: Lista de servicios de transporte del cliente
+        """
+        return db.query(ServicioTransporte).options(
+            joinedload(ServicioTransporte.empleado)
+        ).join(
+            CargoServicioTransporte,
+            ServicioTransporte.id_servicio_transporte == CargoServicioTransporte.servicio_transporte_id
+        ).join(
+            Cargo,
+            CargoServicioTransporte.cargo_id == Cargo.id_cargo
+        ).join(
+            Reservacion,
+            Cargo.reservacion_id == Reservacion.id_reservacion
+        ).filter(
+            Reservacion.cliente_id == cliente_id
+        ).distinct().all()
+
+    def get_by_id_and_cliente_id(self, db: Session, id_servicio: int, cliente_id: int):
+        """
+        Obtiene un servicio de transporte por ID validando que pertenece al cliente especificado
+        
+        Args:
+            db (Session): Sesión de base de datos
+            id_servicio (int): ID del servicio de transporte
+            cliente_id (int): ID del cliente
+            
+        Returns:
+            Optional[ServicioTransporte]: Servicio encontrado o None si no existe o no pertenece al cliente
+        """
+        return db.query(ServicioTransporte).options(
+            joinedload(ServicioTransporte.empleado)
+        ).join(
+            CargoServicioTransporte,
+            ServicioTransporte.id_servicio_transporte == CargoServicioTransporte.servicio_transporte_id
+        ).join(
+            Cargo,
+            CargoServicioTransporte.cargo_id == Cargo.id_cargo
+        ).join(
+            Reservacion,
+            Cargo.reservacion_id == Reservacion.id_reservacion
+        ).filter(
+            ServicioTransporte.id_servicio_transporte == id_servicio,
+            Reservacion.cliente_id == cliente_id
+        ).distinct().first()
 
     def create(self, db: Session, data: ServicioTransporteCreate):
         nuevo_servicio = ServicioTransporte(**data.dict())

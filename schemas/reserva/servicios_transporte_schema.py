@@ -58,3 +58,27 @@ class ServicioTransporteResponse(ServicioTransporteBase):
 
     class Config:
         from_attributes = True
+
+
+class ServicioTransporteOut(BaseModel):
+    id_servicio_transporte: int
+    destino: str
+    fecha_servicio: date
+    hora_servicio: time
+    id_estatus: int
+    observaciones_cliente: str
+    observaciones_empleado: str
+    calificacion_viaje: int
+    costo_viaje: float
+    latitud_origen: float
+    longitud_origen: float
+    latitud_destino: float
+    longitud_destino: float
+    direccion_origen: str
+    direccion_destino: str
+    distancia_km: float
+    id_empleado: int
+    clave_empleado: str
+    nombre: str
+    apellido_paterno: str
+    apellido_materno: str

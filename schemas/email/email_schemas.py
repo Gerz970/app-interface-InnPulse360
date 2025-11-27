@@ -3,7 +3,7 @@ Schemas Pydantic para el sistema de email
 Define la estructura de datos para validación y serialización
 """
 
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, EmailStr, field_validator, model_validator
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 from enum import Enum
@@ -100,15 +100,14 @@ class EmailSend(BaseModel):
         description="Prioridad del email (1=alta, 5=baja)"
     )
     
-    @validator('contenido_html', 'contenido_texto')
-    def validar_contenido(cls, v, values):
+    @model_validator(mode='after')
+    def validar_contenido(self):
         """
         Valida que al menos uno de los contenidos esté presente
         """
-        if not v and not values.get('id_template'):
-            if 'contenido_html' in values and not values['contenido_html']:
-                raise ValueError('Debe proporcionar contenido_html, contenido_texto o id_template')
-        return v
+        if not self.contenido_html and not self.contenido_texto and not self.id_template:
+            raise ValueError('Debe proporcionar contenido_html, contenido_texto o id_template')
+        return self
 
 
 class EmailResponse(BaseModel):

@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 
-if TYPE_CHECKING:
-    from .mensaje_adjunto_schema import MensajeAdjuntoResponse
+# Importación directa para evitar problemas con model_rebuild en Pydantic v2
+from .mensaje_adjunto_schema import MensajeAdjuntoResponse
 
 
 class MensajeCreate(BaseModel):
@@ -21,7 +21,7 @@ class MensajeResponse(BaseModel):
     fecha_envio: datetime
     fecha_leido: Optional[datetime] = None
     id_estatus: int
-    adjuntos: Optional[List['MensajeAdjuntoResponse']] = []
+    adjuntos: Optional[List[MensajeAdjuntoResponse]] = []
     
     class Config:
         from_attributes = True

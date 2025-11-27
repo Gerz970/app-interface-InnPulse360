@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from typing import Optional
 
 
@@ -66,7 +66,8 @@ class HotelBase(BaseModel):
         example=4
     )
     
-    @validator('email_contacto')
+    @field_validator('email_contacto')
+    @classmethod
     def validate_email(cls, v):
         # v es el valor del campo email_contacto
         # cls es la clase HotelBase
@@ -75,7 +76,8 @@ class HotelBase(BaseModel):
             raise ValueError('El email debe tener un formato válido')
         return v
     
-    @validator('telefono')
+    @field_validator('telefono')
+    @classmethod
     def validate_phone(cls, v):
         # v es el valor del campo telefono
         # cls es la clase HotelBase

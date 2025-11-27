@@ -105,4 +105,13 @@ class EmpleadoService:
         except Exception as e:
             raise Exception(f"Error inesperado al obtener hoteles: {str(e)}")
 
+    def obtener_empleados_por_hotel_y_puesto(self, hotel_id: int, puesto_id: int):
+        try:
+            empleados = self.dao.obtener_empleados_por_hotel_y_puesto(hotel_id, puesto_id)
+
+            return empleados
+        except SQLAlchemyError as e:
+            raise Exception(f"Error al obtener empleados de la base de datos: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Error inesperado al obtener empleados: {str(e)}")
     

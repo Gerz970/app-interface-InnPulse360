@@ -139,3 +139,18 @@ def actualizar_empleado(
     if not empleado:
         raise HTTPException(status_code=404, detail="Empleado no encontrado para actualizar")
     return empleado
+
+
+@api_router.get("/empleado-hotel-puesto/{hotel_id}/{puesto_id}", response_model=List[EmpleadoResponse])
+def obtener_empleados_por_hotel_y_puesto(
+    hotel_id: int,
+    puesto_id: int,
+    service: EmpleadoService = Depends(get_empleado_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+
+    try:
+        empleados= service.obtener_empleados_por_hotel_y_puesto(hotel_id, puesto_id)
+        return empleados
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

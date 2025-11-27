@@ -18,6 +18,7 @@ class MantenimientoUpdate(BaseModel):
     fecha: Optional[datetime] = None
     fecha_termino: Optional[date] = None
     empleado_id: Optional[int] = None
+    estatus: Optional[int] = None
 
 class MantenimientoResponse(MantenimientoBase):
     id_mantenimiento: int

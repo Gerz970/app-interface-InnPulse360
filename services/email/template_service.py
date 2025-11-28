@@ -114,7 +114,7 @@ class EmailTemplateService:
         variables = {
             'destinatario_nombre': destinatario_nombre,
             'contenido_principal': contenido_principal,
-            'boton_url': 'https://innpulse360.com/login',
+            'boton_url': 'https://innpulse360.cloud/login',
             'boton_texto': 'Iniciar Sesión',
             'boton_estilo': 'button-secondary',
             'contenido_secundario': '''
@@ -161,7 +161,7 @@ class EmailTemplateService:
         variables = {
             'destinatario_nombre': destinatario_nombre,
             'contenido_principal': contenido_principal,
-            'boton_url': 'https://innpulse360.com/login',
+            'boton_url': 'https://innpulse360.cloud/login',
             'boton_texto': 'Iniciar Sesión',
             'contenido_secundario': '''
             <p><strong>Recomendaciones de seguridad:</strong></p>
@@ -256,7 +256,7 @@ class EmailTemplateService:
         variables = {
             'destinatario_nombre': destinatario_nombre,
             'contenido_principal': contenido_principal,
-            'boton_url': f'https://innpulse360.com/reset-password?token={reset_token}',
+            'boton_url': f'https://innpulse360.cloud/reset-password?token={reset_token}',
             'boton_texto': 'Restablecer Contraseña',
             'contenido_secundario': '''
             <p><strong>Por seguridad:</strong></p>
@@ -339,7 +339,7 @@ class EmailTemplateService:
         variables = {
             'destinatario_nombre': destinatario_nombre,
             'contenido_principal': contenido_principal,
-            'boton_url': 'https://innpulse360.com/hotels',
+            'boton_url': 'https://innpulse360.cloud/hotels',
             'boton_texto': 'Ver Hoteles',
             'boton_estilo': 'button-secondary',
             'contenido_secundario': '''

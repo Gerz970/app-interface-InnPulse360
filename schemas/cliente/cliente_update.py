@@ -93,7 +93,7 @@ class ClienteUpdate(BaseModel):
     correo_electronico: Optional[str] = Field(
         None,
         min_length=1,
-        max_length=20,
+        max_length=50,
         description="Correo electrónico del cliente",
         example="cliente@email.com"
     )

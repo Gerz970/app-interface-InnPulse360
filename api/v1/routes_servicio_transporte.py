@@ -7,6 +7,7 @@ from schemas.reserva.servicios_transporte_schema import (
     ServicioTransporteCreate,
     ServicioTransporteUpdate,
     ServicioTransporteResponse,
+    ServicioTransporteOut
 )
 from schemas.seguridad.usuario_response import UsuarioResponse
 from services.reserva.servicio_transporte_service import ServicioTransporteService
@@ -134,3 +135,13 @@ def eliminar_servicio(id_servicio: int, db: Session = Depends(get_database_sessi
     if not servicio:
         raise HTTPException(status_code=404, detail="Servicio no encontrado")
     return {"message": "Servicio eliminado correctamente"}
+
+@router.get("/servicio-por-hotel-por-estatus/{id_hotel}/{estatus}", response_model=list[ServicioTransporteOut])
+def obtener_servicio_hotel(
+    id_hotel: int,
+    estatus:int,
+    db: Session = Depends(get_database_session),
+    current_user: UsuarioResponse = Depends(get_current_user)
+):
+    servicio = service.obtener_servicio_hotel(db, id_hotel, estatus)
+    return servicio

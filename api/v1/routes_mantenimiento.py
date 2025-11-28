@@ -78,6 +78,4 @@ def obtener_por_empleado_por_estatus(
     db: Session = Depends(get_database_session),
     credentials: HTTPAuthorizationCredentials = Depends(security)):
     mantenimientos = service.obtener_por_empleado_por_estatus(db, empleado_id, estatus)
-    if not mantenimientos:
-        raise HTTPException(status_code=404, detail="No se encontraron mantenimientos para este empleado")
     return mantenimientos

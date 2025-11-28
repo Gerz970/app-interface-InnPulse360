@@ -153,3 +153,16 @@ class EmpleadoDAO:
             return empleado.hoteles
         except SQLAlchemyError as e:
             raise e
+        
+    def obtener_empleados_por_hotel_y_puesto(self, hotel_id: int, puesto_id: int):
+        empleados = (
+        self.db.query(Empleado)
+        .join(Empleado.hoteles) 
+        .join(Empleado.puestos) 
+        .filter(
+            Empleado.hoteles.any(id_hotel=hotel_id),
+            Empleado.puestos.any(id_puesto=puesto_id)
+        )
+        .all()
+        )
+        return empleados

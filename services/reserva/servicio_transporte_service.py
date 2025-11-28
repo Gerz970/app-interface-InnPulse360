@@ -126,3 +126,14 @@ class ServicioTransporteService:
 
     def eliminar(self, db: Session, id_servicio: int):
         return self.dao.delete(db, id_servicio)
+
+    def obtener_servicio_hotel(self, db: Session, id_hotel: int, estatus: int):
+        servicio = self.dao.obtener_servicios_por_hotel(db, id_hotel, estatus)
+        
+        if not servicio:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Servicio no encontrado o no tienes acceso a este servicio"
+            )
+        
+        return servicio

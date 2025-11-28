@@ -5,6 +5,9 @@ from models.reserva.cargo_servicio_transporte_model import CargoServicioTranspor
 from models.reserva.cargos_model import Cargo
 from models.reserva.reservaciones_model import Reservacion
 from schemas.reserva.servicios_transporte_schema import ServicioTransporteCreate, ServicioTransporteUpdate
+from models.empleados.empleado_model import Empleado
+from models.hotel.habitacionArea_model import HabitacionArea
+from models.hotel.piso_model import Piso
 
 class ServicioTransporteDAO:
 
@@ -116,3 +119,47 @@ class ServicioTransporteDAO:
         db.delete(servicio)
         db.commit()
         return servicio
+    
+    def obtener_servicios_por_hotel(self, db:Session, id_hotel: int, estatus: int):
+        servicios = (
+            db.query(ServicioTransporte)
+            .options(joinedload(ServicioTransporte.empleado))
+            .join(Empleado, Empleado.id_empleado == ServicioTransporte.empleado_id, isouter=True)
+            .join(CargoServicioTransporte, CargoServicioTransporte.servicio_transporte_id == ServicioTransporte.id_servicio_transporte)
+            .join(Cargo, Cargo.id_cargo == CargoServicioTransporte.cargo_id)
+            .join(Reservacion, Cargo.reservacion_id == Reservacion.id_reservacion)
+            .join(HabitacionArea, Reservacion.habitacion_area_id == HabitacionArea.id_habitacion_area)
+            .join(Piso, HabitacionArea.piso_id == Piso.id_piso)
+            .filter(Piso.id_hotel == id_hotel, ServicioTransporte.id_estatus == estatus)
+            .all()
+        )
+
+        resultado = []
+
+        for s in servicios:
+            resultado.append({
+            "id_servicio_transporte": s.id_servicio_transporte,
+            "destino": s.destino,
+            "fecha_servicio": s.fecha_servicio,  # Pydantic acepta datetime.date
+            "hora_servicio": s.hora_servicio,    # Pydantic acepta datetime.time
+            "id_estatus": s.id_estatus,
+            "observaciones_cliente": s.observaciones_cliente or "",
+            "observaciones_empleado": s.observaciones_empleado or "",
+            "calificacion_viaje": s.calificacion_viaje or 0,
+            "costo_viaje": float(s.costo_viaje),
+            "latitud_origen": float(s.latitud_origen),
+            "longitud_origen": float(s.longitud_origen),
+            "latitud_destino": float(s.latitud_destino),
+            "longitud_destino": float(s.longitud_destino),
+            "direccion_origen": s.direccion_origen,
+            "direccion_destino": s.direccion_destino,
+            "distancia_km": float(s.distancia_km) if s.distancia_km is not None else 0.0,
+            "id_empleado": s.empleado_id or 0,
+            "clave_empleado": s.empleado.clave_empleado if s.empleado else "",
+            "nombre": s.empleado.nombre if s.empleado else "",
+            "apellido_paterno": s.empleado.apellido_paterno if s.empleado else "",
+            "apellido_materno": s.empleado.apellido_materno if s.empleado else ""
+        })
+        return resultado
+
+

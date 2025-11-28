@@ -116,25 +116,31 @@ class MensajeService:
             adjuntos=[]
         )
         
-        # Enviar notificación FCM si el destinatario no está conectado por WebSocket
-        # Nota: El envío por WebSocket se manejará en el endpoint WebSocket cuando el usuario esté conectado
-        # Si no está conectado, enviamos notificación push para que se entere cuando vuelva a abrir la app
-        if not self.websocket_manager.is_user_connected(destinatario_id):
-            try:
-                contenido_preview = contenido[:100] + "..." if len(contenido) > 100 else contenido
-                self.fcm_service.send_to_user(
-                    usuario_id=destinatario_id,
-                    title=f"Nuevo mensaje de {remitente_nombre}",
-                    body=contenido_preview,
-                    data={
-                        'type': 'mensaje',
-                        'conversacion_id': str(conversacion_id),
-                        'mensaje_id': str(mensaje.id_mensaje),
-                        'remitente_nombre': remitente_nombre
-                    }
-                )
-            except Exception as e:
-                print(f"Error enviando notificación FCM: {e}")
+        # Enviar notificación push SIEMPRE cuando llega un mensaje
+        # Esto asegura notificación incluso si el usuario está en otra pantalla o la app en segundo plano
+        # El WebSocket y FCM pueden coexistir sin problemas
+        try:
+            contenido_preview = contenido[:100] + "..." if len(contenido) > 100 else contenido
+            notification_result = self.fcm_service.send_to_user(
+                usuario_id=destinatario_id,
+                title=f"Nuevo mensaje de {remitente_nombre}",
+                body=contenido_preview,
+                data={
+                    'type': 'mensaje',
+                    'conversacion_id': str(conversacion_id),
+                    'mensaje_id': str(mensaje.id_mensaje),
+                    'remitente_nombre': remitente_nombre
+                }
+            )
+            if notification_result.get('success'):
+                print(f"🔵 MensajeService: Notificación push enviada a usuario {destinatario_id} ({notification_result.get('sent_to')} dispositivos)")
+            else:
+                print(f"⚠️ MensajeService: No se pudo enviar notificación push a usuario {destinatario_id}: {notification_result.get('message', 'Error desconocido')}")
+        except Exception as e:
+            # No fallar el envío del mensaje si falla la notificación
+            print(f"⚠️ MensajeService: Error enviando notificación FCM: {e}")
+            import traceback
+            print(f"⚠️ MensajeService: Traceback: {traceback.format_exc()}")
         
         return mensaje_response
     

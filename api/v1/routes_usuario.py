@@ -4,9 +4,11 @@ Incluye CRUD completo y autenticación
 """
 
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+import logging
 
 from core.database_connection import get_database_session
 from services.seguridad.usuario_service import UsuarioService
@@ -327,6 +329,7 @@ async def verificar_disponibilidad_registro(
 
 @router.post("/registro-cliente", response_model=RegistroClienteResponse, status_code=status.HTTP_201_CREATED)
 async def registrar_usuario_cliente(
+    request: Request,
     request_data: RegistroClienteRequest,
     db: Session = Depends(get_database_session)
 ):
@@ -338,15 +341,25 @@ async def registrar_usuario_cliente(
     - **password**: Contraseña (opcional, se genera si no se envía)
     - **cliente_id**: ID del cliente a asociar
     """
+    # Logging para debug
+    logger = logging.getLogger(__name__)
     try:
+        # Log de los datos parseados
+        logger.info(f"Registro cliente - login: '{request_data.login}', correo: '{request_data.correo_electronico}', cliente_id: {request_data.cliente_id}, password presente: {request_data.password is not None}")
+        
         usuario_service = UsuarioService(db)
         return usuario_service.registrar_usuario_cliente(request_data)
+    except RequestValidationError as e:
+        logger.error(f"Error de validación en registro cliente: {e.errors()}")
+        raise
     except ValueError as e:
+        logger.error(f"Error de valor en registro cliente: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
     except Exception as e:
+        logger.error(f"Error inesperado en registro cliente: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al registrar usuario-cliente: {str(e)}"

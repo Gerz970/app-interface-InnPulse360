@@ -76,6 +76,23 @@ class ServicioTransporteDAO:
             Reservacion.cliente_id == cliente_id
         ).distinct().first()
 
+    def get_all_by_empleado_id(self, db: Session, empleado_id: int):
+        """
+        Obtiene todos los servicios de transporte asignados a un empleado específico
+        
+        Args:
+            db (Session): Sesión de base de datos
+            empleado_id (int): ID del empleado/conductor
+            
+        Returns:
+            List[ServicioTransporte]: Lista de servicios de transporte del empleado
+        """
+        return db.query(ServicioTransporte).options(
+            joinedload(ServicioTransporte.empleado)
+        ).filter(
+            ServicioTransporte.empleado_id == empleado_id
+        ).all()
+
     def create(self, db: Session, data: ServicioTransporteCreate):
         nuevo_servicio = ServicioTransporte(**data.dict())
         db.add(nuevo_servicio)

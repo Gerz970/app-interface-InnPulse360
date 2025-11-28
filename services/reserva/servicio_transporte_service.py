@@ -105,6 +105,19 @@ class ServicioTransporteService:
         
         return servicio
 
+    def obtener_por_empleado(self, db: Session, empleado_id: int):
+        """
+        Obtiene todos los servicios de transporte asignados a un empleado específico
+        
+        Args:
+            db (Session): Sesión de base de datos
+            empleado_id (int): ID del empleado/conductor
+            
+        Returns:
+            List[ServicioTransporte]: Lista de servicios de transporte del empleado
+        """
+        return self.dao.get_all_by_empleado_id(db, empleado_id)
+
     def crear(self, db: Session, data: ServicioTransporteCreate):
         return self.dao.create(db, data)
 

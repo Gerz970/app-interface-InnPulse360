@@ -5,7 +5,8 @@ from .conversacion_schema import (
     ConversacionCreateEmpleadoEmpleado,
     ConversacionUpdate,
     ConversacionResponse,
-    ConversacionListResponse
+    ConversacionListResponse,
+    UsuarioDisponibleResponse
 )
 from .mensaje_schema import (
     MensajeCreate,
@@ -22,6 +23,7 @@ MensajeAdjuntoResponse.model_rebuild()
 MensajeResponse.model_rebuild()
 ConversacionResponse.model_rebuild()
 ConversacionListResponse.model_rebuild()
+UsuarioDisponibleResponse.model_rebuild()
 
 __all__ = [
     'ConversacionCreate',
@@ -30,6 +32,7 @@ __all__ = [
     'ConversacionUpdate',
     'ConversacionResponse',
     'ConversacionListResponse',
+    'UsuarioDisponibleResponse',
     'MensajeCreate',
     'MensajeResponse'
 ]

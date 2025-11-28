@@ -1,7 +1,7 @@
 # controllers/servicio_transporte_controller.py
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List
 from core.database_connection import get_database_session
 from schemas.reserva.servicios_transporte_schema import (
     ServicioTransporteCreate,
@@ -42,6 +42,17 @@ def obtener_servicio(
     """
     servicio = service.obtener(db, id_servicio, usuario_id=current_user.id_usuario)
     return servicio
+
+@router.get("/empleado/{empleado_id}", response_model=list[ServicioTransporteResponse])
+def obtener_por_empleado(
+    empleado_id: int,
+    db: Session = Depends(get_database_session),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Obtiene todos los servicios de transporte asignados a un empleado específico.
+    """
+    return service.obtener_por_empleado(db, empleado_id)
 
 @router.post("/", response_model=ServicioTransporteResponse)
 def crear_servicio(

@@ -13,7 +13,8 @@ from schemas.mensajeria.conversacion_schema import (
     ConversacionCreateClienteAdmin,
     ConversacionCreateEmpleadoEmpleado,
     ConversacionResponse,
-    ConversacionListResponse
+    ConversacionListResponse,
+    UsuarioDisponibleResponse
 )
 from schemas.mensajeria.mensaje_schema import MensajeCreate, MensajeResponse
 from api.v1.routes_usuario import get_current_user
@@ -72,6 +73,49 @@ def listar_conversaciones(
         )
 
 
+@router.get("/conversaciones/buscar-usuario", response_model=List[UsuarioDisponibleResponse])
+def buscar_usuarios_disponibles(
+    query: Optional[str] = Query(None, description="Búsqueda por nombre/login"),
+    current_user: UsuarioResponse = Depends(get_current_user),
+    conversacion_service: ConversacionService = Depends(get_conversacion_service)
+):
+    """
+    Busca usuarios disponibles para iniciar una conversación
+    
+    Reglas de filtrado:
+    - **Si es Cliente**: muestra solo Administradores
+    - **Si es Empleado**: muestra solo Empleados del mismo hotel
+    
+    - **query**: Término de búsqueda opcional para filtrar por nombre o login
+    """
+    try:
+        # Normalizar query - convertir string vacío a None
+        query_normalizado = query if query and query.strip() else None
+        print(f"🔵 API: Buscando usuarios para usuario_id={current_user.id_usuario}, query={query_normalizado}")
+        resultado_dicts = conversacion_service.buscar_usuarios_disponibles(
+            usuario_actual_id=current_user.id_usuario,
+            query=query_normalizado
+        )
+        print(f"🔵 API: Retornando {len(resultado_dicts)} usuarios disponibles")
+        
+        # Convertir dicts a UsuarioDisponibleResponse
+        resultado = [
+            UsuarioDisponibleResponse(**usuario_dict)
+            for usuario_dict in resultado_dicts
+        ]
+        
+        return resultado
+    except Exception as e:
+        print(f"❌ API: Error buscando usuarios: {e}")
+        print(f"❌ API: Tipo de error: {type(e)}")
+        import traceback
+        print(f"❌ API: Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al buscar usuarios: {str(e)}"
+        )
+
+
 @router.get("/conversaciones/{conversacion_id}", response_model=ConversacionResponse)
 def obtener_conversacion(
     conversacion_id: int,
@@ -125,58 +169,6 @@ def crear_conversacion_empleado_empleado(
         empleado2_id=data.empleado2_id,
         usuario_actual_id=current_user.id_usuario
     )
-
-
-@router.put("/conversaciones/{conversacion_id}/archivar", response_model=ConversacionResponse)
-def archivar_conversacion(
-    conversacion_id: int,
-    current_user: UsuarioResponse = Depends(get_current_user),
-    conversacion_service: ConversacionService = Depends(get_conversacion_service)
-):
-    """
-    Archiva una conversación
-    
-    - **conversacion_id**: ID de la conversación a archivar
-    """
-    return conversacion_service.archivar_conversacion(
-        conversacion_id=conversacion_id,
-        usuario_id=current_user.id_usuario
-    )
-
-
-@router.get("/conversaciones/buscar-usuario")
-def buscar_usuarios_disponibles(
-    query: Optional[str] = Query(None, description="Búsqueda por nombre/login"),
-    current_user: UsuarioResponse = Depends(get_current_user),
-    conversacion_service: ConversacionService = Depends(get_conversacion_service)
-):
-    """
-    Busca usuarios disponibles para iniciar una conversación
-    
-    - **query**: Término de búsqueda (opcional)
-    - Retorna usuarios según el rol del usuario actual:
-      - Si es Cliente: muestra Administradores
-      - Si es Empleado: muestra otros Empleados
-    """
-    try:
-        # Normalizar query - convertir string vacío a None
-        query_normalizado = query if query and query.strip() else None
-        print(f"🔵 API: Buscando usuarios para usuario_id={current_user.id_usuario}, query={query_normalizado}")
-        resultado = conversacion_service.buscar_usuarios_disponibles(
-            usuario_actual_id=current_user.id_usuario,
-            query=query_normalizado
-        )
-        print(f"🔵 API: Retornando {len(resultado)} usuarios disponibles")
-        return resultado
-    except Exception as e:
-        print(f"❌ API: Error buscando usuarios: {e}")
-        print(f"❌ API: Tipo de error: {type(e)}")
-        import traceback
-        print(f"❌ API: Traceback: {traceback.format_exc()}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al buscar usuarios: {str(e)}"
-        )
 
 
 @router.get("/conversaciones/no-leidos")

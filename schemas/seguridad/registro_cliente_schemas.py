@@ -1,7 +1,51 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional
 from datetime import datetime
 from schemas.cliente.cliente_formulario import ClienteFormularioData
+
+
+class ClienteFormularioDataConId(BaseModel):
+    """
+    Schema para datos del cliente en respuestas de verificación
+    Similar a ClienteFormularioData pero con id_cliente requerido y validado
+    """
+    id_cliente: int = Field(..., gt=0, description="ID del cliente (requerido y mayor que 0)")
+    tipo_persona: int = Field(..., description="Tipo de persona (1=Física, 2=Moral)")
+    documento_identificacion: Optional[str] = Field(None, max_length=50, description="Número de documento de identificación")
+    nombre_razon_social: str = Field(..., description="Nombre o razón social")
+    apellido_paterno: Optional[str] = Field(None, description="Apellido paterno")
+    apellido_materno: Optional[str] = Field(None, description="Apellido materno")
+    rfc: Optional[str] = Field(None, description="RFC")
+    curp: Optional[str] = Field(None, description="CURP")
+    telefono: Optional[str] = Field(None, description="Teléfono")
+    direccion: Optional[str] = Field(None, description="Dirección")
+    pais_id: int = Field(..., description="ID del país")
+    estado_id: int = Field(..., description="ID del estado")
+    correo_electronico: str = Field(..., description="Correo electrónico")
+    representante: str = Field(..., description="Representante")
+    id_estatus: int = Field(default=1, description="Estatus del cliente")
+    
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id_cliente": 123,
+                "tipo_persona": 1,
+                "documento_identificacion": "123456789",
+                "nombre_razon_social": "Juan Pérez González",
+                "apellido_paterno": "Pérez",
+                "apellido_materno": "González",
+                "rfc": "PEGJ800101XXX",
+                "curp": "PEGJ800101HDFRRN01",
+                "telefono": "5512345678",
+                "direccion": "Calle Principal 123, Col. Centro",
+                "pais_id": 1,
+                "estado_id": 15,
+                "correo_electronico": "cliente@email.com",
+                "representante": "Juan Pérez",
+                "id_estatus": 1
+            }
+        }
 
 
 class VerificarDisponibilidadRequest(BaseModel):
@@ -40,7 +84,7 @@ class VerificarDisponibilidadResponse(BaseModel):
     """
     login_disponible: bool = Field(..., description="Si el login está disponible")
     correo_en_clientes: bool = Field(..., description="Si el correo existe en tabla clientes")
-    cliente: Optional[ClienteFormularioData] = Field(None, description="Datos completos del cliente si existe")
+    cliente: Optional[ClienteFormularioDataConId] = Field(None, description="Datos completos del cliente si existe (con id_cliente requerido)")
     puede_registrar: bool = Field(..., description="Si puede continuar con el registro")
     usuario_ya_existe: bool = Field(default=False, description="Si el cliente ya tiene un usuario asociado con ese correo")
     mensaje: str = Field(..., description="Mensaje descriptivo")
@@ -51,6 +95,7 @@ class VerificarDisponibilidadResponse(BaseModel):
                 "login_disponible": True,
                 "correo_en_clientes": True,
                 "cliente": {
+                    "id_cliente": 123,
                     "tipo_persona": 1,
                     "documento_identificacion": "123456789",
                     "nombre_razon_social": "Juan Pérez González",
@@ -79,10 +124,64 @@ class RegistroClienteRequest(BaseModel):
     """
     login: str = Field(..., min_length=1, max_length=25, description="Login del usuario")
     correo_electronico: str = Field(..., min_length=1, max_length=50, description="Correo electrónico")
-    password: Optional[str] = Field(None, min_length=6, description="Contraseña (opcional, se genera si no se envía)")
+    password: Optional[str] = Field(default=None, description="Contraseña (opcional, se genera si no se envía)")
     cliente_id: int = Field(..., gt=0, description="ID del cliente a asociar")
     
+    @field_validator('login')
+    @classmethod
+    def validate_login(cls, v):
+        """Validar que login no esté vacío después de trim"""
+        if v is None:
+            raise ValueError('El login es requerido')
+        v_trimmed = v.strip() if isinstance(v, str) else str(v).strip()
+        if not v_trimmed:
+            raise ValueError('El login no puede estar vacío')
+        if len(v_trimmed) > 25:
+            raise ValueError('El login no puede tener más de 25 caracteres')
+        return v_trimmed
+    
+    @field_validator('correo_electronico')
+    @classmethod
+    def validate_correo(cls, v):
+        """Validar que correo no esté vacío después de trim"""
+        if v is None:
+            raise ValueError('El correo electrónico es requerido')
+        v_trimmed = v.strip() if isinstance(v, str) else str(v).strip()
+        if not v_trimmed:
+            raise ValueError('El correo electrónico no puede estar vacío')
+        if len(v_trimmed) > 50:
+            raise ValueError('El correo electrónico no puede tener más de 50 caracteres')
+        return v_trimmed
+    
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v):
+        """Validar password solo si se proporciona (no es None ni vacío)"""
+        if v is not None and v != "":
+            v_trimmed = v.strip() if isinstance(v, str) else str(v).strip()
+            if v_trimmed and len(v_trimmed) < 6:
+                raise ValueError('La contraseña debe tener al menos 6 caracteres')
+            return v_trimmed
+        return None
+    
+    @field_validator('cliente_id')
+    @classmethod
+    def validate_cliente_id(cls, v):
+        """Validar que cliente_id sea mayor que 0"""
+        if v is None:
+            raise ValueError('El cliente_id es requerido')
+        if not isinstance(v, int):
+            try:
+                v = int(v)
+            except (ValueError, TypeError):
+                raise ValueError('El cliente_id debe ser un número entero')
+        if v <= 0:
+            raise ValueError(f'El cliente_id debe ser mayor que 0, recibido: {v}')
+        return v
+    
     class Config:
+        # Permitir que los campos opcionales sean None
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "login": "cliente123",

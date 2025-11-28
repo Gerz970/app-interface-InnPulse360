@@ -69,3 +69,15 @@ class ConversacionListResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+class UsuarioDisponibleResponse(BaseModel):
+    """Schema de respuesta para usuarios disponibles para iniciar conversación"""
+    id_usuario: int = Field(..., description="ID del usuario")
+    login: str = Field(..., description="Login del usuario")
+    nombre: str = Field(..., description="Nombre completo del usuario")
+    url_foto_perfil: Optional[str] = Field(None, description="URL completa de la foto de perfil")
+    tipo_usuario: str = Field(..., description="Tipo de usuario: 'Administrador' o 'Empleado'")
+    empleado_id: Optional[int] = Field(None, description="ID del empleado (solo si es empleado)")
+    
+    class Config:
+        from_attributes = True

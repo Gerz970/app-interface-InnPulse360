@@ -31,10 +31,7 @@ from schemas.seguridad.registro_cliente_schemas import (
     CambiarPasswordTemporalRequest,
     CambiarPasswordTemporalResponse,
     ClienteEncontradoInfo,
-    RegistroClienteRequest,
-    RegistroClienteResponse,
-    CambiarPasswordTemporalRequest,
-    CambiarPasswordTemporalResponse
+    ClienteFormularioDataConId
 )
 from schemas.seguridad.usuario_asignacion_schemas import UsuarioEmpleadoAsociacionRequest, UsuarioClienteAsociacionRequest, UsuarioAsignacionResponse
 from schemas.cliente.cliente_formulario import ClienteFormularioData
@@ -155,28 +152,30 @@ class UsuarioService:
         encoded_jwt = jwt.encode(to_encode, AuthSettings.secret_key, algorithm=AuthSettings.algorithm)
         return encoded_jwt
     
-    def create_usuario(self, usuario_data: UsuarioCreate) -> UsuarioResponse:
+    def _create_usuario_internal(self, usuario_data: UsuarioCreate, skip_validations: bool = False) -> UsuarioResponse:
         """
-        Crea un nuevo usuario con contraseña encriptada
+        Método interno para crear usuario sin validaciones duplicadas
+        Usado cuando las validaciones ya se hicieron en el método llamador
         
         Args:
             usuario_data (UsuarioCreate): Datos del usuario
+            skip_validations (bool): Si True, no valida login ni email (ya se validaron)
             
         Returns:
             UsuarioResponse: Usuario creado (sin contraseña)
             
         Raises:
-            HTTPException: Si el login o email ya existen, o si la contraseña no cumple los requisitos de fortaleza
+            HTTPException: Si el login ya existe o si la contraseña no cumple los requisitos
         """
-        # Verificar si el login ya existe
-        if self.dao.exists_by_login(usuario_data.login):
+        # Verificar si el login ya existe (solo si no se saltaron las validaciones)
+        if not skip_validations and self.dao.exists_by_login(usuario_data.login):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El login ya está en uso"
             )
         
-        # Verificar si el email ya existe
-        if self.dao.exists_by_email(usuario_data.correo_electronico):
+        # Verificar si el email ya existe (solo si no se saltaron las validaciones)
+        if not skip_validations and self.dao.exists_by_email(usuario_data.correo_electronico):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El correo electrónico ya está en uso"
@@ -237,6 +236,22 @@ class UsuarioService:
             roles=roles,
             url_foto_perfil=url_foto_completa
         )
+    
+    def create_usuario(self, usuario_data: UsuarioCreate) -> UsuarioResponse:
+        """
+        Crea un nuevo usuario con contraseña encriptada
+        
+        Args:
+            usuario_data (UsuarioCreate): Datos del usuario
+            
+        Returns:
+            UsuarioResponse: Usuario creado (sin contraseña)
+            
+        Raises:
+            HTTPException: Si el login o email ya existen, o si la contraseña no cumple los requisitos de fortaleza
+        """
+        # Usar el método interno con validaciones habilitadas
+        return self._create_usuario_internal(usuario_data, skip_validations=False)
     
     def get_usuario_by_id(self, id_usuario: int) -> Optional[UsuarioResponse]:
         """
@@ -640,22 +655,31 @@ class UsuarioService:
         correo_en_clientes = cliente is not None
         
         # Verificar si el cliente ya tiene un usuario asociado con ese correo
+        # Esto verifica tanto la existencia del usuario como su asignación al cliente
         usuario_ya_existe = False
         if cliente:
             # Obtener usuarios asociados al cliente
             asignaciones = self.asignacion_dao.get_usuarios_por_cliente(cliente.id_cliente)
             
             # Verificar si alguno de esos usuarios tiene el mismo correo electrónico
+            # y que el usuario todavía exista (no haya sido borrado)
             for asignacion in asignaciones:
                 if asignacion.usuario and asignacion.usuario.correo_electronico == request.correo_electronico:
-                    usuario_ya_existe = True
-                    break
+                    # Verificar que el usuario todavía existe en la base de datos
+                    usuario_db = self.dao.get_by_id(asignacion.usuario.id_usuario)
+                    if usuario_db:
+                        usuario_ya_existe = True
+                        break
         
         # Preparar datos del cliente si existe
         cliente_data = None
         if cliente:
-            # Crear datos completos del cliente usando **data
-            # Incluir id_cliente en el diccionario antes de validar
+            # Validar que el cliente tenga un id_cliente válido (mayor que 0)
+            if not cliente.id_cliente or cliente.id_cliente <= 0:
+                raise ValueError(f"El cliente encontrado tiene un ID inválido: {cliente.id_cliente}")
+            
+            # Crear datos completos del cliente usando ClienteFormularioDataConId
+            # que garantiza que id_cliente sea requerido y mayor que 0
             cliente_dict = {
                 'id_cliente': cliente.id_cliente,
                 'tipo_persona': cliente.tipo_persona,
@@ -673,7 +697,8 @@ class UsuarioService:
                 'representante': cliente.representante,
                 'id_estatus': cliente.id_estatus,
             }
-            cliente_data = ClienteFormularioData(**cliente_dict)
+            # Usar ClienteFormularioDataConId que valida que id_cliente > 0
+            cliente_data = ClienteFormularioDataConId(**cliente_dict)
             # Verificar que el id_cliente se incluyó correctamente
             cliente_dump = cliente_data.model_dump(exclude_none=False)
             print(f"DEBUG: Cliente data preparado - id_cliente: {cliente_dump.get('id_cliente')}")
@@ -735,9 +760,16 @@ class UsuarioService:
         asignaciones = self.asignacion_dao.get_usuarios_por_cliente(cliente.id_cliente)
         for asignacion in asignaciones:
             if asignacion.usuario and asignacion.usuario.correo_electronico == request.correo_electronico:
-                raise ValueError("El cliente ya tiene un usuario registrado con este correo electrónico. Por favor, inicie sesión.")
+                # Verificar que el usuario todavía existe en la base de datos
+                usuario_db = self.dao.get_by_id(asignacion.usuario.id_usuario)
+                if usuario_db:
+                    raise ValueError("El cliente ya tiene un usuario registrado con este correo electrónico. Por favor, inicie sesión.")
         
-        # 5. Generar o validar password
+        # 5. Verificar que el email no existe en ningún usuario (validación antes de crear)
+        if self.dao.exists_by_email(request.correo_electronico):
+            raise ValueError("El correo electrónico ya está en uso por otro usuario")
+        
+        # 6. Generar o validar password
         password_temporal_generada = False
         password_temp = None
         password_expira = None
@@ -755,7 +787,7 @@ class UsuarioService:
             password_temporal_generada = True
             password_expira = datetime.utcnow() + timedelta(days=7)
         
-        # 6. Crear usuario
+        # 7. Crear usuario
         usuario_data = UsuarioCreate(
             login=request.login,
             correo_electronico=request.correo_electronico,
@@ -764,27 +796,32 @@ class UsuarioService:
             roles_ids=[]  # Se asignará el rol después
         )
         
-        usuario_creado = self.create_usuario(usuario_data)
+        # Crear usuario usando método interno que no valida login ni email (ya se validaron arriba)
+        try:
+            usuario_creado = self._create_usuario_internal(usuario_data, skip_validations=True)
+        except HTTPException as e:
+            # Convertir HTTPException a ValueError para mantener consistencia
+            raise ValueError(e.detail) from e
         
-        # 7. Actualizar campos de password temporal si aplica
+        # 8. Actualizar campos de password temporal si aplica
         if password_temporal_generada:
             usuario_db = self.dao.get_by_id(usuario_creado.id_usuario)
             usuario_db.password_temporal = True
             usuario_db.password_expira = password_expira
             self.db.commit()
         
-        # 8. Obtener rol "Cliente"
+        # 9. Obtener rol "Cliente"
         rol_cliente = self.roles_dao.get_by_nombre("Cliente")
         if not rol_cliente:
             raise ValueError("No se encontró el rol 'Cliente'. Debe crearse en la base de datos.")
         
-        # 9. Asignar rol "Cliente"
+        # 10. Asignar rol "Cliente"
         self.rol_usuario_dao.assign_role_to_user(usuario_creado.id_usuario, rol_cliente.id_rol)
         
-        # 10. Crear asignación usuario-cliente
+        # 11. Crear asignación usuario-cliente
         self.asignacion_dao.crear_asignacion_cliente(usuario_creado.id_usuario, cliente.id_cliente)
         
-        # 11. Enviar credenciales por email si se generó password temporal
+        # 12. Enviar credenciales por email si se generó password temporal
         email_enviado = self._enviar_credenciales_email(
             password_temporal_generada=password_temporal_generada,
             cliente=cliente,
@@ -793,7 +830,7 @@ class UsuarioService:
             password_expira=password_expira
         )
         
-        # 12. Preparar respuesta
+        # 13. Preparar respuesta según el schema RegistroClienteResponse
         cliente_info = ClienteEncontradoInfo(
             id_cliente=cliente.id_cliente,
             nombre_razon_social=cliente.nombre_razon_social,
@@ -812,18 +849,15 @@ class UsuarioService:
             mensaje = "Usuario creado y asociado al cliente exitosamente."
         
         return RegistroClienteResponse(
-            success=True,
-            mensaje=mensaje,
-            usuario=UsuarioResponse(
-                id_usuario=usuario_creado.id_usuario,
-                login=usuario_creado.login,
-                correo_electronico=usuario_creado.correo_electronico,
-                estatus_id=usuario_creado.estatus_id,
-                roles=self._get_usuario_roles(usuario_creado.id_usuario),
-                url_foto_perfil=usuario_creado.url_foto_perfil
-            ),
-            cliente=cliente_info,
-            email_enviado=email_enviado
+            usuario_creado=True,
+            id_usuario=usuario_creado.id_usuario,
+            login=usuario_creado.login,
+            correo_electronico=usuario_creado.correo_electronico,
+            cliente_asociado=cliente_info,
+            rol_asignado="Cliente",
+            password_temporal_generada=password_temporal_generada,
+            email_enviado=email_enviado,
+            mensaje=mensaje
         )
 
     def asociar_usuario_empleado(self, request: UsuarioEmpleadoAsociacionRequest) -> UsuarioAsignacionResponse:

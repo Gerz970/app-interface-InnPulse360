@@ -6,6 +6,7 @@ from datetime import datetime
 from models.seguridad.usuario_asignacion_model import UsuarioAsignacion
 import logging
 import threading
+from sqlalchemy.orm import joinedload
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +59,26 @@ class MantenimientoService:
             thread.start()  
         return mantenimientoCreado        
 
-    def actualizar(self, db: Session, id_mantenimiento: int, data: MantenimientoUpdate):
-        return self.dao.update(db, id_mantenimiento, data.model_dump(exclude_unset=True))
+    def actualizar(self, db: Session, mantenimiento_id: int, data: MantenimientoUpdate):
+        mantenimiento = (
+            db.query(Mantenimiento)
+            .options(joinedload(Mantenimiento.incidencias))   
+            .filter(Mantenimiento.id_mantenimiento == mantenimiento_id)
+            .first()
+        )
+
+        if not mantenimiento:
+            return None
+
+        if data.estatus == 2:
+            for incidencia in mantenimiento.incidencias:
+                incidencia.id_estatus = 2  # Cambiar el estatus de la incidencia
+
+        db.commit()
+        db.refresh(mantenimiento)
+
+        return self.dao.update(db, mantenimiento_id, data.model_dump(exclude_unset=True))
+
 
     def eliminar(self, db: Session, id_mantenimiento: int):
         return self.dao.delete(db, id_mantenimiento)

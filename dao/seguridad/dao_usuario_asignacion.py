@@ -135,6 +135,50 @@ class UsuarioAsignacionDAO:
         except SQLAlchemyError as e:
             raise e
     
+    def get_by_cliente_id(self, cliente_id: int) -> Optional[UsuarioAsignacion]:
+        """
+        Obtiene la asignación de un cliente
+        
+        Args:
+            cliente_id (int): ID del cliente
+            
+        Returns:
+            Optional[UsuarioAsignacion]: Asignación encontrada o None
+        """
+        try:
+            return (
+                self.db.query(UsuarioAsignacion)
+                .filter(
+                    UsuarioAsignacion.cliente_id == cliente_id,
+                    UsuarioAsignacion.tipo_asignacion == self.TIPO_CLIENTE
+                )
+                .first()
+            )
+        except SQLAlchemyError as e:
+            raise e
+    
+    def get_by_empleado_id(self, empleado_id: int) -> Optional[UsuarioAsignacion]:
+        """
+        Obtiene la asignación de un empleado
+        
+        Args:
+            empleado_id (int): ID del empleado
+            
+        Returns:
+            Optional[UsuarioAsignacion]: Asignación encontrada o None
+        """
+        try:
+            return (
+                self.db.query(UsuarioAsignacion)
+                .filter(
+                    UsuarioAsignacion.empleado_id == empleado_id,
+                    UsuarioAsignacion.tipo_asignacion == self.TIPO_EMPLEADO
+                )
+                .first()
+            )
+        except SQLAlchemyError as e:
+            raise e
+    
     def existe_asignacion_usuario(self, usuario_id: int) -> bool:
         """
         Verifica si un usuario ya tiene una asignación

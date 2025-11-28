@@ -84,6 +84,27 @@ class ConversacionService:
             return asignacion.empleado_id
         return None
     
+    def _obtener_hoteles_empleado(self, empleado_id: int) -> List[int]:
+        """
+        Obtiene los IDs de hoteles asociados a un empleado
+        
+        Args:
+            empleado_id (int): ID del empleado
+            
+        Returns:
+            List[int]: Lista de IDs de hoteles asociados al empleado
+        """
+        try:
+            hoteles = self.empleado_dao.get_hoteles_by_empleado(empleado_id)
+            hotel_ids = [hotel.id_hotel for hotel in hoteles] if hoteles else []
+            print(f"🔵 ConversacionService: Empleado {empleado_id} tiene {len(hotel_ids)} hoteles asignados: {hotel_ids}")
+            return hotel_ids
+        except Exception as e:
+            print(f"❌ ConversacionService: Error obteniendo hoteles del empleado {empleado_id}: {e}")
+            import traceback
+            print(f"❌ ConversacionService: Traceback: {traceback.format_exc()}")
+            return []
+    
     def crear_conversacion_cliente_admin(
         self, 
         cliente_id: int, 
@@ -267,6 +288,7 @@ class ConversacionService:
     ) -> List[ConversacionListResponse]:
         """
         Obtiene todas las conversaciones de un usuario con información adicional
+        Solo retorna conversaciones que tienen al menos un mensaje
         
         Args:
             usuario_id (int): ID del usuario
@@ -282,9 +304,18 @@ class ConversacionService:
             print(f"🔵 ConversacionService: Encontradas {len(conversaciones)} conversaciones en BD")
             
             resultado = []
+            conversaciones_sin_mensajes = 0
+            
             for idx, conv in enumerate(conversaciones):
                 # Obtener último mensaje
                 ultimos_mensajes = self.mensaje_dao.get_by_conversacion(conv.id_conversacion, 0, 1)
+                
+                # FILTRO: Solo incluir conversaciones que tienen al menos un mensaje
+                if not ultimos_mensajes:
+                    conversaciones_sin_mensajes += 1
+                    print(f"🔵 ConversacionService: Conversación {conv.id_conversacion} sin mensajes, omitiendo")
+                    continue
+                
                 ultimo_mensaje = None
                 if ultimos_mensajes:
                     msg = ultimos_mensajes[0]
@@ -344,6 +375,7 @@ class ConversacionService:
                     print(f"❌ ConversacionService: Traceback: {traceback.format_exc()}")
                     raise
             
+            print(f"🔵 ConversacionService: Omitidas {conversaciones_sin_mensajes} conversaciones sin mensajes")
             print(f"🔵 ConversacionService: Retornando {len(resultado)} conversaciones procesadas")
             return resultado
         except Exception as e:
@@ -406,6 +438,10 @@ class ConversacionService:
         """
         Busca usuarios disponibles para iniciar conversación según el rol del usuario actual
         
+        Reglas:
+        - Si es Cliente: muestra solo Administradores
+        - Si es Empleado (incluso si también es Admin): muestra solo Empleados del mismo hotel
+        
         Args:
             usuario_actual_id (int): ID del usuario actual
             query (Optional[str]): Búsqueda por nombre/login
@@ -413,60 +449,36 @@ class ConversacionService:
         Returns:
             List[dict]: Lista de usuarios disponibles con información básica
         """
-        es_cliente = self._es_cliente(usuario_actual_id)
-        es_admin = self._es_administrador(usuario_actual_id)
-        es_empleado = self._obtener_empleado_id(usuario_actual_id) is not None
-        
-        usuarios_disponibles = []
-        
-        if es_cliente:
-            # Cliente puede buscar administradores
-            # Obtener todos los usuarios con rol Administrador
-            todos_usuarios = self.usuario_dao.get_all(0, 1000)
-            for usuario in todos_usuarios:
-                if usuario.id_usuario == usuario_actual_id:
-                    continue
+        try:
+            print(f"🔵 ConversacionService: Buscando usuarios para usuario_id={usuario_actual_id}, query={query}")
+            
+            es_cliente = self._es_cliente(usuario_actual_id)
+            es_admin = self._es_administrador(usuario_actual_id)
+            empleado_id_actual = self._obtener_empleado_id(usuario_actual_id)
+            es_empleado = empleado_id_actual is not None
+            
+            usuarios_disponibles = []
+            
+            # Normalizar query - convertir string vacío a None
+            query_normalizado = query.strip() if query and query.strip() else None
+            
+            if es_cliente:
+                # Cliente puede buscar administradores
+                print(f"🔵 ConversacionService: Usuario es Cliente, buscando Administradores")
+                todos_usuarios = self.usuario_dao.get_all(0, 1000)
+                administradores_encontrados = 0
                 
-                if self._es_administrador(usuario.id_usuario):
-                    nombre_completo = usuario.login
-                    if query:
-                        if query.lower() not in nombre_completo.lower():
-                            continue
+                for usuario in todos_usuarios:
+                    if usuario.id_usuario == usuario_actual_id:
+                        continue
                     
-                    # Construir URL completa de foto de perfil
-                    url_foto_completa = None
-                    if usuario.url_foto_perfil:
-                        ruta_storage = usuario.url_foto_perfil
-                        if self.supabase_settings.public_base_url:
-                            base_url = self.supabase_settings.public_base_url.rstrip('/')
-                            bucket = self.supabase_settings.bucket_images
-                            url_foto_completa = f"{base_url}/storage/v1/object/public/{bucket}/{ruta_storage}"
-                        else:
-                            url_foto_completa = ruta_storage
-                    
-                    usuarios_disponibles.append({
-                        'id_usuario': usuario.id_usuario,
-                        'login': usuario.login,
-                        'nombre': nombre_completo,
-                        'url_foto_perfil': url_foto_completa,
-                        'tipo_usuario': 'Administrador'
-                    })
-        
-        elif es_empleado or es_admin:
-            # Empleado/Admin puede buscar otros empleados
-            todos_usuarios = self.usuario_dao.get_all(0, 1000)
-            for usuario in todos_usuarios:
-                if usuario.id_usuario == usuario_actual_id:
-                    continue
-                
-                # Verificar si es empleado
-                asignacion = self.asignacion_dao.get_by_usuario_id(usuario.id_usuario)
-                if asignacion and asignacion.tipo_asignacion == UsuarioAsignacionDAO.TIPO_EMPLEADO:
-                    empleado = self.empleado_dao.get_by_id(asignacion.empleado_id)
-                    if empleado:
-                        nombre_completo = f"{empleado.nombre} {empleado.apellido_paterno}"
-                        if query:
-                            if query.lower() not in nombre_completo.lower() and query.lower() not in usuario.login.lower():
+                    if self._es_administrador(usuario.id_usuario):
+                        administradores_encontrados += 1
+                        nombre_completo = usuario.login
+                        
+                        # Aplicar filtro de búsqueda si existe
+                        if query_normalizado:
+                            if query_normalizado.lower() not in nombre_completo.lower():
                                 continue
                         
                         # Construir URL completa de foto de perfil
@@ -485,11 +497,112 @@ class ConversacionService:
                             'login': usuario.login,
                             'nombre': nombre_completo,
                             'url_foto_perfil': url_foto_completa,
-                            'tipo_usuario': 'Empleado',
-                            'empleado_id': empleado.id_empleado
+                            'tipo_usuario': 'Administrador'
                         })
-        
-        return usuarios_disponibles
+                
+                print(f"🔵 ConversacionService: Encontrados {administradores_encontrados} administradores, {len(usuarios_disponibles)} después del filtro de query")
+            
+            elif es_empleado:
+                # Empleado puede buscar otros empleados del mismo hotel
+                # Si también es admin pero tiene asignación de empleado, usar lógica de empleado
+                print(f"🔵 ConversacionService: Usuario es Empleado (empleado_id={empleado_id_actual}), buscando empleados del mismo hotel")
+                
+                # Obtener hoteles del empleado actual
+                hoteles_empleado_actual = self._obtener_hoteles_empleado(empleado_id_actual)
+                
+                if not hoteles_empleado_actual:
+                    print(f"⚠️ ConversacionService: Empleado {empleado_id_actual} no tiene hoteles asignados")
+                    return []
+                
+                # Usar un set para evitar duplicados cuando un empleado está en múltiples hoteles
+                empleados_encontrados_por_hotel = {}
+                total_empleados_encontrados = 0
+                
+                # Buscar empleados en cada hotel del empleado actual
+                for hotel_id in hoteles_empleado_actual:
+                    print(f"🔵 ConversacionService: Buscando empleados en hotel_id={hotel_id}")
+                    empleados_hotel = self.empleado_dao.get_all(hotel_id, 0, 1000)
+                    print(f"🔵 ConversacionService: Encontrados {len(empleados_hotel)} empleados en hotel {hotel_id}")
+                    
+                    for empleado in empleados_hotel:
+                        # Obtener usuario asociado al empleado
+                        asignacion_empleado = self.asignacion_dao.get_by_empleado_id(empleado.id_empleado)
+                        if not asignacion_empleado:
+                            continue
+                        
+                        usuario_empleado = self.usuario_dao.get_by_id(asignacion_empleado.usuario_id)
+                        if not usuario_empleado:
+                            continue
+                        
+                        # Excluir el usuario actual
+                        if usuario_empleado.id_usuario == usuario_actual_id:
+                            continue
+                        
+                        # Evitar duplicados usando el id_usuario como clave
+                        if usuario_empleado.id_usuario not in empleados_encontrados_por_hotel:
+                            empleados_encontrados_por_hotel[usuario_empleado.id_usuario] = {
+                                'empleado': empleado,
+                                'usuario': usuario_empleado
+                            }
+                            total_empleados_encontrados += 1
+                
+                print(f"🔵 ConversacionService: Total de empleados únicos encontrados: {total_empleados_encontrados}")
+                
+                # Procesar empleados encontrados y aplicar filtro de query
+                for usuario_id, datos in empleados_encontrados_por_hotel.items():
+                    empleado = datos['empleado']
+                    usuario = datos['usuario']
+                    
+                    nombre_completo = f"{empleado.nombre} {empleado.apellido_paterno}"
+                    
+                    # Aplicar filtro de búsqueda si existe
+                    if query_normalizado:
+                        if (query_normalizado.lower() not in nombre_completo.lower() and 
+                            query_normalizado.lower() not in usuario.login.lower()):
+                            continue
+                    
+                    # Construir URL completa de foto de perfil
+                    url_foto_completa = None
+                    if usuario.url_foto_perfil:
+                        ruta_storage = usuario.url_foto_perfil
+                        if self.supabase_settings.public_base_url:
+                            base_url = self.supabase_settings.public_base_url.rstrip('/')
+                            bucket = self.supabase_settings.bucket_images
+                            url_foto_completa = f"{base_url}/storage/v1/object/public/{bucket}/{ruta_storage}"
+                        else:
+                            url_foto_completa = ruta_storage
+                    
+                    usuarios_disponibles.append({
+                        'id_usuario': usuario.id_usuario,
+                        'login': usuario.login,
+                        'nombre': nombre_completo,
+                        'url_foto_perfil': url_foto_completa,
+                        'tipo_usuario': 'Empleado',
+                        'empleado_id': empleado.id_empleado
+                    })
+                
+                print(f"🔵 ConversacionService: {len(usuarios_disponibles)} empleados después del filtro de query")
+            
+            elif es_admin:
+                # Admin sin asignación de empleado - podría necesitar lógica especial
+                # Por ahora, retornar lista vacía o implementar lógica específica
+                print(f"⚠️ ConversacionService: Usuario es Admin pero no tiene asignación de empleado")
+                # Si es admin puro sin empleado, podría ver todos los empleados o todos los administradores
+                # Por ahora retornamos lista vacía hasta definir el comportamiento esperado
+                return []
+            
+            else:
+                print(f"⚠️ ConversacionService: Usuario {usuario_actual_id} no tiene rol Cliente ni es Empleado")
+                return []
+            
+            print(f"🔵 ConversacionService: Retornando {len(usuarios_disponibles)} usuarios disponibles")
+            return usuarios_disponibles
+            
+        except Exception as e:
+            print(f"❌ ConversacionService: Error en buscar_usuarios_disponibles: {e}")
+            import traceback
+            print(f"❌ ConversacionService: Traceback: {traceback.format_exc()}")
+            raise
     
     def archivar_conversacion(
         self,

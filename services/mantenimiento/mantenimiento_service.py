@@ -82,7 +82,7 @@ class MantenimientoService:
         
         if data_dict.get('estatus') == 2:
             for incidencia in mantenimiento_actual.incidencias:
-                incidencia.id_estatus = 2  # Cambiar el estatus de la incidencia
+                incidencia.id_estatus = 3  # Cambiar el estatus de la incidencia
 
         db.commit()
         db.refresh(mantenimiento_actual)

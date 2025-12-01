@@ -432,3 +432,26 @@ async def asociar_usuario_empleado(
             detail=f"Error al asociar usuario-empleado: {str(e)}"
         )
 
+@router.post("/cliente_usuario_asociacion", response_model=UsuarioAsignacionResponse, status_code=status.HTTP_201_CREATED)
+async def asociar_usuario_cliente(
+    request_data: UsuarioClienteAsociacionRequest,
+    db: Session = Depends(get_database_session)
+):
+    """
+    Asociar un usuario existente con un cliente existente
+    
+    - **usuario_id**: ID del usuario existente
+    - **cliente_id**: ID del cliente existente
+    
+    Requiere autenticación.
+    """
+    try:
+        usuario_service = UsuarioService(db)
+        return usuario_service.asociar_usuario_cliente(request_data)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error al asociar usuario-cliente: {str(e)}"
+        )

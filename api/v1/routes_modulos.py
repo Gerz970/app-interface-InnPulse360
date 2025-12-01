@@ -91,6 +91,21 @@ def obtener_modulos(
     movil_only_int = 1 if movil_only is None else (1 if movil_only else 0)
     return modulo_service.get_all_modulos(skip, limit, activos_only, movil_only_int)
 
+@router.delete("/desasignar-rol", status_code=status.HTTP_200_OK)
+def desasignar_modulo_de_rol(
+    modulo_id: int = Query(..., description="ID del módulo"),
+    rol_id: int = Query(..., description="ID del rol"),
+    modulo_service: ModulosService = Depends(get_modulos_service),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    """
+    Desasignar un módulo de un rol
+    
+    - **modulo_id**: ID del módulo a desasignar
+    - **rol_id**: ID del rol del que se desasigna el módulo
+    """
+    modulo_service.desasignar_modulo_de_rol(modulo_id, rol_id)
+    return {"message": "Módulo desasignado del rol correctamente"}
 
 @router.get("/{id_modulo}", response_model=ModulosResponse)
 def obtener_modulo_por_id(
@@ -153,23 +168,6 @@ def asignar_modulo_a_rol(
     """
     modulo_service.asignar_modulo_a_rol(asignacion.modulo_id, asignacion.rol_id)
     return {"message": "Módulo asignado al rol correctamente"}
-
-
-@router.delete("/desasignar-rol", status_code=status.HTTP_200_OK)
-def desasignar_modulo_de_rol(
-    modulo_id: int = Query(..., description="ID del módulo"),
-    rol_id: int = Query(..., description="ID del rol"),
-    modulo_service: ModulosService = Depends(get_modulos_service),
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-):
-    """
-    Desasignar un módulo de un rol
-    
-    - **modulo_id**: ID del módulo a desasignar
-    - **rol_id**: ID del rol del que se desasigna el módulo
-    """
-    modulo_service.desasignar_modulo_de_rol(modulo_id, rol_id)
-    return {"message": "Módulo desasignado del rol correctamente"}
 
 
 @router.post("/asignar-multiples", status_code=status.HTTP_200_OK)

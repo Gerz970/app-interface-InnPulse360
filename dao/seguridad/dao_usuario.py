@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from models.seguridad.usuario_model import Usuario
 from schemas.seguridad.usuario_create import UsuarioCreate
 from schemas.seguridad.usuario_update import UsuarioUpdate
-
+from models.seguridad.usuario_asignacion_model import UsuarioAsignacion
 
 class UsuarioDAO:
     """
@@ -294,3 +294,16 @@ class UsuarioDAO:
             return query.first() is not None
         except SQLAlchemyError as e:
             raise e
+        
+    def obtener_usuarios_huerfanos(self):
+        query = (
+            self.db.query(Usuario)
+            .outerjoin(UsuarioAsignacion, UsuarioAsignacion.usuario_id == Usuario.id_usuario)
+            .filter(
+                Usuario.estatus_id == 1,
+                UsuarioAsignacion.id_asignacion == None  # equivalente a IS NULL
+            )
+            .all()
+        )
+
+        return query

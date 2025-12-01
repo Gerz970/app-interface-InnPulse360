@@ -1208,3 +1208,6 @@ class UsuarioService:
             return 'No definida'
         
         return password_expira.strftime('%d/%m/%Y a las %H:%M')
+
+    def obtener_usuarios_huerfanos(self):
+        return self.dao.obtener_usuarios_huerfanos()

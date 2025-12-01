@@ -164,7 +164,17 @@ async def get_usuarios(
     """
     return usuario_service.get_all_usuarios(skip=skip, limit=limit)
 
-
+@router.get("/obtener_usuarios_huerfanos")
+async def obtener_usuarios_huerfanos(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_database_session)
+):
+    try:
+        usuario_service = UsuarioService(db)
+        return usuario_service.obtener_usuarios_huerfanos()
+    except HTTPException as e:
+        raise e
+    
 @router.get("/{id_usuario}", response_model=UsuarioResponse, summary="Obtener usuario por ID")
 async def get_usuario(
     id_usuario: int,
@@ -422,28 +432,3 @@ async def asociar_usuario_empleado(
             detail=f"Error al asociar usuario-empleado: {str(e)}"
         )
 
-
-@router.post("/cliente_usuario_asociacion", response_model=UsuarioAsignacionResponse, status_code=status.HTTP_201_CREATED)
-async def asociar_usuario_cliente(
-    request_data: UsuarioClienteAsociacionRequest,
-    current_user: UsuarioResponse = Depends(get_current_user),
-    db: Session = Depends(get_database_session)
-):
-    """
-    Asociar un usuario existente con un cliente existente
-    
-    - **usuario_id**: ID del usuario existente
-    - **cliente_id**: ID del cliente existente
-    
-    Requiere autenticación.
-    """
-    try:
-        usuario_service = UsuarioService(db)
-        return usuario_service.asociar_usuario_cliente(request_data)
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error al asociar usuario-cliente: {str(e)}"
-        )

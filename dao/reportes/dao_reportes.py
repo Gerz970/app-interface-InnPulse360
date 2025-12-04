@@ -17,7 +17,7 @@ class ReportesDAO:
         )
             .join(TipoCargo, TipoCargo.id_tipo == Cargo.tipo_id)
             .filter(func.cast(Cargo.created_at, Date) == fecha)
-            .group_by(TipoCargo.nombre_cargo, Cargo.tipo_id, func.cast(Cargo.created_at, Date))
+           # .group_by(TipoCargo.nombre_cargo, Cargo.tipo_id, func.cast(Cargo.created_at, Date))
             .all()
         )
 
